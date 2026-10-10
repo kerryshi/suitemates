@@ -5,6 +5,8 @@ import { watchWith } from "../personas/financial/watch.ts";
 import financial from "../personas/financial/index.ts";
 import { getPurchases, type Purchase } from "../personas/financial/nessie.ts";
 import type { Ctx, UserProfile } from "../core/types.ts";
+import { loadPersonas } from "../core/personas.ts";
+import { keywordRoute } from "../core/router.ts";
 
 const NOW = new Date(2026, 9, 10, 23, 2); // Sat Oct 10 2026, 11:02 PM local
 const user: UserProfile = { phone: "+1", budgetMonthly: 800, savingsGoal: "spring break, $400", canvasLinked: true, onboardingStep: "done" };
@@ -157,4 +159,10 @@ test("the beach trip matches its cost estimate", async () => {
   assert.equal(matchActivity("going on the beach trip saturday", [{ id: "beach", name: "Beach trip to Wrightsville", when: "Saturday", costEstimate: 45 }])?.costEstimate, 45);
   const tool = financial.tools.find((t) => t.name === "estimate_plan_cost")!;
   assert.match(await tool.run({ plan: "beach trip" }, ctxWith()), /\$45/);
+});
+
+test("keyword routing (keyless mode) wakes Financial for 'how much is the beach trip', nobody for small talk", () => {
+  const personas = loadPersonas();
+  assert.ok(keywordRoute("how much is the beach trip", personas).includes("financial"));
+  assert.deepEqual(keywordRoute("lol ok", personas), []);
 });

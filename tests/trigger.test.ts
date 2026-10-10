@@ -4,13 +4,17 @@ import { spawnSync } from "node:child_process";
 import { mkdtempSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 
-// Runs the real script. SERVER_URL="" is defined, so loadDotEnv won't fill it from a real .env: the local path.
+// Runs the real script. Defined keys win over a real .env (loadDotEnv never overrides): SERVER_URL="" forces
+// the local path, MOCK=1 keeps a teammate's MOCK=0 from reaching real Canvas.
 const trigger = (...args: string[]) =>
   spawnSync(process.execPath, [join("node_modules", "tsx", "dist", "cli.mjs"), "scripts/trigger.ts", ...args], {
+    cwd: fileURLToPath(new URL("..", import.meta.url)),
     env: {
       ...process.env,
       SERVER_URL: "",
+      MOCK: "1",
       FAKE_LLM: "1",
       TRANSPORT: "terminal",
       CHAT_STATE: join(mkdtempSync(join(tmpdir(), "trigger-")), "chat-state.json"),

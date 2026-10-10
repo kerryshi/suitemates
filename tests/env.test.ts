@@ -46,9 +46,8 @@ test("a straight copy of .env.example loads every blank key as blank", () => {
   for (const k of ["SERVER_URL", "DEMO_TOKEN", "FAKE_ROUTE", "NESSIE_API_KEY", "CANVAS_TOKEN", "ACADEMIC_LINE", "GEMINI_API_KEY"]) {
     assert.equal(env[k], "", k);
   }
-  assert.equal(env.TRANSPORT, "terminal");
-  assert.equal(env.WEEKLY_AT, "sun 18:00");
-  assert.equal(env.DEFAULT_PERSONA, "academic");
+  // Shape, not values: teammates add keys to the template, so no value may start with a comment.
+  for (const [k, v] of Object.entries(env)) assert.ok(!v?.startsWith("#"), k);
   // The symptom: a comment in FAKE_ROUTE forced every group message to Penny.
   const config = loadConfig(env);
   assert.equal(config.fakeRoute, undefined);

@@ -29,7 +29,7 @@ Plan of record: `docs/PLAN.md` (architect). Owners: Kerry = core + Financial, Is
 - `rm data/social.json` before each rehearsal (chat's `/reset` doesn't touch the sign-up board); `rm data/chat-state.json` to re-onboard.
 - Social match texts: scheduler (`WATCH=financial,social`) OR the cue, never both. Cue, with `npm run dev` up:
   `SERVER_URL=http://localhost:3000 npm run trigger -- social match +1<real phone>`. Without `SERVER_URL` the trigger runs in-process
-  against `data/chat-state.json` and only prints (it says so on stderr). The cue sends only the newest match (PR #4, 17da735);
+  against `data/chat-state.json` and only prints (it says so on stderr when you pass a phone). The cue sends only the newest match (PR #4, 17da735);
   append the real phone, or it goes to the fake demo user.
 - Anyone who copied `.env` before 16:26: delete its `*_NAME=` lines (they override the defaults). Check before the Photon demo:
   `grep -nE '^(PRODUCT|ACADEMIC|FINANCIAL|SOCIAL)_NAME=' .env` → nothing or the new names.

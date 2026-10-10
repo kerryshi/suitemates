@@ -1,0 +1,46 @@
+# fail-first: trigger test inherits MOCK from the developer's env; MOCK=0 → real Canvas path — Sat Oct 10 18:07:35 EDT 2026
+✖ a cue with a real phone but no SERVER_URL says on stderr that it only printed (213.778834ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 0
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 341.484417
+
+✖ failing tests:
+
+test at tests/trigger.test.ts:21:1
+✖ a cue with a real phone but no SERVER_URL says on stderr that it only printed (213.778834ms)
+  AssertionError [ERR_ASSERTION]: /Users/kerryshi/Projects/hacknc-agents-env/personas/academic/canvas.ts:31
+    if (!token) throw new Error("CANVAS_TOKEN is not set (or run with MOCK=1)");
+                      ^
+  
+  
+  Error: CANVAS_TOKEN is not set (or run with MOCK=1)
+      at fromCanvas (/Users/kerryshi/Projects/hacknc-agents-env/personas/academic/canvas.ts:31:21)
+      at getAssignments (/Users/kerryshi/Projects/hacknc-agents-env/personas/academic/canvas.ts:19:53)
+      at Object.morning_due (/Users/kerryshi/Projects/hacknc-agents-env/personas/academic/watch.ts:24:26)
+      at Engine.trigger (/Users/kerryshi/Projects/hacknc-agents-env/core/engine.ts:134:31)
+      at <anonymous> (/Users/kerryshi/Projects/hacknc-agents-env/scripts/trigger.ts:27:33)
+      at ModuleJob.run (node:internal/modules/esm/module_job:365:25)
+      at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:665:26)
+      at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:99:5)
+  
+  Node.js v24.3.0
+  
+  
+  1 !== 0
+  
+      at TestContext.<anonymous> (/Users/kerryshi/Projects/hacknc-agents-env/tests/trigger.test.ts:23:10)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1062:25)
+      at Test.start (node:internal/test_runner/test:959:17)
+      at startSubtestAfterBootstrap (node:internal/test_runner/harness:332:17) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 1,
+    expected: 0,
+    operator: 'strictEqual'
+  }

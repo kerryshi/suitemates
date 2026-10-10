@@ -12,7 +12,7 @@
     "chat": "tsx scripts/chat.ts",
     "trigger": "tsx scripts/trigger.ts",
     "check-gemini": "tsx scripts/check-gemini.ts",
-    "test": "tsx --test tests/*.test.ts",
+    "test": "tsx --test tests/*.test.ts personas/*/*.test.ts",
     "typecheck": "tsc --noEmit -p ."
   },
   "dependencies": {

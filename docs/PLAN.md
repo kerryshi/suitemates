@@ -71,7 +71,7 @@ One project with 3 dedicated lines (route by `space.phone`, `*_LINE`) OR per-per
 5. Real key: `npx tsx scripts/check-gemini.ts` shows a functionCall. Photon creds: `npm run dev` logs 3 lines; DM "hi" → budget question on the phone.
 
 ## Escalation / open
-- Display names default Canopy/Oak/Clover/Breeze (doc's first set), env-configurable.
+- Display names default Canopy/Oak/Clover/Breeze (doc's first set), env-configurable. Superseded 2026-10-10: Suitemates (product), Dean, Penny, Sunny.
 - Proactive events target DMs only; Social's broadcast to the group needs a group-handle registry — not in v0.
 
 ## Risks

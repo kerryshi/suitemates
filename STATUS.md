@@ -1,9 +1,9 @@
 # STATUS: hacknc-agents (team build)
 
-Last updated: 2026-10-10 17:31 EDT · Devpost due Sun 10:00 AM · repo github.com/kerryshi/hacknc-agents (private)
+Last updated: 2026-10-10 17:45 EDT · Devpost due Sun 10:00 AM · repo github.com/kerryshi/hacknc-agents (private)
 Plan of record: `docs/PLAN.md` (architect). Owners: Kerry = core + Financial, Ismail = Academic, Abdallah = Social.
 
-## Where we are (main = 325bd69)
+## Where we are (main = 20f6a27)
 - All three personas are on main: Social PR #1 (59e47cb) and PR #2 (squash a924976: watch() match + hot-plan texts, review fixes),
   Academic (a00e502: check_plan_conflicts + tests), Financial (0de7113: Penny + Nessie), Penny wakes on "how much is…" (b60fc06).
 - Names: Suitemates, Dean (academic), Penny (financial), Sunny (social); defaults in core/config.ts.
@@ -19,20 +19,23 @@ Plan of record: `docs/PLAN.md` (architect). Owners: Kerry = core + Financial, Is
 
 ## Demo runbook
 - `rm data/social.json` before each rehearsal (chat's `/reset` doesn't touch the sign-up board); `rm data/chat-state.json` to re-onboard.
-- Social match texts: scheduler (`WATCH=financial,social`) OR the cue (`npm run trigger -- social match`), never both. The cue
-  re-sends every match the user has (4 joiners = 4 texts, again on every cue).
+- Social match texts: scheduler (`WATCH=financial,social`) OR the cue (`npm run trigger -- social match +1<real phone>`), never both.
+  On main the cue re-sends every match the user has (4 joiners = 4 texts, again on every cue); PR #3 (open, Abdallah to merge)
+  makes it send only the newest. Over iMessage, append the real phone: the trigger defaults to the fake demo user.
 - "the saturday one" / "sunday" ask which plan before joining (by design); "soccer today" matches.
 - Join/match needs `GEMINI_API_KEY`; keyless only lists plans.
 
 ## Next (Kerry)
 1. GEMINI_API_KEY → `npm run check-gemini` → a scripted social session (two phones join soccer/boba, find matches, leave).
-2. `.env.example` lines 15-18 → `PRODUCT_NAME=Suitemates`, `ACADEMIC_NAME=Dean`, `FINANCIAL_NAME=Penny`, `SOCIAL_NAME=Sunny` (by hand: Claude is denied that file).
+2. `.env.example` (unchanged since the scaffold; by hand, Claude is denied that file): lines 15-18 → `PRODUCT_NAME=Suitemates`,
+   `ACADEMIC_NAME=Dean`, `FINANCIAL_NAME=Penny`, `SOCIAL_NAME=Sunny`; add `NESSIE_OWNER_PHONE=` (unset = every onboarded phone gets
+   Penny's purchase and weekly texts, `personas/financial/watch.ts:18`) and `NESSIE_MERCHANT_ID=` (printed by `npm run setup-nessie`).
 3. Photon: one shared number, so no `*_LINE` → fill `SPECTRUM_PROJECT_ID/SECRET` + `DEFAULT_PERSONA` → `TRANSPORT=imessage npm run dev`,
    DM "hi". Group chat: add the number by hand (SDK can't create one).
-4. Nessie key + account (`npm run setup-nessie`), `NESSIE_OWNER_PHONE`.
+4. Nessie key + account (`npm run setup-nessie`), and set `NESSIE_OWNER_PHONE` in `.env` to your phone before the demo.
 
 ## Open questions
-- Social cue re-send (`personas/social/watch.ts` `triggers.match` returns every match): fix = newest match only, or keep the runbook rule.
+- Social cue re-send: fix is PR #3 (`kerry/social-cue-newest`, newest match only, fail-first test, 74/74), waiting on Abdallah's review/merge.
 - One shared number: proactive DMs from all three personas arrive from it with no name (`core/engine.ts:146`). Name-tag them
   like the group path does (`core/engine.ts:100`)? Product call.
 - Someone who onboards after a plan already hit 3 gets Sunny's hot_plan text right with "you're all set" (onboarding runs

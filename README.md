@@ -78,7 +78,7 @@ Built at HackNC 2026 by Kerry Shi (@kerryshi), Ismail (@ismail-gasmi) and Abdall
 - **Financial persona** (`personas/financial/`): Kerry made the design calls (voice, what gets roasted, no money transfers); Claude Code wrote the code: the purchase watcher, money math, tools, prompt, demo scripts and tests. Claude subagents also planned and reviewed it.
 - **Academic persona** (`personas/academic/`): Ismail directed the work and reviewed it: voice, when Oak speaks up, the look. Claude Code wrote the prompt voice (`prompt.md`), the group-chat `routerLine` and tool description tuning, and drew the avatar (`avatar.svg`, hand-written SVG, not an image model).
 - **Everyone:** list any other AI tool you use here before merging (ChatGPT, Copilot, Cursor, an image generator for the avatars).
-- <!-- add any AI image generation used for the avatars here -->
+- **Avatars** (`docs/avatars/`): AI-generated at the event with Z-Image-Turbo (open-weights, Apache-2.0) running locally on Kerry's GPU. Claude Code wrote the prompts from the persona descriptions, and Kerry picked the final images. Exact prompts and settings are in `docs/avatars/README.md`.
 
 **Who owns what** (update with what each person actually built before submitting):
 - Kerry: shared layer (`core/`) and the Financial persona (Nessie)

@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { affordVerdict, categorize, diffNew, matchActivity, parsePurchaseDate, purchaseFacts } from "../personas/financial/money.ts";
 import { watchWith } from "../personas/financial/watch.ts";
 import financial from "../personas/financial/index.ts";
-import type { Purchase } from "../personas/financial/nessie.ts";
+import { getPurchases, type Purchase } from "../personas/financial/nessie.ts";
 import type { Ctx, UserProfile } from "../core/types.ts";
 
 const NOW = new Date(2026, 9, 10, 23, 2); // Sat Oct 10 2026, 11:02 PM local
@@ -99,6 +99,48 @@ test("purchase facts carry the numbers the roast needs", () => {
 test("a 3 AM delivery order is flagged late night", () => {
   const p = buy("p8", "DoorDash (Insomnia Cookies)", 14.5, new Date(2026, 9, 10, 3, 12));
   assert.match(purchaseFacts(p, [...six, p], 400, user, NOW), /late night/);
+});
+
+test("a real (date-only) purchase from an earlier day is not called late night or given a fake time", () => {
+  const p: Purchase = { id: "x", merchant: "Harris Teeter", amount: 42.18, at: new Date(2026, 9, 9), dateOnly: true };
+  const facts = purchaseFacts(p, [p], 400, user, NOW);
+  assert.doesNotMatch(facts, /late night/);
+  assert.doesNotMatch(facts, /12:00 AM/);
+  assert.match(facts, /Harris Teeter \$42\.18 Friday \[groceries\]/);
+});
+
+test("a date-only purchase stamped with first-seen time is roasted with that time", async () => {
+  const ctx = ctxWith();
+  const lateNow = new Date(2026, 9, 10, 2, 30);
+  ctx.now = lateNow;
+  await watchWith(ctx, deps(() => six));
+  const [ev] = await watchWith(ctx, deps(() => [...six, { ...buy("p9", "DoorDash", 20, new Date(2026, 9, 10)), dateOnly: true }]));
+  assert.match(ev.facts, /2:30 AM \[delivery\], late night/);
+});
+
+test("purchase roasts go only to the account owner when NESSIE_OWNER_PHONE is set", async () => {
+  const ctx = ctxWith();
+  const evs = await watchWith(ctx, { ...deps(() => six, 80), owner: "+19195550002" });
+  assert.deepEqual(evs, []);
+  assert.equal(ctx.kv.get("seenPurchaseIds"), undefined);
+  const mine = await watchWith(ctx, { ...deps(() => six, 80), owner: "+1" });
+  assert.equal(mine.length, 1); // low balance for the owner
+});
+
+test("a fresh Nessie account (404 on the purchase list) reads as no purchases, other errors still throw", async () => {
+  const realFetch = globalThis.fetch;
+  process.env.NESSIE_API_KEY = "k";
+  process.env.NESSIE_ACCOUNT_ID = "acct";
+  try {
+    globalThis.fetch = (async () => new Response('{"code":404,"message":"no purchases"}', { status: 404 })) as typeof fetch;
+    assert.deepEqual(await getPurchases({ ...ctxWith(), mock: false }), []);
+    globalThis.fetch = (async () => new Response("boom", { status: 500 })) as typeof fetch;
+    await assert.rejects(getPurchases({ ...ctxWith(), mock: false }), /500/);
+  } finally {
+    globalThis.fetch = realFetch;
+    delete process.env.NESSIE_API_KEY;
+    delete process.env.NESSIE_ACCOUNT_ID;
+  }
 });
 
 test("the beach trip matches its cost estimate", async () => {

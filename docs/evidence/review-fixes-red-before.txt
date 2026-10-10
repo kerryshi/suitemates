@@ -1,0 +1,139 @@
+# fail-first: regression tests for review findings, before the fixes — Sat Oct 10 16:38:19 EDT 2026
+✔ first poll baselines existing purchases and roasts nothing (0.842875ms)
+✔ a new purchase is roasted exactly once (12.878542ms)
+✔ a burst after downtime roasts at most 3 but marks all seen (0.883ms)
+✔ a date-only Nessie purchase from today is stamped with the time it was first seen (0.181083ms)
+✔ low balance warns once per day (0.080625ms)
+✔ Nessie YYYY-MM-DD dates parse as local days, not UTC (0.067ms)
+✔ categories come from the merchant name unless given (0.124166ms)
+✔ afford verdict boundaries: over budget, half of what's left, small (0.058833ms)
+✔ purchase facts carry the numbers the roast needs (0.135167ms)
+✔ a 3 AM delivery order is flagged late night (0.136958ms)
+✖ a real (date-only) purchase from an earlier day is not called late night or given a fake time (0.549625ms)
+✔ a date-only purchase stamped with first-seen time is roasted with that time (0.163625ms)
+✖ purchase roasts go only to the account owner when NESSIE_OWNER_PHONE is set (0.496833ms)
+✖ a fresh Nessie account (404 on the purchase list) reads as no purchases, other errors still throw (10.363083ms)
+✔ the beach trip matches its cost estimate (0.936625ms)
+✖ finishing onboarding baselines the watchers right away (a buy made just after isn't swallowed) (1.42675ms)
+✖ a proactive text whose LLM call fails sends the plain facts, not a glitch message (12.952167ms)
+✖ the watch poll defaults to 5 s so poll + LLM stays under the 10 s roast goal (1.883291ms)
+ℹ tests 18
+ℹ suites 0
+ℹ pass 12
+ℹ fail 6
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 180.836667
+
+✖ failing tests:
+
+test at tests/financial.test.ts:104:1
+✖ a real (date-only) purchase from an earlier day is not called late night or given a fake time (0.549625ms)
+  AssertionError [ERR_ASSERTION]: The input was expected to not match the regular expression /late night/. Input:
+  
+  'New purchase: Harris Teeter $42.18 Friday 12:00 AM [groceries], late night. Budget left this month: $757.82 of $800 (22 days left, ~$34.45/day). Balance $400.00. Saving for: spring break, $400. This purchase is 11% of that $400 target. Tone: a good choice, hype it.'
+  
+      at TestContext.<anonymous> (/Users/kerryshi/Projects/hacknc-agents/tests/financial.test.ts:107:10)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1062:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:752:18)
+      at Test.postRun (node:internal/test_runner/test:1191:19)
+      at Test.run (node:internal/test_runner/test:1119:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:752:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'New purchase: Harris Teeter $42.18 Friday 12:00 AM [groceries], late night. Budget left this month: $757.82 of $800 (22 days left, ~$34.45/day). Balance $400.00. Saving for: spring break, $400. This purchase is 11% of that $400 target. Tone: a good choice, hype it.',
+    expected: /late night/,
+    operator: 'doesNotMatch'
+  }
+
+test at tests/financial.test.ts:121:1
+✖ purchase roasts go only to the account owner when NESSIE_OWNER_PHONE is set (0.496833ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+  
+  + [
+  +   {
+  +     dedupeKey: 'financial:lowbal:+1:2026-10-10',
+  +     facts: 'Low balance warning: $80.00 left in checking.',
+  +     kind: 'low_balance',
+  +     userPhone: '+1'
+  +   }
+  + ]
+  - []
+  
+      at TestContext.<anonymous> (/Users/kerryshi/Projects/hacknc-agents/tests/financial.test.ts:124:10)
+      at async Test.run (node:internal/test_runner/test:1069:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:752:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: [ { kind: 'low_balance', userPhone: '+1', facts: 'Low balance warning: $80.00 left in checking.', dedupeKey: 'financial:lowbal:+1:2026-10-10' } ],
+    expected: [],
+    operator: 'deepStrictEqual'
+  }
+
+test at tests/financial.test.ts:130:1
+✖ a fresh Nessie account (404 on the purchase list) reads as no purchases, other errors still throw (10.363083ms)
+  Error: Nessie GET /accounts/acct/purchases → 404: {"code":404,"message":"no purchases"}
+      at nessie (/Users/kerryshi/Projects/hacknc-agents/personas/financial/nessie.ts:95:22)
+      at async getPurchases (/Users/kerryshi/Projects/hacknc-agents/personas/financial/nessie.ts:53:16)
+      at async TestContext.<anonymous> (/Users/kerryshi/Projects/hacknc-agents/tests/financial.test.ts:136:22)
+      at async Test.run (node:internal/test_runner/test:1069:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:752:7)
+
+test at tests/proactive.test.ts:25:1
+✖ finishing onboarding baselines the watchers right away (a buy made just after isn't swallowed) (1.42675ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+  
+  + []
+  - [
+  -   '+5'
+  - ]
+  
+      at TestContext.<anonymous> (/Users/kerryshi/Projects/hacknc-agents/tests/proactive.test.ts:32:10)
+      at async Test.run (node:internal/test_runner/test:1069:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:332:3) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: [],
+    expected: [ '+5' ],
+    operator: 'deepStrictEqual'
+  }
+
+test at tests/proactive.test.ts:35:1
+✖ a proactive text whose LLM call fails sends the plain facts, not a glitch message (12.952167ms)
+  AssertionError [ERR_ASSERTION]: The input was expected to not match the regular expression /glitch/. Input:
+  
+  'one sec, my brain glitched 😵 try that again?'
+  
+      at TestContext.<anonymous> (/Users/kerryshi/Projects/hacknc-agents/tests/proactive.test.ts:45:10)
+      at async Test.run (node:internal/test_runner/test:1069:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:752:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'one sec, my brain glitched 😵 try that again?',
+    expected: /glitch/,
+    operator: 'doesNotMatch'
+  }
+
+test at tests/proactive.test.ts:49:1
+✖ the watch poll defaults to 5 s so poll + LLM stays under the 10 s roast goal (1.883291ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  10000 !== 5000
+  
+      at TestContext.<anonymous> (/Users/kerryshi/Projects/hacknc-agents/tests/proactive.test.ts:50:10)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1062:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:752:18)
+      at Test.postRun (node:internal/test_runner/test:1191:19)
+      at Test.run (node:internal/test_runner/test:1119:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:752:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 10000,
+    expected: 5000,
+    operator: 'strictEqual'
+  }

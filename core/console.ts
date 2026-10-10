@@ -78,6 +78,7 @@ export class ConsoleTransport implements Transport {
       case "/skip": {
         const u = this.app.store.user(this.sender);
         this.app.store.saveUser({ ...u, budgetMonthly: 600, savingsGoal: "spring break, $400", canvasLinked: true, onboardingStep: "done" });
+        await this.app.engine.onboarded(this.sender);
         return console.log("  onboarded: budget $600/month, saving for spring break, $400");
       }
       case "/trigger": {

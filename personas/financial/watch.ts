@@ -11,11 +11,16 @@ const LOW_BALANCE = 100;
 export interface WatchDeps {
   getPurchases(ctx: Ctx): Promise<Purchase[]>;
   getBalance(ctx: Ctx): Promise<number>;
+  owner?: string; // phone that owns the bank account; others get no purchase texts
 }
+
+const digits = (s?: string) => (s ?? "").replace(/\D/g, "").slice(-10);
 
 // Polled every WATCH_MS (financial is in WATCH by default). One event per NEW purchase; core
 // texts the user in Penny's voice from `facts`. The first poll only records what's already there.
 export async function watchWith(ctx: Ctx, deps: WatchDeps): Promise<WatchEvent[]> {
+  // One demo bank account: without this, every onboarded user is texted about every purchase.
+  if (deps.owner && digits(deps.owner) !== digits(ctx.user.phone)) return [];
   const all = await deps.getPurchases(ctx);
   const balance = await deps.getBalance(ctx);
   const { baselined, fresh, seen } = diffNew(ctx.kv.get<string[]>(SEEN_KEY), all);
@@ -23,7 +28,7 @@ export async function watchWith(ctx: Ctx, deps: WatchDeps): Promise<WatchEvent[]
   const events: WatchEvent[] = [];
   if (baselined) ctx.log(`baselined ${seen.length} purchases`);
   for (const p of fresh.slice(0, MAX_PER_POLL)) {
-    const stamped = p.dateOnly && ymd(p.at) === ymd(ctx.now) ? { ...p, at: ctx.now } : p;
+    const stamped = p.dateOnly && ymd(p.at) === ymd(ctx.now) ? { ...p, at: ctx.now, dateOnly: false } : p;
     const withStamp = all.map((x) => (x.id === p.id ? stamped : x));
     events.push({
       kind: "purchase",
@@ -43,7 +48,7 @@ export async function watchWith(ctx: Ctx, deps: WatchDeps): Promise<WatchEvent[]
   return events;
 }
 
-export const watch = (ctx: Ctx) => watchWith(ctx, { getPurchases, getBalance });
+export const watch = (ctx: Ctx) => watchWith(ctx, { getPurchases, getBalance, owner: process.env.NESSIE_OWNER_PHONE });
 
 export const triggers = {
   // Scheduled at WEEKLY_AT, and fired on cue with: npm run trigger -- financial weekly_money

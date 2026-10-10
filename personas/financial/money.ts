@@ -1,6 +1,6 @@
 // Pure money math for Financial. No I/O — every number Penny says is computed here, never by the LLM.
 import type { UserProfile } from "../../core/types.ts";
-import { fmtWhen } from "../../core/kit.ts";
+import { fmtWhen, ymd } from "../../core/kit.ts";
 import type { Purchase } from "./nessie.ts";
 
 const CATEGORIES: [RegExp, string][] = [
@@ -24,6 +24,12 @@ export function categorize(merchant: string, given?: string): string {
 
 export function isLateNight(d: Date): boolean {
   return d.getHours() < 5;
+}
+
+// Real Nessie purchases only carry a date, so never print (or judge) a time for them.
+export function fmtPurchaseWhen(p: Pick<Purchase, "at" | "dateOnly">, now: Date): string {
+  if (!p.dateOnly) return fmtWhen(p.at, now);
+  return ymd(p.at) === ymd(now) ? "today" : p.at.toLocaleDateString("en-US", { weekday: "long" });
 }
 
 // Nessie gives "YYYY-MM-DD"; new Date() would read that as UTC midnight (= the previous evening in EDT).
@@ -109,7 +115,8 @@ export function matchActivity<T extends PlanCost>(plan: string, acts: T[]): T | 
 
 export function purchaseFacts(p: Purchase, all: Purchase[], balance: number, user: UserProfile, now: Date): string {
   const cat = categorize(p.merchant, p.category);
-  const parts = [`New purchase: ${p.merchant} $${p.amount.toFixed(2)} ${fmtWhen(p.at, now)} [${cat}]${isLateNight(p.at) ? ", late night" : ""}.`];
+  const late = !p.dateOnly && isLateNight(p.at);
+  const parts = [`New purchase: ${p.merchant} $${p.amount.toFixed(2)} ${fmtPurchaseWhen(p, now)} [${cat}]${late ? ", late night" : ""}.`];
   const week = categoryWeek(all, now, cat);
   if (week.count > 1) parts.push(`This week in ${cat}: ${week.count} purchases, $${week.total.toFixed(2)}.`);
   const m = monthStats(all, now, user.budgetMonthly);
@@ -123,6 +130,6 @@ export function purchaseFacts(p: Purchase, all: Purchase[], balance: number, use
     parts.push(`Saving for: ${user.savingsGoal}. This purchase is ${pct < 1 ? "under 1%" : `${Math.round(pct)}%`} of that $${target} target.`);
   }
   if (GOOD.has(cat)) parts.push("Tone: a good choice, hype it.");
-  else if (ROASTABLE.has(cat) || isLateNight(p.at)) parts.push("Tone: roast-worthy.");
+  else if (ROASTABLE.has(cat) || late) parts.push("Tone: roast-worthy.");
   return parts.join(" ");
 }

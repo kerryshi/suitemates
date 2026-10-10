@@ -50,10 +50,17 @@ export async function getPurchases(ctx: Ctx): Promise<Purchase[]> {
     const extras = readExtras().map((e) => ({ ...e, at: new Date(e.at) }));
     return [...base, ...extras].sort((a, b) => +b.at - +a.at);
   }
-  const rows = await nessie<{ _id: string; description?: string; amount: number; purchase_date?: string; merchant_id?: string }[]>(
-    "GET",
-    `/accounts/${accountId()}/purchases`,
-  );
+  type Row = { _id: string; description?: string; amount: number; purchase_date?: string; merchant_id?: string };
+  let rows: Row[];
+  try {
+    rows = await nessie<Row[]>("GET", `/accounts/${accountId()}/purchases`);
+  } catch (err) {
+    // A brand-new account may 404 instead of returning []. A wrong account id still fails loudly
+    // in getBalance, which watch() calls on every poll.
+    if (!(err instanceof NessieError && err.status === 404)) throw err;
+    ctx.log("Nessie: 404 on the purchase list, treating it as no purchases yet");
+    rows = [];
+  }
   return rows
     .map((r) => ({
       id: r._id,
@@ -92,10 +99,18 @@ export async function nessie<T>(method: "GET" | "POST", path: string, body?: unk
     signal: AbortSignal.timeout(10_000),
   });
   const text = await res.text();
-  if (!res.ok) throw new Error(`Nessie ${method} ${path} → ${res.status}: ${text.slice(0, 200)}`);
+  if (!res.ok) throw new NessieError(res.status, `Nessie ${method} ${path} → ${res.status}: ${text.slice(0, 200)}`);
   const json = text ? JSON.parse(text) : null;
   // Nessie wraps created objects as { code, message, objectCreated }.
   return (json && typeof json === "object" && "objectCreated" in json ? json.objectCreated : json) as T;
+}
+
+export class NessieError extends Error {
+  readonly status: number;
+  constructor(status: number, message: string) {
+    super(message);
+    this.status = status;
+  }
 }
 
 function savedIds(): { accountId?: string; merchantId?: string } {

@@ -1,8 +1,8 @@
 // Financial tools (owner: Kerry). Same shape as personas/academic/tools.ts.
 import type { Ctx, Tool } from "../../core/types.ts";
-import { fmtWhen, loadMock } from "../../core/kit.ts";
+import { loadMock } from "../../core/kit.ts";
 import { getBalance, getPurchases } from "./nessie.ts";
-import { affordVerdict, breakdownLine, matchActivity, monthStats, savingsTarget, type PlanCost } from "./money.ts";
+import { affordVerdict, breakdownLine, categorize, fmtPurchaseWhen, matchActivity, monthStats, savingsTarget, type PlanCost } from "./money.ts";
 
 const getRecentPurchases: Tool = {
   name: "get_recent_purchases",
@@ -19,7 +19,7 @@ const getRecentPurchases: Tool = {
     const since = ctx.now.getTime() - days * 86_400_000;
     const recent = (await getPurchases(ctx)).filter((p) => p.at.getTime() >= since && p.at <= ctx.now);
     const total = recent.reduce((s, p) => s + p.amount, 0);
-    const lines = recent.map((p) => `${p.merchant} $${p.amount.toFixed(2)} ${fmtWhen(p.at, ctx.now)}${p.category ? ` [${p.category}]` : ""}`);
+    const lines = recent.map((p) => `${p.merchant} $${p.amount.toFixed(2)} ${fmtPurchaseWhen(p, ctx.now)} [${categorize(p.merchant, p.category)}]`);
     return [
       `Balance: $${(await getBalance(ctx)).toFixed(2)}. Monthly budget: ${ctx.user.budgetMonthly ? `$${ctx.user.budgetMonthly}` : "unknown"}.`,
       `Last ${days} days: ${recent.length} purchases, $${total.toFixed(2)} total. By category: ${breakdownLine(recent) || "nothing"}.`,

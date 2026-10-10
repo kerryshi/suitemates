@@ -42,7 +42,7 @@ const Env = z.object({
 
   PORT: z.coerce.number().default(3000),
   DEMO_TOKEN: opt,
-  WATCH_MS: z.coerce.number().default(10_000),
+  WATCH_MS: z.coerce.number().default(5_000), // poll + LLM must fit the 10 s roast goal
   GROUP_SETTLE_MS: z.coerce.number().default(1500),
   MORNING_AT: str.default("08:00"),
   WEEKLY_AT: str.default("sun 18:00"),

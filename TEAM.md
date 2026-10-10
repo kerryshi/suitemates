@@ -4,7 +4,7 @@
 |---|---|---|---|
 | Kerry | `core/` (shared layer) + `personas/financial/` | `kerry/core`, `fin/nessie` | `[core]`, `[financial]` |
 | Ismail | `personas/academic/` | `academic/canvas` | `[academic]` |
-| Abdallah | `personas/social/` + `personas/social/router-prompt.md` (the group router) | `social/matching` | `[social]` |
+| Abdullah | `personas/social/` + `personas/social/router-prompt.md` (the group router) | `social/matching` | `[social]` |
 
 Your first hour is in your folder's `TODO.md`.
 

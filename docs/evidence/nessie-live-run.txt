@@ -1,0 +1,63 @@
+# Nessie live run (console transport, real Nessie sandbox) — 2026-10-10 18:31–18:37 EDT, main 77b7981 (PR #8); ids and phone masked
+#
+# Setup: TRANSPORT=terminal MOCK=0 FAKE_LLM=1 (no Gemini, no iMessage) WATCH=financial WATCH_MS=2000 PORT=3010,
+# NESSIE_OWNER_PHONE=<demo user>, scratch DATA_FILE. /skip onboards the demo user; onboarding baselines existing purchases.
+#
+# What this proves:
+#   - npm run setup-nessie works against the real sandbox, including POST /merchants (marked UNVERIFIED in the script).
+#   - Run 1 (before PR #8): a purchase POSTed without `status` was accepted, then every GET of the account's purchases
+#     returned 400 ("status field required"); no Penny event. This is the bug PR #8 fixed.
+#   - DELETE /purchases/<id> is not available (403 "Missing Authentication Token", API Gateway's no-such-route reply), so
+#     the poisoned account was abandoned: data/nessie.json moved aside, setup-nessie re-run on a fresh account.
+#   - Run 2 (after PR #8, status "completed"): the purchase was accepted, GET returned 200 with status=completed, and exactly
+#     one Penny proactive event appeared 2 s after the buy (WATCH_MS=2000), none after.
+# Not proven / open:
+#   - Nessie drops cents: "Sheetz 4.29" is stored as amount 4, and the $412.55 seed balance reads back as $412.00, so Penny
+#     says "Sheetz $4.00". Open product call; no fix here.
+#   - Penny's text is from the stand-in model (FAKE_LLM=1), not Gemini; nothing was sent over iMessage.
+#
+## Run 1 — setup (first account)
+created customer <id>, account <id> ($412.55), merchant <id>
+add to .env:
+NESSIE_ACCOUNT_ID=<id>
+NESSIE_MERCHANT_ID=<id>
+then: MOCK=0 npm run buy -- Sheetz 4.29
+
+## Run 1 — server log (before PR #8)
+18:31:39 Suitemates · transport=terminal · LLM=fake · MOCK=0
+18:31:39 personas: academic=Dean, financial=Penny, social=Sunny
+18:31:39 [scheduler] watch=financial every 2000ms; academic.morning_due@08:00, financial.weekly_money@sun 18:00
+18:31:39 +1•••••••0001 → group chat> /skip
+18:31:40 [core] financial: baselined 0 purchases
+18:31:49 [scheduler] Nessie GET /accounts/<id>/purchases → 400: "1 validation error for Purchase\nstatus\n  field required (type=value_error.missing)"
+18:31:51 [scheduler] Nessie GET /accounts/<id>/purchases → 400: "1 validation error for Purchase\nstatus\n  field required (type=value_error.missing)"
+18:31:53 [scheduler] Nessie GET /accounts/<id>/purchases → 400: "1 validation error for Purchase\nstatus\n  field required (type=value_error.missing)"
+… (the same 400 repeats every 2 s until the server was stopped at 18:32:09)
+
+## Run 1 — buy
+posted to Nessie: Sheetz $4.29 (purchase <id>)
+
+## Cleanup attempt
+18:36:15 DELETE /purchases/<purchase> → 403 {"message":"Missing Authentication Token"}
+18:36:15 GET /accounts/<account>/purchases → 400 "1 validation error for Purchase\nstatus\n  field required (type=value_error.missing)"
+
+## Run 2 — setup (fresh account; data/nessie.json from run 1 moved to data/nessie.json.poisoned)
+created customer <redacted>, account <redacted> ($412.55), merchant <redacted>
+add to .env:
+NESSIE_ACCOUNT_ID=<id>
+NESSIE_MERCHANT_ID=<id>
+then: MOCK=0 npm run buy -- Sheetz 4.29
+
+## Run 2 — server log (main 77b7981, PR #8 merged)
+18:36:47 Suitemates · transport=terminal · LLM=fake · MOCK=0
+18:36:47 personas: academic=Dean, financial=Penny, social=Sunny
+18:36:47 [scheduler] watch=financial every 2000ms; academic.morning_due@08:00, financial.weekly_money@sun 18:00
+18:36:47 +1•••••••0001 → group chat> /skip
+18:36:47 [core] financial: baselined 0 purchases
+18:36:57   [Penny] (DM) (fake LLM) New purchase: Sheetz $4.00 today 6:36 PM [energy drink]. Budget left this month: $596.00 of $600 (22 days left, ~$27.09/day). Balance $412.00. Saving for: spring break, $400. This purchase is 1% of that $400 target. Tone: roast-worthy.
+
+## Run 2 — buy
+posted to Nessie: Sheetz $4.29 (purchase <id>)
+
+## Run 2 — purchase list after the buy
+18:37:14 GET /accounts/<account>/purchases → 200 (1 purchase: Sheetz $4 status=completed)

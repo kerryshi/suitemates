@@ -41,6 +41,7 @@ test("on one shared number a proactive DM says which persona sent it", async () 
 test("no tag when that persona has its own line or project, and never twice", async () => {
   assert.deepEqual(await sendVia({ ...SHARED, FINANCIAL_LINE: "+1 (919) 555-0142" }, dm("financial")), ["roast"]);
   assert.deepEqual(await sendVia({ ...SHARED, FINANCIAL_PROJECT_ID: "p", FINANCIAL_PROJECT_SECRET: "s" }, dm("financial")), ["roast"]);
+  assert.deepEqual(await sendVia({ ...SHARED, FINANCIAL_LINE: "+1 (919) 555-0142" }, dm("social", "hi")), ["Sunny: hi"]); // per persona
   assert.deepEqual(await sendVia(SHARED, dm("financial", "Penny: roast")), ["Penny: roast"]);
   assert.deepEqual(await sendVia(SHARED, dm("financial", "penny: roast")), ["penny: roast"]);
 });

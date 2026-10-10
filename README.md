@@ -15,7 +15,7 @@ Needs Node 18.19+ (`node -v`).
 ```bash
 git clone https://github.com/kerryshi/hacknc-agents && cd hacknc-agents
 npm install
-npm test                       # 14 tests, checks every persona folder against the contract
+npm test                       # all tests, incl. every persona folder checked against the contract
 npm run chat -- financial      # talk to a persona in the terminal. No keys, no phone.
 ```
 In the chat, say `hi` to onboard (or `/skip`), then try `show my recent purchases`. Type `/help` for commands.
@@ -76,9 +76,9 @@ Built at HackNC 2026 by Kerry Shi (@kerryshi), Ismail (@ismail-gasmi) and Abdall
 - **Gemini API** (Flash) is the runtime model. It powers every persona's replies, the group-chat router, and receipt-photo reading.
 - The Photon transport and Gemini client in `core/` were adapted from Kerry's solo prototype (`hacknc-tab`, first commit Sat Oct 10, 12:40 PM, after hacking began at 11:30 AM).
 - **Financial persona** (`personas/financial/`): Kerry made the design calls (voice, what gets roasted, no money transfers); Claude Code wrote the code: the purchase watcher, money math, tools, prompt, demo scripts and tests. Claude subagents also planned and reviewed it.
-- **Academic persona** (`personas/academic/`): Ismail directed the work and reviewed it: voice, when Oak speaks up, the look. Claude Code wrote the prompt voice (`prompt.md`), the group-chat `routerLine` and tool description tuning, and drew the avatar (`avatar.svg`, hand-written SVG, not an image model).
-- **Everyone:** list any other AI tool you use here before merging (ChatGPT, Copilot, Cursor, an image generator for the avatars).
-- **Avatars** (`docs/avatars/`): AI-generated at the event with Z-Image-Turbo (open-weights, Apache-2.0) running locally on Kerry's GPU. Claude Code wrote the prompts from the persona descriptions, and Kerry picked the final images. Exact prompts and settings are in `docs/avatars/README.md`.
+- **Academic persona** (`personas/academic/`): Ismail directed the work and reviewed it: voice, when Dean speaks up, the look. Claude Code wrote the prompt voice (`prompt.md`), the group-chat `routerLine` and tool description tuning, and drew the avatar (`avatar.svg`, hand-written SVG, not an image model).
+- **Everyone:** list any other AI tool you use here before merging (ChatGPT, Copilot, Cursor).
+- **Avatars** (`docs/avatars/`): AI-generated during HackNC (Sat Oct 10) with Z-Image-Turbo (open-weights, Apache-2.0) running locally on Kerry's GPU. Claude Code wrote the prompts from the persona descriptions, and Kerry picked the final images. Exact prompts and settings are in `docs/avatars/README.md`.
 
 **Who owns what** (update with what each person actually built before submitting):
 - Kerry: shared layer (`core/`) and the Financial persona (Nessie)
@@ -98,7 +98,7 @@ personas/    one folder per persona, owned by one person (see TEAM.md)
 mock/        fake Canvas courses, Nessie purchases, students + sign-ups (dates are relative to today)
 scripts/     chat, trigger, check-gemini
 tests/       contract loader, group dedupe + router, onboarding
-docs/        PLAN.md (design), evidence/
+docs/        PLAN.md (design), evidence/, avatars/ (persona images + prompts)
 ```
 
 Team rules, branches and checkpoints: [TEAM.md](TEAM.md).

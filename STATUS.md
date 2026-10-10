@@ -6,7 +6,7 @@ Plan of record: `docs/PLAN.md` (architect). Owners: Kerry = core + Financial, Is
 ## Where we are
 - Scaffold pushed (dea81a3) to main + branches kerry/core, fin/nessie, academic/canvas, social/matching.
 - Keyless everything works: `npm run chat -- <persona|group>`, `npm run trigger`, `npm run dev` (/demo/trigger + scheduler).
-  Evidence: docs/evidence/chat-keyless-transcript.txt, dev-server-smoke.txt, tests-red-guards-disabled.txt → tests-green.txt (14/14).
+  Evidence: docs/evidence/chat-keyless-transcript.txt, dev-server-smoke.txt, tests-red-guards-disabled.txt → tests-green.txt (14/14 at scaffold; 48/48 at e2b76ee).
 - NOT yet run for real: Gemini (needs key → `npm run check-gemini`), Photon iMessage transport, Canvas, Nessie.
 
 ## Next (Kerry)
@@ -16,5 +16,5 @@ Plan of record: `docs/PLAN.md` (architect). Owners: Kerry = core + Financial, Is
 4. Financial: Nessie key + account, turn on watch() (sketch in personas/financial/watch.ts).
 
 ## Open questions
-- Names decided 2026-10-10: Suitemates (product), Dean (academic), Penny (financial), Sunny (social); defaults in core/config.ts. `.env.example` still lists the old placeholders (Claude is denied that file) — fix by hand.
+- Names decided 2026-10-10: Suitemates (product), Dean (academic), Penny (financial), Sunny (social); defaults in core/config.ts, `.env.example` updated to match. Anyone who copied `.env` before 16:26 must delete its `*_NAME=` lines (they override the defaults). Before the Photon demo: `grep -nE '^(PRODUCT|ACADEMIC|FINANCIAL|SOCIAL)_NAME=' .env` → nothing or the new names.
 - Proactive texts go to DMs only; Social broadcasting into the group needs a group-handle registry (not built).

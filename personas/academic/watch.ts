@@ -1,4 +1,5 @@
 // Proactive texts for Academic. Each returns WatchEvents; core writes the text in Academic's voice.
+// If that LLM call fails, core sends `facts` as-is over iMessage, so they're written to the student ("you").
 import type { Ctx, WatchEvent } from "../../core/types.ts";
 import { fmtWhen, ymd } from "../../core/kit.ts";
 import { getAssignments } from "./canvas.ts";
@@ -12,7 +13,7 @@ export async function watch(ctx: Ctx): Promise<WatchEvent[]> {
   return soon.map((a) => ({
     kind: "due_within_24h",
     userPhone: ctx.user.phone,
-    facts: `${a.course}: ${a.name} is due ${fmtWhen(a.due, ctx.now)}.`,
+    facts: `Heads up: ${a.course} ${a.name} is due ${fmtWhen(a.due, ctx.now)}.`,
     dedupeKey: `academic:24h:${ctx.user.phone}:${a.id}:${ymd(a.due)}`,
   }));
 }
@@ -22,9 +23,9 @@ export const triggers = {
   async morning_due(ctx: Ctx): Promise<WatchEvent[]> {
     const today = (await getAssignments(ctx)).filter((a) => ymd(a.due) === ymd(ctx.now));
     const facts = today.length
-      ? `Morning check-in. ${today.length} thing${today.length > 1 ? "s" : ""} due today: ` +
+      ? `Morning! You have ${today.length} thing${today.length > 1 ? "s" : ""} due today: ` +
         today.map((a) => `${a.course} ${a.name} at ${fmtWhen(a.due, ctx.now).replace("today ", "")}`).join("; ") + "."
-      : "Morning check-in. Nothing is due today.";
+      : "Morning! Nothing is due today.";
     return [{ kind: "morning_due", userPhone: ctx.user.phone, facts, dedupeKey: `academic:morning:${ctx.user.phone}:${ymd(ctx.now)}` }];
   },
 };

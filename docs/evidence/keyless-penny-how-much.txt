@@ -1,0 +1,17 @@
+# keyless group smoke — main e2b76ee + Penny routerLine fix — 2026-10-10 17:07 EDT
+# MOCK=1 npm run chat -- group < /skip, /to group, how much is the beach trip, thanks so much, /quit
++19195550001 → group chat> how much is the beach trip
+[core] group copies: academic:m1-academic, financial:m1-financial, social:m1-social
+[core] router → [academic, financial, social]
+[core] financial: tool estimate_plan_cost({})
+[core] social: tool list_signups({})
+  [Dean] (group) (fake LLM) heard "how much is the beach trip" — no tool matched. Set GEMINI_API_KEY for real replies.
+  [Penny] (group) (fake LLM) estimate_plan_cost → No cost estimate for "". Known plans: Beach trip to Wrightsville ~$45; Pickup soccer at Hooker Fields ~$0; Boba run on Franklin St ~$7.
+  [Sunny] (group) (fake LLM) list_signups → Beach trip to Wrightsville, Saturday 9 AM: 3 in (Ismail, Abdallah, Priya), ~$45
+Pickup soccer at Hooker Fields, Sunday 4 PM: 3 in (Abdallah, Priya, Sam)
+Boba run on Franklin St, Friday 8 PM: 1 in (Sam), ~$7
++19195550001 → group chat> thanks so much
+[core] group copies: academic:m2-academic, financial:m2-financial, social:m2-social
+[core] router → [financial]
+  [Penny] (group) (fake LLM) heard "thanks so much" — no tool matched. Set GEMINI_API_KEY for real replies.
++19195550001 → group chat> /quit

@@ -1,0 +1,46 @@
+# fail-first: Penny wakes on 'how much is…' (keyless router) — 2026-10-10 17:06 EDT, main e2b76ee, routerLine unchanged
+✔ first poll baselines existing purchases and roasts nothing (0.799167ms)
+✔ a new purchase is roasted exactly once (12.544209ms)
+✔ a burst after downtime roasts at most 3 but marks all seen (0.460833ms)
+✔ a date-only Nessie purchase from today is stamped with the time it was first seen (0.191875ms)
+✔ low balance warns once per day (0.081666ms)
+✔ Nessie YYYY-MM-DD dates parse as local days, not UTC (0.065541ms)
+✔ categories come from the merchant name unless given (0.123166ms)
+✔ afford verdict boundaries: over budget, half of what's left, small (0.059916ms)
+✔ purchase facts carry the numbers the roast needs (0.1545ms)
+✔ a 3 AM delivery order is flagged late night (0.14ms)
+✔ a real (date-only) purchase from an earlier day is not called late night or given a fake time (0.138584ms)
+✔ a date-only purchase stamped with first-seen time is roasted with that time (0.214541ms)
+✔ purchase roasts go only to the account owner when NESSIE_OWNER_PHONE is set (0.10475ms)
+✔ the weekly check-in also goes only to the account owner when NESSIE_OWNER_PHONE is set (0.449333ms)
+✔ a fresh Nessie account (404 on the purchase list) reads as no purchases, other errors still throw (9.633416ms)
+✔ the beach trip matches its cost estimate (0.314125ms)
+✖ keyword routing (keyless mode) wakes Financial for 'how much is the beach trip', nobody for small talk (39.725208ms)
+ℹ tests 17
+ℹ suites 0
+ℹ pass 16
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 201.735208
+
+✖ failing tests:
+
+test at tests/financial.test.ts:164:1
+✖ keyword routing (keyless mode) wakes Financial for 'how much is the beach trip', nobody for small talk (39.725208ms)
+  AssertionError [ERR_ASSERTION]: false == true
+      at TestContext.<anonymous> (/private/tmp/claude-501/-Users-kerryshi/bba353b1-4cd1-42e4-80d0-b369e9021016/scratchpad/wt-main/tests/financial.test.ts:166:10)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1062:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:752:18)
+      at Test.postRun (node:internal/test_runner/test:1191:19)
+      at Test.run (node:internal/test_runner/test:1119:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:752:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '=='
+  }
+exit=1

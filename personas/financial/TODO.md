@@ -18,3 +18,8 @@ Demo: set `NESSIE_OWNER_PHONE=<demo phone>` in .env so only the account owner ge
 - [ ] **The 10 s goal is NOT yet proven for real**: needs `MOCK=0` + NESSIE key + GEMINI key run → save to docs/evidence/
 - [ ] Receipt photo over iMessage (needs Photon + Gemini)
 - [ ] Financial avatar
+
+## Sign-up flow (see docs/SIGNUP-PLAN.md), added by Ismail
+- [ ] Core: `POST /signup`, `GET /admin/signups`, `POST /admin/intro`, serve `web/`; `UserProfile.interests` + `signupStatus`
+- [ ] Public URL (cloudflared/ngrok) and Gemini billing before the group demo
+- [ ] Penny `intro` trigger

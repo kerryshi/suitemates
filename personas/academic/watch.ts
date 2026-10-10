@@ -19,6 +19,16 @@ export async function watch(ctx: Ctx): Promise<WatchEvent[]> {
 }
 
 export const triggers = {
+  // First text after sign-up: Dean introduces himself and what's due soonest. Fired by /demo/trigger (later: POST /signup).
+  async intro(ctx: Ctx): Promise<WatchEvent[]> {
+    const next = (await getAssignments(ctx))[0];
+    const facts =
+      `Hey${ctx.user.name ? ` ${ctx.user.name}` : ""}, I'm Dean. I keep track of your Canvas deadlines so you don't have to. ` +
+      (next ? `Next up: ${next.course} ${next.name}, due ${fmtWhen(next.due, ctx.now)}. ` : "") +
+      `Text me "what's due?" anytime.`;
+    return [{ kind: "intro", userPhone: ctx.user.phone, facts, dedupeKey: `academic:intro:${ctx.user.phone}` }];
+  },
+
   // Scheduled at MORNING_AT, and fired on cue with: npm run trigger -- academic morning_due
   async morning_due(ctx: Ctx): Promise<WatchEvent[]> {
     const today = (await getAssignments(ctx)).filter((a) => ymd(a.due) === ymd(ctx.now));

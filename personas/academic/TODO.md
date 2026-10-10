@@ -18,3 +18,8 @@ Already working (keyless): `MOCK=1 npm run chat -- academic` then type `what's d
 - [x] `check_plan_conflicts` tool (`conflicts.ts`): what's due on a plan's day or the day after, plus an exam right after. Feeds the 2 AM three-persona hand-off.
 - [x] Academic tests (`academic.test.ts`, run by `npm test`): tools, plan windows, morning_due, watch, keyword routing
 - [x] With a Gemini key: "beach trip saturday, bad idea?" → Dean calls `check_plan_conflicts({"day":"saturday"})` and flags the ENGL post + COMP 421. Free tier is 5 requests/min, so space demo messages out.
+
+## Sign-up flow (see docs/SIGNUP-PLAN.md)
+- [x] `intro` trigger: Dean texts first after sign-up (`/demo/trigger?persona=academic&name=intro&phone=…`)
+- [ ] `web/index.html` sign-up page → `POST /signup` (needs Kerry's endpoint)
+- [ ] Canvas layer prep: per-user token (`ctx.user.canvasToken`) → env `CANVAS_TOKEN` → mock

@@ -1,9 +1,9 @@
 # STATUS: hacknc-agents (team build)
 
-Last updated: 2026-10-10 18:29 EDT · Devpost due Sun 10:00 AM · repo github.com/kerryshi/hacknc-agents (private)
+Last updated: 2026-10-10 18:45 EDT · Devpost due Sun 10:00 AM · repo github.com/kerryshi/hacknc-agents (private)
 Plan of record: `docs/PLAN.md` (architect). Owners: Kerry = core + Financial, Ismail = Academic, Abdullah = Social.
 
-## Where we are (main = 80d78eb)
+## Where we are (main = a599349)
 - All three personas are on main: Social PR #1 (59e47cb) and PR #2 (squash a924976: watch() match + hot-plan texts, review fixes),
   Academic (a00e502: check_plan_conflicts + tests), Financial (0de7113: Penny + Nessie), Penny wakes on "how much is…" (b60fc06).
 - Names: Suitemates, Dean (academic), Penny (financial), Sunny (social); defaults in core/config.ts and `.env.example`.
@@ -28,8 +28,13 @@ Plan of record: `docs/PLAN.md` (architect). Owners: Kerry = core + Financial, Is
   server, went to Penny, and onboarding completed; Kerry confirmed Penny's first reply arrived. The fix was adding the phone
   under Photon Users (otherwise `Target not allowed`). That run was LLM=fake/MOCK=1, and the roast after onboarding was not
   confirmed on the phone. Group chat over iMessage is untested.
+- Nessie verified live 18:36 (PR #9, `docs/evidence/nessie-live-run.txt`): `npm run buy` → GET 200 → one Penny event 2 s later,
+  console transport, FAKE_LLM=1. Needed PR #8: a purchase POSTed without `status` made every later GET 400, and Nessie has no
+  DELETE route, so the first sandbox account is abandoned (`data/nessie.json.poisoned`). Nessie drops cents (open question).
+- Gemini: Kerry's key is valid (first call returned a correct functionCall) but every call after that gets 429 quota exceeded on
+  gemini-3.6-flash and 3.5-flash, even after 65 s idle. A key- or project-level limit; Kerry is getting a better key. No Gemini calls until then.
 - NOT yet run for real: Gemini (Social join/match has only run keyless, where the fake LLM calls `join_activity({})` and can't join),
-  iMessage group chat, Canvas, Nessie.
+  iMessage group chat, Canvas.
 
 ## Demo runbook
 - `rm data/social.json` before each rehearsal (chat's `/reset` doesn't touch the sign-up board); `rm data/chat-state.json` to re-onboard.
@@ -43,17 +48,20 @@ Plan of record: `docs/PLAN.md` (architect). Owners: Kerry = core + Financial, Is
 - Join/match needs `GEMINI_API_KEY`; keyless only lists plans.
 
 ## Next (Kerry)
-1. GEMINI_API_KEY → `npm run check-gemini` → a scripted social session (two phones join soccer/boba, find matches, leave).
+1. A Gemini key with quota (the current one 429s) → `npm run check-gemini` → a scripted social session (two phones join soccer/boba, find matches, leave).
 2. `.env.example` (names done in the kerry/review-fixes merge; Claude's Read is denied `.env.*`): add `NESSIE_OWNER_PHONE=` (unset = every onboarded phone gets
    Penny's purchase and weekly texts, `personas/financial/watch.ts:18`) and `NESSIE_MERCHANT_ID=` (printed by `npm run setup-nessie`).
 3. Photon one-to-one works (see "Where we are"). For every tester, add their phone under Photon Users first. `.env`:
    `SPECTRUM_PROJECT_ID/SECRET`, `DEFAULT_PERSONA=financial`, no `*_LINE` → `TRANSPORT=imessage npm run dev`.
-4. Nessie key + account (`npm run setup-nessie`), and set `NESSIE_OWNER_PHONE` in `.env` to your phone before the demo.
+4. Nessie: key and sandbox account are set up (`data/nessie.json`). Still to do: set `NESSIE_OWNER_PHONE` in `.env` to your phone before the demo.
 5. iMessage group: create it by hand (your phone, the pool number, and teammates already on the Users allowlist), send
    "I'm going on the beach trip Saturday", expect replies from Sunny plus Dean and/or Penny. Untested on the Pro pool; open risk:
    whether a group thread reaches us when members are routed through different pool numbers (Photon bullet above).
 
 ## Open questions
+- Nessie drops cents: `buy -- Sheetz 4.29` is stored as $4 and the $412.55 seed balance reads back as $412.00, so Penny says
+  "Sheetz $4.00". Demo with whole-dollar buys (`npm run buy -- Sheetz 4`), or change how amounts are posted? Product call.
+- `getPurchases` tolerates only 404 (`personas/financial/nessie.ts:58-61`): any other Nessie error logs on every poll. Follow-up.
 - Someone who onboards after a plan already hit 3 gets Sunny's hot_plan text right with "you're all set" (onboarding runs
   watch() and delivers). Keep as a demo beat, or suppress?
 - Proactive texts go to DMs only; Social broadcasting into the group needs a group-handle registry (not built).

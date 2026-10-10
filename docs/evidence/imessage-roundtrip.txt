@@ -1,0 +1,22 @@
+# iMessage round trip (Photon Pro shared pool) — 2026-10-10 17:36–17:39 EDT, server log from the live run; phone numbers masked
+#
+# What this proves: inbound iMessage → server → onboarding. Three texts from Kerry's phone ("Hey", "600", "Spring break, $400")
+# reached the server over the Pro pool (`line=shared`), were routed to Penny (DEFAULT_PERSONA=financial, no *_LINE set), and
+# onboarding completed (budget, then savings goal, then "baselined 6 purchases").
+# Outbound is confirmed only by Kerry saying "okay got the text" at 17:38, after Penny's first reply.
+# Not proven here:
+#   - real Gemini: this run was LLM=fake, MOCK=1, so Penny's replies came from the stand-in model;
+#   - the purchase roast after onboarding: NOT confirmed on the phone;
+#   - group chat over iMessage: not tried.
+# The fix that made it work: adding the phone under Photon Users (the allowlist); before that, sends failed with `Target not allowed`.
+# The space id has the form `any;-;<phone>`, not `dm:…`, so inbound DM replies are never name-tagged as proactive texts.
+#
+17:36:51 Suitemates · transport=imessage · LLM=fake · MOCK=1
+17:36:51 personas: academic=Dean, financial=Penny, social=Sunny
+17:36:51 [scheduler] watch=financial every 5000ms; academic.morning_due@08:00, financial.weekly_money@sun 18:00
+17:36:51 [http] listening on :3000 (POST /demo/trigger, GET /health)
+17:36:51 [imessage] lines: academic=? financial=? social=?
+17:38:00 [imessage] financial line=shared dm +1••••••••••: Hey (space any;-;+1••••••••••, msg spc-msg-d4c2e81d-9bc1-42cf-a973-aaf3d8107310)
+17:38:57 [imessage] financial line=shared dm +1••••••••••: 600 (space any;-;+1••••••••••, msg spc-msg-f391735b-f35d-4c64-9a6c-b6db7910b604)
+17:39:20 [imessage] financial line=shared dm +1••••••••••: Spring break, $400 (space any;-;+1••••••••••, msg spc-msg-3297e642-bcb5-4fd9-8a2f-06e5f67765ae)
+17:39:20 [core] financial: baselined 6 purchases

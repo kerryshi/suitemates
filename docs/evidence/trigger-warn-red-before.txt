@@ -1,0 +1,30 @@
+# fail-first: npm run trigger with a real phone and no SERVER_URL prints silently, never says it didn't send — Sat Oct 10 18:02:48 EDT 2026
+✖ a cue with a real phone but no SERVER_URL says on stderr that it only printed (225.872542ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 0
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 372.886416
+
+✖ failing tests:
+
+test at tests/trigger.test.ts:21:1
+✖ a cue with a real phone but no SERVER_URL says on stderr that it only printed (225.872542ms)
+  AssertionError [ERR_ASSERTION]: The input did not match the regular expression /not sent/. Input:
+  
+  ''
+  
+      at TestContext.<anonymous> (/Users/kerryshi/Projects/hacknc-agents-env/tests/trigger.test.ts:25:10)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1062:25)
+      at Test.start (node:internal/test_runner/test:959:17)
+      at startSubtestAfterBootstrap (node:internal/test_runner/harness:332:17) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: '',
+    expected: /not sent/,
+    operator: 'match'
+  }

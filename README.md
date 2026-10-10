@@ -75,12 +75,20 @@ Built at HackNC 2026 by Kerry Shi (@kerryshi), Ismail (@ismail-gasmi) and Abdall
 - **Claude Code** (Anthropic's AI coding agent) generated the initial scaffold on Sat Oct 10 from our team's project doc. That scaffold was `core/` (engine, group router, onboarding, Gemini client, Photon transport, scheduler, demo trigger), the starter tool in each persona folder, the mock data, the tests, and this README. The design plan in `docs/PLAN.md` was also drafted with Claude. We made the product, scope, and ownership decisions and reviewed and ran everything. Claude Code also helped with code and debugging during the event.
 - **Gemini API** (Flash) is the runtime model. It powers every persona's replies, the group-chat router, and receipt-photo reading.
 - The Photon transport and Gemini client in `core/` were adapted from Kerry's solo prototype (`hacknc-tab`, first commit Sat Oct 10, 12:40 PM, after hacking began at 11:30 AM).
+- **Financial persona** (`personas/financial/`): Kerry made the design calls (voice, what gets roasted, no money transfers); Claude Code wrote the code: the purchase watcher, money math, tools, prompt, demo scripts and tests. Claude subagents also planned and reviewed it.
+- **Everyone:** list any other AI tool you use here before merging (ChatGPT, Copilot, Cursor, an image generator for the avatars).
 - <!-- add any AI image generation used for the avatars here -->
 
 **Who owns what** (update with what each person actually built before submitting):
 - Kerry: shared layer (`core/`) and the Financial persona (Nessie)
 - Ismail: the Academic persona (Canvas)
 - Abdallah: the Social persona and the group-chat router prompt
+
+## Data, privacy and Gemini's terms
+- **Demo data is fake.** Canvas courses, Nessie purchases and students come from `mock/` or Capital One's mock bank. No real student or bank data is needed to run or demo this.
+- **Gemini free tier:** Google may use free-tier prompts and responses to improve its products, and humans may review them. Don't send real personal data (a real Canvas account's assignments, real receipts) through a free-tier key; use mock data or a paid/credit-backed key.
+- **Users must be 18+** under the Gemini API terms.
+- **Not financial advice.** Penny is a spending mentor: `can_i_afford` verdicts are computed in code from the student's own budget, it never gives investment advice, and it never moves money or makes decisions for anyone.
 
 ## Layout
 ```

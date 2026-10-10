@@ -15,6 +15,8 @@ Your first hour is in your folder's `TODO.md`.
 - Commit messages start with your area: `[financial] roast on new purchase`.
 - `npm test` must pass before you merge (it checks every persona folder against the contract).
 - Never commit API keys. New key names go in `.env.example`; real values go in the team chat.
+- **Used an AI tool?** (ChatGPT, Copilot, Cursor, Claude, an image generator) Add it to README → *How we built it* before you merge. MLH requires us to disclose AI tools, and judges may ask who built what, so be ready to explain the code in your folder.
+- Don't send real personal data through Gemini on a free-tier key (Google may train on it). Mock data is fine.
 
 ## Checkpoints (Sat → Sun)
 - [ ] 5 PM: shared layer live; everyone's tools working on mock data

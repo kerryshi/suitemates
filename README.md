@@ -4,11 +4,11 @@ Three AI texting agents that help UNC students balance school, money, and social
 
 | Persona | Folder | Data | Proactive |
 |---|---|---|---|
-| Academic (Oak) | `personas/academic/` | Canvas | morning "due today", 24h warnings |
-| Financial (Clover) | `personas/financial/` | Capital One Nessie | reacts to purchases, weekly check-in |
-| Social (Breeze) | `personas/social/` | our sign-up list | "3 people want pickup soccer Sunday" |
+| Academic (Dean) | `personas/academic/` | Canvas | morning "due today", 24h warnings |
+| Financial (Penny) | `personas/financial/` | Capital One Nessie | reacts to purchases, weekly check-in |
+| Social (Sunny) | `personas/social/` | our sign-up list | "3 people want pickup soccer Sunday" |
 
-Names are placeholders. Change them in `.env` (`PRODUCT_NAME`, `ACADEMIC_NAME`, …).
+Names default to Suitemates (product), Dean, Penny and Sunny. Change them in `.env` (`PRODUCT_NAME`, `ACADEMIC_NAME`, …).
 
 ## 60-second setup
 Needs Node 18.19+ (`node -v`).

@@ -14,10 +14,10 @@ const Env = z.object({
   GEMINI_API_KEY: opt,
   GEMINI_MODEL: str.default("gemini-3.6-flash"),
 
-  PRODUCT_NAME: str.default("Canopy"),
-  ACADEMIC_NAME: str.default("Oak"),
-  FINANCIAL_NAME: str.default("Clover"),
-  SOCIAL_NAME: str.default("Breeze"),
+  PRODUCT_NAME: str.default("Suitemates"),
+  ACADEMIC_NAME: str.default("Dean"),
+  FINANCIAL_NAME: str.default("Penny"),
+  SOCIAL_NAME: str.default("Sunny"),
 
   // Photon, shape 1: one project, one dedicated line per persona (route by line number).
   SPECTRUM_PROJECT_ID: opt,
@@ -37,12 +37,13 @@ const Env = z.object({
 
   NESSIE_API_KEY: opt,
   NESSIE_ACCOUNT_ID: opt,
+  NESSIE_OWNER_PHONE: opt, // read by personas/financial: only this phone gets purchase/weekly texts
   CANVAS_TOKEN: opt,
   CANVAS_BASE_URL: str.default("https://uncch.instructure.com"),
 
   PORT: z.coerce.number().default(3000),
   DEMO_TOKEN: opt,
-  WATCH_MS: z.coerce.number().default(10_000),
+  WATCH_MS: z.coerce.number().default(5_000), // poll + LLM must fit the 10 s roast goal
   GROUP_SETTLE_MS: z.coerce.number().default(1500),
   MORNING_AT: str.default("08:00"),
   WEEKLY_AT: str.default("sun 18:00"),

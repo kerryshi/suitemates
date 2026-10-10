@@ -16,5 +16,5 @@ Plan of record: `docs/PLAN.md` (architect). Owners: Kerry = core + Financial, Is
 4. Financial: Nessie key + account, turn on watch() (sketch in personas/financial/watch.ts).
 
 ## Open questions
-- Product/persona names (placeholders Canopy/Oak/Clover/Breeze, env-configurable).
+- Names decided 2026-10-10: Suitemates (product), Dean (academic), Penny (financial), Sunny (social); defaults in core/config.ts. `.env.example` still lists the old placeholders (Claude is denied that file) — fix by hand.
 - Proactive texts go to DMs only; Social broadcasting into the group needs a group-handle registry (not built).

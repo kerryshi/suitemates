@@ -22,7 +22,7 @@ export interface EngineDeps {
   personas: Map<PersonaId, Persona>;
   store: Store;
   llm: LlmClient;
-  config: Pick<Config, "names" | "PRODUCT_NAME" | "mock" | "fakeRoute" | "GROUP_SETTLE_MS">;
+  config: Pick<Config, "names" | "PRODUCT_NAME" | "mock" | "fakeRoute" | "GROUP_SETTLE_MS"> & { watchList?: PersonaId[] };
   routerPrompt: string;
   now?: () => number;
   log?: (msg: string) => void;
@@ -50,7 +50,8 @@ export class Engine {
       const n = this.d.config.names;
       const r = onboard(user, ev.text ?? "", { me: ev.persona, product: this.d.config.PRODUCT_NAME, ...n });
       this.d.store.saveUser(r.user);
-      return [{ persona: ev.persona, handle: ev.handle, text: r.reply }];
+      const extra = r.user.onboardingStep === "done" ? await this.onboarded(r.user.phone) : [];
+      return [{ persona: ev.persona, handle: ev.handle, text: r.reply }, ...extra];
     }
     const text = await this.reply(ev.persona, user, ev.text ?? "", ev.image, "dm");
     return [{ persona: ev.persona, handle: ev.handle, text }];
@@ -100,6 +101,23 @@ export class Engine {
     });
   }
 
+  // Run each watcher once as soon as a user is onboarded, so its first poll (the baseline that
+  // records what already exists) happens now, not up to WATCH_MS later. Otherwise a purchase made
+  // right after "you're all set" would be counted as pre-existing and never roasted. Runs through
+  // trigger(), so if it isn't the first poll (e.g. /skip again after a buy) the events are delivered.
+  async onboarded(phone: string): Promise<Outbound[]> {
+    const out: Outbound[] = [];
+    for (const id of this.d.config.watchList ?? []) {
+      if (!this.d.personas.get(id)?.watch) continue;
+      try {
+        out.push(...(await this.trigger(id, "watch", { phone })));
+      } catch (err) {
+        this.log(`WARN ${id} baseline at onboarding failed: ${err instanceof Error ? err.message : err}`);
+      }
+    }
+    return out;
+  }
+
   // Proactive: run a persona's named trigger (or "watch") and turn its events into DMs.
   // force = true (demo trigger) re-sends events already delivered; scheduled runs pass false.
   async trigger(personaId: PersonaId, name: string, opts: { phone?: string; force?: boolean } = {}): Promise<Outbound[]> {
@@ -117,7 +135,14 @@ export class Engine {
       for (const ev of events) {
         if (!this.d.store.claim(ev.dedupeKey) && !opts.force) continue;
         const target = this.d.store.user(ev.userPhone);
-        const text = await this.reply(personaId, target, `[proactive] ${ev.kind}: ${ev.facts}`, undefined, "proactive");
+        let text: string;
+        try {
+          text = await this.replyOrThrow(personaId, target, `[proactive] ${ev.kind}: ${ev.facts}`, undefined, "proactive");
+        } catch (err) {
+          // The event is already claimed and won't come back, so never drop it: send the facts plainly.
+          this.log(`ERROR ${personaId} proactive text failed, sending plain facts: ${err instanceof Error ? err.message : err}`);
+          text = ev.facts.replace(/\s*Tone: [^.]*\./g, "").trim();
+        }
         out.push({ persona: personaId, handle: `dm:${ev.userPhone}`, text });
       }
     }
@@ -135,24 +160,27 @@ export class Engine {
   }
 
   private async reply(id: PersonaId, user: UserProfile, text: string, image: Inbound["image"], setting: Setting): Promise<string> {
-    const persona = this.d.personas.get(id)!;
-    let out: string;
     try {
-      out = await respond({
-        persona,
-        ctx: this.ctx(id, user),
-        llm: this.d.llm,
-        history: this.d.store.history(id, user.phone),
-        text,
-        image,
-        setting,
-        product: this.d.config.PRODUCT_NAME,
-        names: this.d.config.names,
-      });
+      return await this.replyOrThrow(id, user, text, image, setting);
     } catch (err) {
       this.log(`ERROR ${id} reply failed: ${err instanceof Error ? err.message : err}`);
       return "one sec, my brain glitched 😵 try that again?";
     }
+  }
+
+  private async replyOrThrow(id: PersonaId, user: UserProfile, text: string, image: Inbound["image"], setting: Setting): Promise<string> {
+    const persona = this.d.personas.get(id)!;
+    const out = await respond({
+      persona,
+      ctx: this.ctx(id, user),
+      llm: this.d.llm,
+      history: this.d.store.history(id, user.phone),
+      text,
+      image,
+      setting,
+      product: this.d.config.PRODUCT_NAME,
+      names: this.d.config.names,
+    });
     const said = setting === "proactive" ? [] : [{ role: "user" as const, text: setting === "group" ? `(group chat) ${text}` : text }];
     this.d.store.pushHistory(id, user.phone, ...said, { role: "model", text: out });
     return out;

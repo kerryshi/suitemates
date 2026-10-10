@@ -1,0 +1,45 @@
+# green: regression tests after the review fixes — Sat Oct 10 16:39:04 EDT 2026
+
+> hacknc-agents@0.1.0 test
+> tsx --test tests/*.test.ts
+
+✔ first poll baselines existing purchases and roasts nothing (0.8935ms)
+✔ a new purchase is roasted exactly once (16.692458ms)
+✔ a burst after downtime roasts at most 3 but marks all seen (2.441667ms)
+✔ a date-only Nessie purchase from today is stamped with the time it was first seen (0.228417ms)
+✔ low balance warns once per day (0.094041ms)
+✔ Nessie YYYY-MM-DD dates parse as local days, not UTC (0.077167ms)
+✔ categories come from the merchant name unless given (0.129417ms)
+✔ afford verdict boundaries: over budget, half of what's left, small (0.066084ms)
+✔ purchase facts carry the numbers the roast needs (0.144417ms)
+✔ a 3 AM delivery order is flagged late night (0.216541ms)
+✔ a real (date-only) purchase from an earlier day is not called late night or given a fake time (0.231584ms)
+✔ a date-only purchase stamped with first-seen time is roasted with that time (0.252875ms)
+✔ purchase roasts go only to the account owner when NESSIE_OWNER_PHONE is set (0.134333ms)
+✔ a fresh Nessie account (404 on the purchase list) reads as no purchases, other errors still throw (11.091041ms)
+✔ the beach trip matches its cost estimate (0.746166ms)
+✔ hi → budget → goal finishes onboarding with Canvas linked (0.515333ms)
+✔ a non-number budget is re-asked once, then defaults to 500 (0.145209ms)
+✔ budget parsing handles $ signs, commas and k (0.053708ms)
+✔ a DM from a new user gets onboarding, not the LLM (0.314416ms)
+✔ all three persona folders satisfy the contract (0.879875ms)
+✔ two tools with the same name are refused (0.273ms)
+✔ a required parameter missing from properties is refused (0.083958ms)
+✔ a persona exported under the wrong id is refused (0.059583ms)
+✔ a non-snake_case tool name is refused (0.06825ms)
+✔ finishing onboarding baselines the watchers right away (a buy made just after isn't swallowed) (1.003708ms)
+✔ a proactive text whose LLM call fails sends the plain facts, not a glitch message (13.13625ms)
+✔ the watch poll defaults to 5 s so poll + LLM stays under the 10 s roast goal (1.786791ms)
+✔ three line copies of one group message run the router once (17.487917ms)
+✔ each chosen persona replies through its own line's handle (0.500542ms)
+✔ the same text after the dedupe window is a new message (0.392291ms)
+✔ a chosen persona whose line got no copy speaks through another line, name-tagged (30.404958ms)
+✔ keyword routing (keyless mode) wakes Social for the beach trip and nobody for small talk (0.349334ms)
+ℹ tests 32
+ℹ suites 0
+ℹ pass 32
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 293.65975

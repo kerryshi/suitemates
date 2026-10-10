@@ -1,0 +1,38 @@
+# green: all suites — Sat Oct 10 16:24:41 EDT 2026
+
+> hacknc-agents@0.1.0 test
+> tsx --test tests/*.test.ts
+
+✔ first poll baselines existing purchases and roasts nothing (1.230542ms)
+✔ a new purchase is roasted exactly once (13.833708ms)
+✔ a burst after downtime roasts at most 3 but marks all seen (0.591875ms)
+✔ a date-only Nessie purchase from today is stamped with the time it was first seen (0.508ms)
+✔ low balance warns once per day (0.155916ms)
+✔ Nessie YYYY-MM-DD dates parse as local days, not UTC (0.084791ms)
+✔ categories come from the merchant name unless given (0.733958ms)
+✔ afford verdict boundaries: over budget, half of what's left, small (0.081833ms)
+✔ purchase facts carry the numbers the roast needs (0.175ms)
+✔ a 3 AM delivery order is flagged late night (0.155041ms)
+✔ the beach trip matches its cost estimate (0.512833ms)
+✔ hi → budget → goal finishes onboarding with Canvas linked (0.537458ms)
+✔ a non-number budget is re-asked once, then defaults to 500 (0.1555ms)
+✔ budget parsing handles $ signs, commas and k (0.054208ms)
+✔ a DM from a new user gets onboarding, not the LLM (0.316125ms)
+✔ all three persona folders satisfy the contract (1.79125ms)
+✔ two tools with the same name are refused (0.537416ms)
+✔ a required parameter missing from properties is refused (0.224292ms)
+✔ a persona exported under the wrong id is refused (0.144ms)
+✔ a non-snake_case tool name is refused (0.172667ms)
+✔ three line copies of one group message run the router once (15.847ms)
+✔ each chosen persona replies through its own line's handle (0.71025ms)
+✔ the same text after the dedupe window is a new message (0.405917ms)
+✔ a chosen persona whose line got no copy speaks through another line, name-tagged (30.013875ms)
+✔ keyword routing (keyless mode) wakes Social for the beach trip and nobody for small talk (0.312917ms)
+ℹ tests 25
+ℹ suites 0
+ℹ pass 25
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 209.309209

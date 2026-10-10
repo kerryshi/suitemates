@@ -27,7 +27,8 @@ export async function respond(a: RespondArgs): Promise<string> {
     { role: "user", text: a.text, image: a.image },
   ];
   for (let round = 0; round < MAX_TOOL_ROUNDS; round++) {
-    const step = await a.llm.chat({ system, messages, tools: a.persona.tools });
+    // Proactive texts carry complete facts: no tool round, so a purchase roast lands fast.
+    const step = await a.llm.chat({ system, messages, tools: a.setting === "proactive" ? [] : a.persona.tools });
     if ("text" in step) return step.text;
     messages.push({ role: "model", toolCalls: step.toolCalls, raw: step.raw });
     const results = [];

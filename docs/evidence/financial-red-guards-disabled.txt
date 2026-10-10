@@ -1,0 +1,138 @@
+# fail-first: financial guards disabled (baseline, burst cap, local date parse) — Sat Oct 10 16:24:41 EDT 2026
+✖ first poll baselines existing purchases and roasts nothing (13.617042ms)
+✔ a new purchase is roasted exactly once (1.17675ms)
+✖ a burst after downtime roasts at most 3 but marks all seen (0.949ms)
+✔ a date-only Nessie purchase from today is stamped with the time it was first seen (0.561ms)
+✖ low balance warns once per day (0.569208ms)
+✖ Nessie YYYY-MM-DD dates parse as local days, not UTC (0.106333ms)
+✔ categories come from the merchant name unless given (0.119334ms)
+✔ afford verdict boundaries: over budget, half of what's left, small (0.065459ms)
+✔ purchase facts carry the numbers the roast needs (0.118417ms)
+✔ a 3 AM delivery order is flagged late night (0.117291ms)
+✔ the beach trip matches its cost estimate (0.436791ms)
+ℹ tests 11
+ℹ suites 0
+ℹ pass 7
+ℹ fail 4
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 140.767333
+
+✖ failing tests:
+
+test at tests/financial.test.ts:27:1
+✖ first poll baselines existing purchases and roasts nothing (13.617042ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+  
+  + [
+  +   {
+  +     dedupeKey: 'purchase:+1:p1',
+  +     facts: 'New purchase: Harris Teeter $42.18 Friday 12:00 PM [groceries]. Budget left this month: $672.56 of $800 (22 days left, ~$30.57/day). Balance $412.55. Saving for: spring break, $400. This purchase is 11% of that $400 target. Tone: a good choice, hype it.',
+  +     kind: 'purchase',
+  +     userPhone: '+1'
+  +   },
+  +   {
+  +     dedupeKey: 'purchase:+1:p2',
+  +     facts: 'New purchase: DoorDash (Cosmic Cantina) $23.40 Friday 12:00 PM [delivery]. This week in delivery: 2 purchases, $42.15. Budget left this month: $672.56 of $800 (22 days left, ~$30.57/day). Balance $412.55. Saving for: spring break, $400. This purchase is 6% of that $400 target. Tone: roast-worthy.',
+  +     kind: 'purchase',
+  +     userPhone: '+1'
+  +   },
+  +   {
+  +     dedupeKey: 'purchase:+1:p3',
+  +     facts: 'New purchase: Starbucks $6.85 Friday 12:00 PM [coffee]. Budget left this month: $672.56 of $800 (22 days left, ~$30.57/day). Balance $412.55. Saving for: spring break, $400. This purchase is 2% of that $400 target. Tone: roast-worthy.',
+  +     kind: 'purchase',
+  +     userPhone: '+1'
+  +   },
+  +   {
+  +     dedupeKey: 'purchase:+1:p4',
+  +     facts: 'New purchase: Target $31.97 Friday 12:00 PM [shopping]. Budget left this month: $672.56 of $800 (22 days left, ~$30.57/day). Balance $412.55. Saving for: spring break, $400. This purchase is 8% of that $400 target.',
+  +     kind: 'purchase',
+  +     userPhone: '+1'
+  +   },
+  +   {
+  +     dedupeKey: 'purchase:+1:p5',
+  +     facts: 'New purchase: Sheetz $4.29 Friday 12:00 PM [energy drink]. Budget left this month: $672.56 of $800 (22 days left, ~$30.57/day). Balance $412.55. Saving for: spring break, $400. This purchase is 1% of that $400 target. Tone: roast-worthy.',
+  +     kind: 'purchase',
+  +     userPhone: '+1'
+  +   },
+  +   {
+  +     dedupeKey: 'purchase:+1:p6',
+  +     facts: 'New purchase: Uber Eats (Sup Dogs) $18.75 Friday 12:00 PM [delivery]. This week in delivery: 2 purchases, $42.15. Budget left this month: $672.56 of $800 (22 days left, ~$30.57/day). Balance $412.55. Saving for: spring break, $400. This purchase is 5% of that $400 target. Tone: roast-worthy.',
+  +     kind: 'purchase',
+  +     userPhone: '+1'
+  +   }
+  + ]
+  - []
+  
+      at TestContext.<anonymous> (/Users/kerryshi/Projects/hacknc-agents/tests/financial.test.ts:29:10)
+      at async Test.run (node:internal/test_runner/test:1069:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:332:3) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: [ { kind: 'purchase', userPhone: '+1', facts: 'New purchase: Harris Teeter $42.18 Friday 12:00 PM [groceries]. Budget left this month: $672.56 of $800 (22 days left, ~$30.57/day). Balance $412.55. Saving for: spring break, $400. This purchase is 11% of that $400 target. Tone: a good choice, hype it.', dedupeKey: 'purchase:+1:p1' }, { kind: 'purchase', userPhone: '+1', facts: 'New purchase: DoorDash (Cosmic Cantina) $23.40 Friday 12:00 PM [delivery]. This week in delivery: 2 purchases, $42.15. Budget left this month: $672.56 of $800 (22 days left, ~$30.57/day). Balance $412.55. Saving for: spring break, $400. This purchase is 6% of that $400 target. Tone: roast-worthy.', dedupeKey: 'purchase:+1:p2' }, { kind: 'purchase', userPhone: '+1', facts: 'New purchase: Starbucks $6.85 Friday 12:00 PM [coffee]. Budget left this month: $672.56 of $800 (22 days left, ~$30.57/day). Balance $412.55. Saving for: spring break, $400. This purchase is 2% of that $400 target. Tone: roast-worthy.', dedupeKey: 'purchase:+1:p3' }, { kind: 'purchase', userPhone: '+1', facts: 'New purchase: Target $31.97 Friday 12:00 PM [shopping]. Budget left this month: $672.56 of $800 (22 days left, ~$30.57/day). Balance $412.55. Saving for: spring break, $400. This purchase is 8% of that $400 target.', dedupeKey: 'purchase:+1:p4' }, { kind: 'purchase', userPhone: '+1', facts: 'New purchase: Sheetz $4.29 Friday 12:00 PM [energy drink]. Budget left this month: $672.56 of $800 (22 days left, ~$30.57/day). Balance $412.55. Saving for: spring break, $400. This purchase is 1% of that $400 target. Tone: roast-worthy.', dedupeKey: 'purchase:+1:p5' }, { kind: 'purchase', userPhone: '+1', facts: 'New purchase: Uber Eats (Sup Dogs) $18.75 Friday 12:00 PM [delivery]. This week in delivery: 2 purchases, $42.15. Budget left this month: $672.56 of $800 (22 days left, ~$30.57/day). Balance $412.55. Saving for: spring break, $400. This purchase is 5% of that $400 target. Tone: roast-worthy.', dedupeKey: 'purchase:+1:p6' } ],
+    expected: [],
+    operator: 'deepStrictEqual'
+  }
+
+test at tests/financial.test.ts:44:1
+✖ a burst after downtime roasts at most 3 but marks all seen (0.949ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  7 !== 3
+  
+      at TestContext.<anonymous> (/Users/kerryshi/Projects/hacknc-agents/tests/financial.test.ts:49:10)
+      at async Test.run (node:internal/test_runner/test:1069:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:752:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 7,
+    expected: 3,
+    operator: 'strictEqual'
+  }
+
+test at tests/financial.test.ts:62:1
+✖ low balance warns once per day (0.569208ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+  
+    [
+  +   'purchase:+1:p1',
+  +   'purchase:+1:p2',
+  +   'purchase:+1:p3',
+  +   'purchase:+1:p4',
+  +   'purchase:+1:p5',
+  +   'purchase:+1:p6',
+      'financial:lowbal:+1:2026-10-10'
+    ]
+  
+      at TestContext.<anonymous> (/Users/kerryshi/Projects/hacknc-agents/tests/financial.test.ts:65:10)
+      at async Test.run (node:internal/test_runner/test:1069:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:752:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: [ 'purchase:+1:p1', 'purchase:+1:p2', 'purchase:+1:p3', 'purchase:+1:p4', 'purchase:+1:p5', 'purchase:+1:p6', 'financial:lowbal:+1:2026-10-10' ],
+    expected: [ 'financial:lowbal:+1:2026-10-10' ],
+    operator: 'deepStrictEqual'
+  }
+
+test at tests/financial.test.ts:68:1
+✖ Nessie YYYY-MM-DD dates parse as local days, not UTC (0.106333ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  9 !== 10
+  
+      at TestContext.<anonymous> (/Users/kerryshi/Projects/hacknc-agents/tests/financial.test.ts:70:10)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1062:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:752:18)
+      at Test.postRun (node:internal/test_runner/test:1191:19)
+      at Test.run (node:internal/test_runner/test:1119:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:752:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 9,
+    expected: 10,
+    operator: 'strictEqual'
+  }

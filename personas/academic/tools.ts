@@ -8,7 +8,8 @@ const getDueAssignments: Tool = {
   name: "get_due_assignments",
   description:
     "List the student's assignments and exams due in the next N days, soonest first. " +
-    "Use for 'what's due', deadlines, 'do I have time for X', or anything about upcoming schoolwork.",
+    "Use for 'what's due', deadlines, 'do I have time for X', or anything about upcoming schoolwork. " +
+    "Also use when they mention a plan (a trip, party, concert, tonight, the weekend, Friday/Saturday/Sunday) to check what collides with it.",
   parameters: {
     properties: {
       days: { type: "number", description: "How many days ahead to look. Default 7." },

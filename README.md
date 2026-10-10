@@ -76,6 +76,7 @@ Built at HackNC 2026 by Kerry Shi (@kerryshi), Ismail (@ismail-gasmi) and Abdall
 - **Gemini API** (Flash) is the runtime model. It powers every persona's replies, the group-chat router, and receipt-photo reading.
 - The Photon transport and Gemini client in `core/` were adapted from Kerry's solo prototype (`hacknc-tab`, first commit Sat Oct 10, 12:40 PM, after hacking began at 11:30 AM).
 - **Financial persona** (`personas/financial/`): Kerry made the design calls (voice, what gets roasted, no money transfers); Claude Code wrote the code: the purchase watcher, money math, tools, prompt, demo scripts and tests. Claude subagents also planned and reviewed it.
+- **Academic persona** (`personas/academic/`): Ismail directed the work and reviewed it: voice, when Oak speaks up, the look. Claude Code wrote the prompt voice (`prompt.md`), the group-chat `routerLine` and tool description tuning, and drew the avatar (`avatar.svg`, hand-written SVG, not an image model).
 - **Everyone:** list any other AI tool you use here before merging (ChatGPT, Copilot, Cursor, an image generator for the avatars).
 - <!-- add any AI image generation used for the avatars here -->
 

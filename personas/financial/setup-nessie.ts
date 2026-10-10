@@ -32,4 +32,4 @@ const ids = { customerId: customer._id, accountId: account._id, merchantId: merc
 mkdirSync(dirname(NESSIE_IDS_FILE), { recursive: true });
 writeFileSync(NESSIE_IDS_FILE, JSON.stringify(ids, null, 2));
 console.log(`created customer ${ids.customerId}, account ${ids.accountId} ($${START_BALANCE}), merchant ${ids.merchantId}`);
-console.log(`\nadd to .env:\nNESSIE_ACCOUNT_ID=${ids.accountId}\nNESSIE_MERCHANT_ID=${ids.merchantId}\n\nthen: MOCK=0 npm run buy -- Sheetz 4.29`);
+console.log(`\nadd to .env:\nNESSIE_ACCOUNT_ID=${ids.accountId}\nNESSIE_MERCHANT_ID=${ids.merchantId}\n\nthen: MOCK=0 npm run buy -- Sheetz 4   (whole dollars: Nessie drops cents)`);

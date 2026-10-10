@@ -1,13 +1,27 @@
-// Purchases from Capital One Nessie, or from mock/nessie-purchases.json when ctx.mock.
+// Purchases from Capital One Nessie, or from mock data when ctx.mock.
+// Mock = mock/nessie-purchases.json + anything queued by `npm run buy` (data/mock-new-purchases.json).
 // Nessie docs: http://api.nessieisreal.com/documentation
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import type { Ctx } from "../../core/types.ts";
-import { loadMock, relativeDate } from "../../core/kit.ts";
+import { loadMock, relativeDate, ymd } from "../../core/kit.ts";
+import { parsePurchaseDate } from "./money.ts";
 
 export interface Purchase {
   id: string;
   merchant: string;
   amount: number; // dollars
   at: Date;
+  category?: string;
+  dateOnly?: boolean; // Nessie only stores the day; watch() stamps today's with the time it first saw them
+}
+
+export interface ExtraPurchase {
+  id: string;
+  merchant: string;
+  amount: number;
+  at: string; // ISO
   category?: string;
 }
 
@@ -17,32 +31,87 @@ interface MockNessie {
 }
 
 const BASE = "https://api.nessieisreal.com";
+const DATA = join(dirname(fileURLToPath(import.meta.url)), "../../data");
+export const EXTRA_FILE = join(DATA, "mock-new-purchases.json");
+export const NESSIE_IDS_FILE = join(DATA, "nessie.json");
+
+export function readExtras(): ExtraPurchase[] {
+  return existsSync(EXTRA_FILE) ? (JSON.parse(readFileSync(EXTRA_FILE, "utf8")) as ExtraPurchase[]) : [];
+}
+
+export function writeExtras(list: ExtraPurchase[]) {
+  mkdirSync(DATA, { recursive: true });
+  writeFileSync(EXTRA_FILE, JSON.stringify(list, null, 2));
+}
 
 export async function getPurchases(ctx: Ctx): Promise<Purchase[]> {
   if (ctx.mock) {
-    return loadMock<MockNessie>("nessie-purchases")
-      .purchases.map((p) => ({ ...p, at: relativeDate(ctx.now, p) }))
-      .sort((a, b) => +b.at - +a.at);
+    const base = loadMock<MockNessie>("nessie-purchases").purchases.map((p) => ({ ...p, at: relativeDate(ctx.now, p) }));
+    const extras = readExtras().map((e) => ({ ...e, at: new Date(e.at) }));
+    return [...base, ...extras].sort((a, b) => +b.at - +a.at);
   }
-  // TODO(financial): verify against the real API once NESSIE_API_KEY + NESSIE_ACCOUNT_ID exist.
   const rows = await nessie<{ _id: string; description?: string; amount: number; purchase_date?: string; merchant_id?: string }[]>(
-    `/accounts/${requireEnv("NESSIE_ACCOUNT_ID")}/purchases`,
+    "GET",
+    `/accounts/${accountId()}/purchases`,
   );
   return rows
-    .map((r) => ({ id: r._id, merchant: r.description ?? r.merchant_id ?? "unknown", amount: r.amount, at: new Date(r.purchase_date ?? Date.now()) }))
+    .map((r) => ({
+      id: r._id,
+      merchant: r.description || r.merchant_id || "unknown",
+      amount: r.amount,
+      at: r.purchase_date ? parsePurchaseDate(r.purchase_date) : new Date(),
+      dateOnly: true,
+    }))
     .sort((a, b) => +b.at - +a.at);
 }
 
 export async function getBalance(ctx: Ctx): Promise<number> {
-  if (ctx.mock) return loadMock<MockNessie>("nessie-purchases").balance;
-  const acct = await nessie<{ balance: number }>(`/accounts/${requireEnv("NESSIE_ACCOUNT_ID")}`);
-  return acct.balance;
+  if (ctx.mock) {
+    const spentSince = readExtras().reduce((s, e) => s + e.amount, 0);
+    return Math.round((loadMock<MockNessie>("nessie-purchases").balance - spentSince) * 100) / 100;
+  }
+  return (await nessie<{ balance: number }>("GET", `/accounts/${accountId()}`)).balance;
 }
 
-async function nessie<T>(path: string): Promise<T> {
-  const res = await fetch(`${BASE}${path}?key=${encodeURIComponent(requireEnv("NESSIE_API_KEY"))}`, { signal: AbortSignal.timeout(10_000) });
-  if (!res.ok) throw new Error(`Nessie ${res.status}: ${(await res.text()).slice(0, 200)}`);
-  return (await res.json()) as T;
+// Real Nessie only. The merchant is a single demo merchant; the description carries the store name.
+export async function postPurchase(p: { merchant: string; amount: number; now: Date }): Promise<{ _id: string }> {
+  return nessie("POST", `/accounts/${accountId()}/purchases`, {
+    merchant_id: merchantId(),
+    medium: "balance",
+    purchase_date: ymd(p.now),
+    amount: p.amount,
+    description: p.merchant,
+  });
+}
+
+export async function nessie<T>(method: "GET" | "POST", path: string, body?: unknown): Promise<T> {
+  const res = await fetch(`${BASE}${path}?key=${encodeURIComponent(requireEnv("NESSIE_API_KEY"))}`, {
+    method,
+    headers: body ? { "content-type": "application/json" } : undefined,
+    body: body ? JSON.stringify(body) : undefined,
+    signal: AbortSignal.timeout(10_000),
+  });
+  const text = await res.text();
+  if (!res.ok) throw new Error(`Nessie ${method} ${path} → ${res.status}: ${text.slice(0, 200)}`);
+  const json = text ? JSON.parse(text) : null;
+  // Nessie wraps created objects as { code, message, objectCreated }.
+  return (json && typeof json === "object" && "objectCreated" in json ? json.objectCreated : json) as T;
+}
+
+function savedIds(): { accountId?: string; merchantId?: string } {
+  return existsSync(NESSIE_IDS_FILE) ? JSON.parse(readFileSync(NESSIE_IDS_FILE, "utf8")) : {};
+}
+
+function accountId(): string {
+  const id = process.env.NESSIE_ACCOUNT_ID || savedIds().accountId;
+  if (!id) throw new Error("NESSIE_ACCOUNT_ID is not set (run `npm run setup-nessie`, or use MOCK=1)");
+  return id;
+}
+
+function merchantId(): string {
+  const id = process.env.NESSIE_MERCHANT_ID || savedIds().merchantId;
+  if (!id) throw new Error("NESSIE_MERCHANT_ID is not set (run `npm run setup-nessie`)");
+  return id;
 }
 
 function requireEnv(k: string): string {

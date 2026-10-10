@@ -1,0 +1,27 @@
+16:25:23 Suitemates · transport=terminal · LLM=fake · MOCK=1
+16:25:23 personas: academic=Dean, financial=Penny, social=Sunny
+16:25:23 [scheduler] watch=financial every 3000ms; academic.morning_due@08:00, financial.weekly_money@sun 18:00
+16:25:23 commands:
+16:25:23   <text>                   send as the current user
+16:25:23   as +1919...: <text>      send once as someone else
+16:25:23   /to academic|financial|social|group   switch chat
+16:25:23   /as +1919...             switch user
+16:25:23   /skip                    skip onboarding (budget 600, goal "spring break, $400")
+16:25:23   /reset                   forget this user (re-onboard)
+16:25:23   /trigger <persona> <name>   fire a proactive message, e.g. /trigger academic morning_due
+16:25:23   /who                     show the user profile
+16:25:23   /quit
+16:25:23 
+16:25:23 (not onboarded yet: say "hi", or /skip)
+16:25:23 [http] listening on :3998 (POST /demo/trigger, GET /health)
+16:25:23 +19195550001 → group chat> /skip
+16:25:23   onboarded: budget $600/month, saving for spring break, $400
+16:25:26 [core] financial: baselined 6 purchases
+16:25:29 >>> npm run buy -- Sheetz 4.29
+posted (mock): Sheetz $4.29 → the watcher will pick it up within WATCH_MS
+16:25:32   [Penny] (DM) (fake LLM) New purchase: Sheetz $4.29 today 4:25 PM [energy drink]. This week in energy drink: 2 purchases, $8.58. Budget left this month: $468.27 of $600 (22 days left, ~$21.29/day). Balance $408.26. Saving for: spring break, $400. This purchase is 1% of that $400 target. Tone: roast-worthy.
+16:25:35 >>> npm run buy -- "DoorDash (Insomnia Cookies)" 14.50   [a 2nd purchase]
+posted (mock): DoorDash (Insomnia Cookies) $14.50 → the watcher will pick it up within WATCH_MS
+16:25:38   [Penny] (DM) (fake LLM) New purchase: DoorDash (Insomnia Cookies) $14.50 today 4:25 PM [delivery]. This week in delivery: 3 purchases, $56.65. Budget left this month: $453.77 of $600 (22 days left, ~$20.63/day). Balance $393.76. Saving for: spring break, $400. This purchase is 4% of that $400 target. Tone: roast-worthy.
+16:25:42 >>> POST /demo/trigger financial weekly_money
+16:25:42   [Penny] (DM) (fake LLM) Weekly money check-in. Spent $146.23 across 8 purchases this week against a weekly budget of about $140. By category: delivery $56.65 (3), groceries $42.18 (1), shopping $31.97 (1), energy drink $8.58 (2), coffee $6.85 (1). Balance $393.76. Saving for: spring break, $400.

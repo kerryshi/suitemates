@@ -1,0 +1,32 @@
+# fail-first: financial tests before money.ts / watchWith exist — Sat Oct 10 16:22:30 EDT 2026
+
+node:internal/modules/run_main:105
+    triggerUncaughtException(
+    ^
+Error [ERR_MODULE_NOT_FOUND]: Cannot find module '/Users/kerryshi/Projects/hacknc-agents/personas/financial/money.ts' imported from /Users/kerryshi/Projects/hacknc-agents/tests/financial.test.ts
+    at finalizeResolution (node:internal/modules/esm/resolve:274:11)
+    at moduleResolve (node:internal/modules/esm/resolve:859:10)
+    at defaultResolve (node:internal/modules/esm/resolve:983:11)
+    at nextResolve (node:internal/modules/esm/hooks:748:28)
+    at resolveBase (file:///Users/kerryshi/Projects/hacknc-agents/node_modules/tsx/dist/register-nyXW-TH3.mjs:2:10494)
+    at async resolveDirectory (file:///Users/kerryshi/Projects/hacknc-agents/node_modules/tsx/dist/register-nyXW-TH3.mjs:2:11575) {
+  code: 'ERR_MODULE_NOT_FOUND',
+  url: 'file:///Users/kerryshi/Projects/hacknc-agents/personas/financial/money.ts'
+}
+
+Node.js v24.3.0
+✖ tests/financial.test.ts (150.224333ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 0
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 155.609125
+
+✖ failing tests:
+
+test at tests/financial.test.ts:1:1
+✖ tests/financial.test.ts (150.224333ms)
+  'test failed'

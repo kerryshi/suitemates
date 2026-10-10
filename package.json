@@ -13,7 +13,9 @@
     "trigger": "tsx scripts/trigger.ts",
     "check-gemini": "tsx scripts/check-gemini.ts",
     "test": "tsx --test tests/*.test.ts",
-    "typecheck": "tsc --noEmit -p ."
+    "typecheck": "tsc --noEmit -p .",
+    "buy": "tsx personas/financial/post-purchase.ts",
+    "setup-nessie": "tsx personas/financial/setup-nessie.ts"
   },
   "dependencies": {
     "spectrum-ts": "^12.10.1",

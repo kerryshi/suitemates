@@ -72,6 +72,7 @@ npm run dev                          # terminal group chat + :3000/demo/trigger 
 TRANSPORT=imessage npm run dev       # Photon (needs SPECTRUM_*; add *_LINE on dedicated lines, else DEFAULT_PERSONA answers)
 curl -X POST localhost:3000/demo/trigger -H 'content-type: application/json' \
   -d '{"persona":"academic","name":"morning_due","phone":"+1919..."}'
+SERVER_URL=http://localhost:3000 npm run trigger -- social match +1919...   # sends through the server like the curl; without SERVER_URL it only prints
 ```
 
 ## How we built it

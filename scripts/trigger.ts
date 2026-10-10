@@ -8,7 +8,8 @@ import { DEMO_USER } from "../core/console.ts";
 import type { PersonaId } from "../core/types.ts";
 
 loadDotEnv();
-const [persona, name, phone = DEMO_USER] = process.argv.slice(2);
+const [persona, name, phoneArg] = process.argv.slice(2);
+const phone = phoneArg ?? DEMO_USER;
 if (!persona || !name) {
   console.error("usage: npm run trigger -- <academic|financial|social> <trigger name|watch> [phone]");
   process.exit(1);
@@ -26,4 +27,5 @@ if (process.env.SERVER_URL) {
   const outs = await app.engine.trigger(persona as PersonaId, name, { phone, force: true });
   if (outs.length === 0) console.log("(no events)");
   for (const o of outs) console.log(`[${app.config.names[o.persona]}] → ${o.handle}: ${o.text}`);
+  if (phoneArg) console.error(`(printed only, not sent to ${phone}; set SERVER_URL=http://localhost:${process.env.PORT ?? 3000} to send through the running server)`);
 }

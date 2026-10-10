@@ -14,10 +14,10 @@ const Env = z.object({
   GEMINI_API_KEY: opt,
   GEMINI_MODEL: str.default("gemini-3.6-flash"),
 
-  PRODUCT_NAME: str.default("Canopy"),
-  ACADEMIC_NAME: str.default("Oak"),
-  FINANCIAL_NAME: str.default("Clover"),
-  SOCIAL_NAME: str.default("Breeze"),
+  PRODUCT_NAME: str.default("Suitemates"),
+  ACADEMIC_NAME: str.default("Dean"),
+  FINANCIAL_NAME: str.default("Penny"),
+  SOCIAL_NAME: str.default("Sunny"),
 
   // Photon, shape 1: one project, one dedicated line per persona (route by line number).
   SPECTRUM_PROJECT_ID: opt,

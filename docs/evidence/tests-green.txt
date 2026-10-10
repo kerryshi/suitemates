@@ -1,0 +1,27 @@
+# green: guards restored — Sat Oct 10 15:48:47 EDT 2026
+
+> hacknc-agents@0.1.0 test
+> tsx --test tests/*.test.ts
+
+✔ hi → budget → goal finishes onboarding with Canvas linked (0.527209ms)
+✔ a non-number budget is re-asked once, then defaults to 500 (0.145375ms)
+✔ budget parsing handles $ signs, commas and k (0.052917ms)
+✔ a DM from a new user gets onboarding, not the LLM (0.301709ms)
+✔ all three persona folders satisfy the contract (0.822375ms)
+✔ two tools with the same name are refused (0.229125ms)
+✔ a required parameter missing from properties is refused (0.074417ms)
+✔ a persona exported under the wrong id is refused (0.056417ms)
+✔ a non-snake_case tool name is refused (0.061583ms)
+✔ three line copies of one group message run the router once (14.598542ms)
+✔ each chosen persona replies through its own line's handle (0.43425ms)
+✔ the same text after the dedupe window is a new message (0.381083ms)
+✔ a chosen persona whose line got no copy speaks through another line, name-tagged (29.922959ms)
+✔ keyword routing (keyless mode) wakes Social for the beach trip and nobody for small talk (0.333125ms)
+ℹ tests 14
+ℹ suites 0
+ℹ pass 14
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 182.357208

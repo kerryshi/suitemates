@@ -1,0 +1,15 @@
+{
+  "_note": "Fake students and activity sign-ups for MOCK=1 (Social). The demo user is +19195550001.",
+  "students": [
+    { "phone": "+19195550001", "name": "Kerry" },
+    { "phone": "+19195550101", "name": "Ismail" },
+    { "phone": "+19195550102", "name": "Abdallah" },
+    { "phone": "+19195550103", "name": "Priya" },
+    { "phone": "+19195550104", "name": "Sam" }
+  ],
+  "activities": [
+    { "id": "beach", "name": "Beach trip to Wrightsville", "when": "Saturday 9 AM", "costEstimate": 45, "signups": ["+19195550101", "+19195550102", "+19195550103"] },
+    { "id": "soccer", "name": "Pickup soccer at Hooker Fields", "when": "Sunday 4 PM", "costEstimate": 0, "signups": ["+19195550102", "+19195550103", "+19195550104"] },
+    { "id": "boba", "name": "Boba run on Franklin St", "when": "Friday 8 PM", "costEstimate": 7, "signups": ["+19195550104"] }
+  ]
+}

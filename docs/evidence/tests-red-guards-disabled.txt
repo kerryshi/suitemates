@@ -1,0 +1,130 @@
+# fail-first: guards disabled (dedupe lookup, duplicate-tool check, budget re-ask) — Sat Oct 10 15:48:47 EDT 2026
+
+> hacknc-agents@0.1.0 test
+> tsx --test tests/*.test.ts
+
+✔ hi → budget → goal finishes onboarding with Canvas linked (0.522791ms)
+✖ a non-number budget is re-asked once, then defaults to 500 (0.538083ms)
+✔ budget parsing handles $ signs, commas and k (0.0565ms)
+✔ a DM from a new user gets onboarding, not the LLM (0.355667ms)
+✔ all three persona folders satisfy the contract (0.824083ms)
+✖ two tools with the same name are refused (0.44725ms)
+✔ a required parameter missing from properties is refused (0.16075ms)
+✔ a persona exported under the wrong id is refused (0.065792ms)
+✔ a non-snake_case tool name is refused (0.060875ms)
+✖ three line copies of one group message run the router once (45.669666ms)
+✖ each chosen persona replies through its own line's handle (31.684959ms)
+✖ the same text after the dedupe window is a new message (62.737583ms)
+✖ a chosen persona whose line got no copy speaks through another line, name-tagged (31.092709ms)
+✔ keyword routing (keyless mode) wakes Social for the beach trip and nobody for small talk (0.985458ms)
+ℹ tests 14
+ℹ suites 0
+ℹ pass 8
+ℹ fail 6
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 375.635959
+
+✖ failing tests:
+
+test at tests/onboarding.test.ts:29:1
+✖ a non-number budget is re-asked once, then defaults to 500 (0.538083ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  2 !== 1
+  
+      at TestContext.<anonymous> (/Users/kerryshi/Projects/hacknc-agents/tests/onboarding.test.ts:31:10)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1062:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:752:18)
+      at Test.postRun (node:internal/test_runner/test:1191:19)
+      at Test.run (node:internal/test_runner/test:1119:12)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:332:3) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 2,
+    expected: 1,
+    operator: 'strictEqual'
+  }
+
+test at tests/persona-loader.test.ts:27:1
+✖ two tools with the same name are refused (0.44725ms)
+  AssertionError [ERR_ASSERTION]: Missing expected exception.
+      at TestContext.<anonymous> (/Users/kerryshi/Projects/hacknc-agents/tests/persona-loader.test.ts:28:10)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1062:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:752:18)
+      at Test.postRun (node:internal/test_runner/test:1191:19)
+      at Test.run (node:internal/test_runner/test:1119:12)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:332:3) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: /two tools are named "get_x"/,
+    operator: 'throws'
+  }
+
+test at tests/router-dedupe.test.ts:41:1
+✖ three line copies of one group message run the router once (45.669666ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  3 !== 1
+  
+      at TestContext.<anonymous> (/Users/kerryshi/Projects/hacknc-agents/tests/router-dedupe.test.ts:44:10)
+      at async Test.run (node:internal/test_runner/test:1069:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:332:3) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 3,
+    expected: 1,
+    operator: 'strictEqual'
+  }
+
+test at tests/router-dedupe.test.ts:48:1
+✖ each chosen persona replies through its own line's handle (31.684959ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  3 !== 1
+  
+      at TestContext.<anonymous> (/Users/kerryshi/Projects/hacknc-agents/tests/router-dedupe.test.ts:51:10)
+      at async Test.run (node:internal/test_runner/test:1069:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:752:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 3,
+    expected: 1,
+    operator: 'strictEqual'
+  }
+
+test at tests/router-dedupe.test.ts:55:1
+✖ the same text after the dedupe window is a new message (62.737583ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  6 !== 2
+  
+      at TestContext.<anonymous> (/Users/kerryshi/Projects/hacknc-agents/tests/router-dedupe.test.ts:60:10)
+      at async Test.run (node:internal/test_runner/test:1069:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:752:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 6,
+    expected: 2,
+    operator: 'strictEqual'
+  }
+
+test at tests/router-dedupe.test.ts:63:1
+✖ a chosen persona whose line got no copy speaks through another line, name-tagged (31.092709ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  2 !== 1
+  
+      at TestContext.<anonymous> (/Users/kerryshi/Projects/hacknc-agents/tests/router-dedupe.test.ts:66:10)
+      at async Test.run (node:internal/test_runner/test:1069:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:752:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 2,
+    expected: 1,
+    operator: 'strictEqual'
+  }

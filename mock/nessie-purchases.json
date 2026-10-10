@@ -1,0 +1,12 @@
+{
+  "_note": "Fake Nessie purchases for MOCK=1. daysAgo 0 = today; time is HH:MM local. Shape mirrors what personas/financial/nessie.ts returns.",
+  "balance": 412.55,
+  "purchases": [
+    { "id": "p1", "merchant": "Harris Teeter", "amount": 42.18, "daysAgo": 3, "time": "18:20", "category": "groceries" },
+    { "id": "p2", "merchant": "DoorDash (Cosmic Cantina)", "amount": 23.40, "daysAgo": 1, "time": "03:12", "category": "delivery" },
+    { "id": "p3", "merchant": "Starbucks", "amount": 6.85, "daysAgo": 1, "time": "10:05", "category": "coffee" },
+    { "id": "p4", "merchant": "Target", "amount": 31.97, "daysAgo": 2, "time": "14:40", "category": "shopping" },
+    { "id": "p5", "merchant": "Sheetz", "amount": 4.29, "daysAgo": 0, "time": "09:15", "category": "energy drink" },
+    { "id": "p6", "merchant": "Uber Eats (Sup Dogs)", "amount": 18.75, "daysAgo": 4, "time": "01:47", "category": "delivery" }
+  ]
+}

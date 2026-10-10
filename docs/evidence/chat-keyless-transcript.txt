@@ -1,0 +1,57 @@
+Canopy chat · LLM=fake · MOCK=1 · state=data/chat-state.json
+
+commands:
+  <text>                   send as the current user
+  as +1919...: <text>      send once as someone else
+  /to academic|financial|social|group   switch chat
+  /as +1919...             switch user
+  /skip                    skip onboarding (budget 600, goal "spring break, $400")
+  /reset                   forget this user (re-onboard)
+  /trigger <persona> <name>   fire a proactive message, e.g. /trigger academic morning_due
+  /who                     show the user profile
+  /quit
+
+(not onboarded yet: say "hi", or /skip)
++19195550001 → Oak> hi
+  [Oak] hey! i'm Oak from Canopy 👋 i've got school, Clover has money, Breeze has plans. quick setup: what's your monthly budget? (just a number, like 600)
++19195550001 → Oak> 800
+  [Oak] got it. what's one thing you're saving for? (e.g. "spring break, $400")
++19195550001 → Oak> spring break, $400
+  [Oak] saving for: spring break, $400. your Canvas is linked ✅ you're all set — ask "what's due this week?" anytime.
++19195550001 → Oak> what's due this week?
+[core] academic: tool get_due_assignments({})
+  [Oak] (fake LLM) get_due_assignments → STOR 435: Problem Set 6, due today 5:00 PM, 20 pts
+ENGL 105: Discussion post: source analysis, due today 11:59 PM, 5 pts
+COMP 421: Project 1: Buffer Pool Manager, due Sunday 11:59 PM, 100 pts
+COMP 577: HW2: Feature Matching, due Tuesday 11:59 PM, 50 pts
+STOR 435: Midterm 2 (EXAM), due Friday 9:30 AM, 100 pts
++19195550001 → Oak> /to financial
++19195550001 → Clover> show my recent purchases
+[core] financial: tool get_recent_purchases({})
+  [Clover] (fake LLM) get_recent_purchases → Balance: $412.55. Monthly budget: $800.
+Last 7 days: 6 purchases, $127.44 total.
+Sheetz $4.29 today 9:15 AM [energy drink]
+Starbucks $6.85 Friday 10:05 AM [coffee]
+DoorDash (Cosmic Cantina) $23.40 Friday 3:12 AM [delivery]
+Target $31.97 Thursday 2:40 PM [shopping]
+Harris Teeter $42.18 Wednesday 6:20 PM [groceries]
+Uber Eats (Sup Dogs) $18.75 Tuesday 1:47 AM [delivery]
++19195550001 → Clover> /to social
++19195550001 → Breeze> anyone down for soccer
+[core] social: tool list_signups({})
+  [Breeze] (fake LLM) list_signups → Beach trip to Wrightsville, Saturday 9 AM: 3 in (Ismail, Abdallah, Priya), ~$45
+Pickup soccer at Hooker Fields, Sunday 4 PM: 3 in (Abdallah, Priya, Sam)
+Boba run on Franklin St, Friday 8 PM: 1 in (Sam), ~$7
++19195550001 → Breeze> /to group
++19195550001 → group chat> I'm going on the beach trip Saturday
+[core] group copies: academic:m7-academic, financial:m7-financial, social:m7-social
+[core] router → [social]
+[core] social: tool list_signups({})
+  [Breeze] (group) (fake LLM) list_signups → Beach trip to Wrightsville, Saturday 9 AM: 3 in (Ismail, Abdallah, Priya), ~$45
+Pickup soccer at Hooker Fields, Sunday 4 PM: 3 in (Abdallah, Priya, Sam)
+Boba run on Franklin St, Friday 8 PM: 1 in (Sam), ~$7
++19195550001 → group chat> lol ok
+[core] group copies: academic:m8-academic, financial:m8-financial, social:m8-social
+[core] router → []
++19195550001 → group chat> /trigger academic morning_due
+  [Oak] (DM) (fake LLM) Morning check-in. 2 things due today: STOR 435 Problem Set 6 at 5:00 PM; ENGL 105 Discussion post: source analysis at 11:59 PM.

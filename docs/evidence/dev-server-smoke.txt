@@ -1,0 +1,17 @@
+Canopy · transport=terminal · LLM=fake · MOCK=1
+personas: academic=Oak, financial=Clover, social=Breeze
+[scheduler] watch=financial every 10000ms; academic.morning_due@08:00, financial.weekly_money@sun 18:00
+commands:
+  <text>                   send as the current user
+  as +1919...: <text>      send once as someone else
+  /to academic|financial|social|group   switch chat
+  /as +1919...             switch user
+  /skip                    skip onboarding (budget 600, goal "spring break, $400")
+  /reset                   forget this user (re-onboard)
+  /trigger <persona> <name>   fire a proactive message, e.g. /trigger academic morning_due
+  /who                     show the user profile
+  /quit
+
+(not onboarded yet: say "hi", or /skip)
+[http] listening on :3999 (POST /demo/trigger, GET /health)
+  [Clover] (DM) (fake LLM) Weekly money check-in. Spent $127.44 across 6 purchases this week. Balance $412.55.

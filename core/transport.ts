@@ -104,8 +104,18 @@ export class SpectrumTransport implements Transport {
     const wait = (this.lastSend.get(o.persona) ?? 0) + SEND_GAP_MS - Date.now();
     if (wait > 0) await new Promise((r) => setTimeout(r, wait));
     this.lastSend.set(o.persona, Date.now());
-    this.recentlySent.push({ text: o.text, at: Date.now() });
-    await space.send(o.text);
+    const text = this.tagged(o);
+    this.recentlySent.push({ text, at: Date.now() });
+    await space.send(text);
+  }
+
+  // One shared number: every persona texts from it, so a proactive DM ("dm:<phone>"; only engine.trigger makes
+  // those) says who it's from, like the group path in engine.ts. Off for a persona with its own *_LINE or
+  // *_PROJECT_ID. Replies to the user's own DM are left alone: they texted that persona.
+  private tagged(o: Outbound): string {
+    const name = this.config.names[o.persona];
+    if (!o.handle.startsWith("dm:") || this.config.lines[o.persona] || this.config.projects[o.persona]) return o.text;
+    return o.text.trimStart().toLowerCase().startsWith(`${name.toLowerCase()}:`) ? o.text : `${name}: ${o.text}`;
   }
 
   private async dmSpace(persona: PersonaId, phone: string): Promise<SendableSpace> {

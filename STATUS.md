@@ -12,12 +12,16 @@ Plan of record: `docs/PLAN.md` (architect). Owners: Kerry = core + Financial, Is
 - Social watch() verified through the real scheduler, keyless (`WATCH=social WATCH_MS=1000`): one DM about 1 s after a join, no repeats.
 - Branches: `academic/canvas` fully merged. `social/matching` has the same social code as main but 7 pre-squash commits:
   Abdallah, start from main before the next PR (`git fetch && git switch -C social/matching origin/main`). kerry/core and fin/nessie deleted.
-- Photon (Abdallah, PR #2): the Pro plan is ONE shared number, invite-only, no dedicated lines; the SDK can't create group
-  chats or say which number a message hit. 325bd69: with no `*_LINE` set, inbound DMs now go to `DEFAULT_PERSONA`
-  (before: always academic); `tests/transport.test.ts`.
-- Proactive DMs on the shared number carry the persona's name (`core/transport.ts` `send`: `Penny: …`; off for a persona with its
-  own `*_LINE`/project; inbound DM replies untagged on purpose), `tests/transport.test.ts`, 7227497. On the shared number leave every
+- Photon (Abdallah, PR #2): the Pro plan is a SHARED POOL, not one number. Each person you add under Users (the allowlist;
+  anyone else gets `Target not allowed`) is routed through a pool number that can differ per person (photon-docs:2425, 4823).
+  The SDK reports every pooled line as `shared`, so it can't tell personas apart by number and can't create group chats.
+  325bd69: with no `*_LINE` set, inbound DMs go to `DEFAULT_PERSONA` (before: always academic); `tests/transport.test.ts`.
+- Proactive DMs on the shared pool carry the persona's name (`core/transport.ts` `send`: `Penny: …`; off for a persona with its
+  own `*_LINE`/project; inbound DM replies untagged on purpose), `tests/transport.test.ts`, 7227497. On the shared pool leave every
   `*_LINE` empty: a set line both drops that persona's tag and routes all inbound to it.
+- Ruling (Kerry, 17:55): the pool doesn't block the demo. Pitch: per-persona numbers + agent-made group chats are a plan-tier
+  upgrade (Business = dedicated lines), not a rewrite. Core already routes by line (`core/transport.ts:62`, `:128`): set
+  `*_LINE` and it works. Never run on dedicated lines, so say "designed for", not "tested on".
 - NOT yet run for real: Gemini (Social join/match has only run keyless, where the fake LLM calls `join_activity({})` and can't join),
   Photon iMessage transport, Canvas, Nessie.
 

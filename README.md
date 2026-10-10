@@ -60,10 +60,16 @@ scheduler ─────────┘      └ router (Gemini JSON, keyword f
 - **Group chat:** each persona's number receives its own copy of every message. Core treats the copies as one message, runs the router once, and each chosen persona replies from its own number.
 - **Proactive:** `watch()` / `triggers` → events → core composes → DM from that persona's number.
 
+**Numbers and plan tiers.** The design above gives each persona its own number, which is Photon's Business plan
+(dedicated lines). For the demo we run on the Pro plan, a shared pool: each tester is added to the project's allowlist and
+gets a pool number, which may differ from person to person, and every persona answers from it. Core is already built for
+dedicated lines: set `ACADEMIC_LINE` / `FINANCIAL_LINE` / `SOCIAL_LINE` and it routes and sends per line, so the upgrade is
+configuration, not code (not yet run on a Business account).
+
 ## Run the real thing (Kerry)
 ```bash
 npm run dev                          # terminal group chat + :3000/demo/trigger + scheduler
-TRANSPORT=imessage npm run dev       # the three Photon lines (needs SPECTRUM_* + *_LINE in .env)
+TRANSPORT=imessage npm run dev       # Photon (needs SPECTRUM_*; add *_LINE on dedicated lines, else DEFAULT_PERSONA answers)
 curl -X POST localhost:3000/demo/trigger -H 'content-type: application/json' \
   -d '{"persona":"academic","name":"morning_due","phone":"+1919..."}'
 ```

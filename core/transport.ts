@@ -60,7 +60,7 @@ export class SpectrumTransport implements Transport {
   }
 
   private personaForLine(line?: string): PersonaId {
-    const hit = (Object.entries(this.config.lines) as [PersonaId, string][]).find(([, l]) => digits(l) === digits(line));
+    const hit = (Object.entries(this.config.lines) as [PersonaId, string][]).find(([, l]) => l && digits(l) === digits(line));
     return hit?.[0] ?? this.config.DEFAULT_PERSONA;
   }
 

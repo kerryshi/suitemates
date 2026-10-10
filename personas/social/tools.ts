@@ -1,17 +1,35 @@
 // Social tools (owner: Abdallah). Sign-ups live on the shared board (board.ts) so every user sees them.
 // Keep list_signups first: the keyless fake LLM calls the first tool whose name words match, with args = {}.
 import type { Ctx, Tool } from "../../core/types.ts";
-import { type Activity, type Board, describe, findActivities, findDuplicate, loadBoard, nameOf, rememberUser, saveBoard, slug } from "./board.ts";
+import {
+  type Activity,
+  type Board,
+  TEXT_MAX,
+  addSignup,
+  clean,
+  describe,
+  findActivities,
+  findDuplicate,
+  loadBoard,
+  matchActivities,
+  nameOf,
+  rememberUser,
+  saveBoard,
+  slug,
+} from "./board.ts";
 
 export type { Activity } from "./board.ts";
 
-const str = (v: unknown) => (typeof v === "string" ? v.trim() : "");
+const str = (v: unknown) => clean(v, TEXT_MAX);
 
 // Resolve the activity the model asked for, or explain what to ask the user.
 function pick(b: Board, query: string): Activity | string {
   const options = b.activities.map((a) => `- ${a.name}, ${a.when}`).join("\n");
   if (!query) return `Which plan? Ask the user to pick one:\n${options}`;
-  const hits = findActivities(b, query);
+  const { hits, how } = matchActivities(b, query);
+  if (how === "day") {
+    return `No plan called "${query}", but on that day there's:\n${hits.map((a) => `- ${a.name}, ${a.when}`).join("\n")}\nAsk if they mean one of these before signing them up.`;
+  }
   if (hits.length === 1) return hits[0];
   if (hits.length === 0) return `No plan matches "${query}". Current plans:\n${options}\nOffer start_activity if they want to start it.`;
   return `"${query}" matches ${hits.length} plans; ask which one:\n${hits.map((a) => `- ${a.name}, ${a.when}`).join("\n")}`;
@@ -64,7 +82,7 @@ const joinActivity: Tool = {
     const matched = crew.length ? ` Matched with: ${crew.join(", ")}.` : " Nobody else yet; they're first.";
     const named = rememberUser(b, ctx, str(args.my_name));
     const already = a.signups.includes(ctx.user.phone);
-    if (!already) a.signups.push(ctx.user.phone);
+    if (!already) addSignup(b, a, ctx.user.phone); // they just heard who's in; watch() texts about people who join after this
     saveBoard(b);
     return `${already ? "Already in" : "Joined"}. ${describe(b, a, ctx)}.${matched}${named ? "" : ASK_NAME}`;
   },
@@ -114,8 +132,9 @@ const startActivity: Tool = {
     const same = args.new_plan === true ? undefined : findDuplicate(b, name);
     if (same) return `Similar plan already exists: ${describe(b, same, ctx)}. Ask if they want to join it (join_activity) or really start a separate one (new_plan true).`;
     const cost = typeof args.cost === "number" && args.cost > 0 ? args.cost : undefined;
-    const a: Activity = { id: slug(name, b.activities), name, when, ...(cost ? { costEstimate: cost } : {}), signups: [ctx.user.phone] };
+    const a: Activity = { id: slug(name, b.activities), name, when, ...(cost ? { costEstimate: cost } : {}), signups: [] };
     b.activities.push(a);
+    addSignup(b, a, ctx.user.phone);
     const named = rememberUser(b, ctx, str(args.my_name));
     saveBoard(b);
     return `Started. ${describe(b, a, ctx)}. Others can join now.${named ? "" : ASK_NAME}`;

@@ -2,6 +2,7 @@
 import type { Persona } from "../../core/types.ts";
 import { loadText } from "../../core/kit.ts";
 import { tools } from "./tools.ts";
+import { triggers, watch } from "./watch.ts";
 
 const social: Persona = {
   id: "social",
@@ -10,7 +11,8 @@ const social: Persona = {
     "Wake me for plans and hanging out: trips, outings, parties, sports, soccer, games, boba, events, weekend plans, " +
     "'anyone down for…', or joining or dropping out of a plan.",
   tools,
-  // watch: TODO(social), e.g. "3 people want pickup soccer Sunday" when a new match forms.
+  watch, // "Jordan joined soccer after you" for plans you're in; "3 people want boba" when a plan takes off without you
+  triggers,
 };
 
 export default social;

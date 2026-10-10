@@ -11,7 +11,7 @@ Sign-ups persist in `data/social.json` (shared by chat + dev). Reset between reh
 - [x] Try the router: `npm run chat -- group`, type `I'm going on the beach trip Saturday`
       (keyless = keyword routing; with GEMINI_API_KEY = the real router using your prompt)
 - [x] Tools: `join_activity` (add the user to a plan), matching people with the same interest
-- [ ] `watch()`: "3 people want pickup soccer Sunday" when a match forms
+- [x] `watch()`: "3 people want pickup soccer Sunday" when a match forms (turn on with `WATCH=financial,social`; on cue: `npm run trigger -- social match`)
 - [ ] Group chat creation + intros (needs a Photon dedicated line; fallback: DM each match the others' names)
 - [ ] Voice in `prompt.md`: hype friend who knows everyone. Activities and outings only.
 - [ ] Social avatar

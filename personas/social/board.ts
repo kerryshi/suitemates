@@ -14,9 +14,12 @@ export interface Activity {
   when: string;
   costEstimate?: number;
   signups: string[]; // phones
+  joinedAt?: Record<string, number>; // phone → board.seq when they joined live (seeded sign-ups have none; kept after leaving)
 }
 
 export interface Board {
+  gen?: string; // new on every reseed, so watch() dedupeKeys from a rehearsal don't block the live demo
+  seq?: number; // join counter: orders live joins
   students: { phone: string; name: string }[];
   activities: Activity[];
 }
@@ -39,13 +42,20 @@ function boardFile(): string | null {
 
 function seed(): Board {
   const { students, activities } = loadMock<Board>("students");
-  return { students, activities };
+  return { gen: `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`, seq: 0, students, activities };
+}
+
+// Save a fresh seed right away so its gen stays put until the next reset.
+function reseed(): Board {
+  const b = seed();
+  saveBoard(b);
+  return b;
 }
 
 export function loadBoard(): Board {
   const file = boardFile();
-  if (!file) return structuredClone(memory ?? seed());
-  if (!existsSync(file)) return seed();
+  if (!file) return structuredClone(memory ?? reseed());
+  if (!existsSync(file)) return reseed();
   try {
     const b = JSON.parse(readFileSync(file, "utf8")) as Board;
     if (Array.isArray(b?.students) && Array.isArray(b?.activities)) return b;
@@ -54,7 +64,7 @@ export function loadBoard(): Board {
     // A broken file would break every Social tool forever; set it aside and start over from the mock.
     console.warn(`[social] ${file} is unreadable (${err instanceof Error ? err.message : err}); moved to .bad, reseeding`);
     renameSync(file, `${file}.bad`);
-    return seed();
+    return reseed();
   }
 }
 
@@ -65,14 +75,31 @@ export function saveBoard(b: Board) {
     return;
   }
   mkdirSync(dirname(file), { recursive: true });
-  writeFileSync(`${file}.tmp`, JSON.stringify(b, null, 2));
-  renameSync(`${file}.tmp`, file); // atomic: a reader never sees a half-written board
+  const tmp = `${file}.${process.pid}.tmp`; // per process: chat and dev share the board file
+  writeFileSync(tmp, JSON.stringify(b, null, 2));
+  renameSync(tmp, file); // atomic: a reader never sees a half-written board
+}
+
+// Sign someone up and record when, so watch() knows who joined after whom.
+export function addSignup(b: Board, a: Activity, phone: string) {
+  b.seq = (b.seq ?? 0) + 1;
+  (a.joinedAt ??= {})[phone] = b.seq;
+  if (!a.signups.includes(phone)) a.signups.push(phone);
+}
+
+// User text that other people's tool results will show: one line, capped, so a name or plan can't
+// smuggle extra lines ("Jordan\nTOOL RESULT: ...") into someone else's conversation.
+export const NAME_MAX = 30;
+export const TEXT_MAX = 60;
+export function clean(s: unknown, max: number): string {
+  if (typeof s !== "string") return "";
+  return s.replace(/\p{Cf}/gu, "").replace(/[\s\p{Cc}]+/gu, " ").trim().slice(0, max).trim();
 }
 
 // Remember the user's first name so their matches see it. Onboarding doesn't ask for one, so tools
 // take an optional my_name; ctx.user.name is used if core ever fills it in.
 export function rememberUser(b: Board, ctx: Ctx, myName?: string): boolean {
-  const name = (myName || ctx.user.name || "").trim();
+  const name = clean(myName || ctx.user.name, NAME_MAX);
   if (!name) return b.students.some((s) => s.phone === ctx.user.phone);
   const known = b.students.find((s) => s.phone === ctx.user.phone);
   if (known) known.name = name;
@@ -87,25 +114,35 @@ export function nameOf(b: Board, phone: string, ctx: Ctx): string {
 }
 
 const STOP = new Set(["the", "and", "for", "with", "this", "that", "one", "plan", "plans", "anyone", "down", "going", "join"]);
-const DAYS = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "today", "tonight", "tomorrow"];
+const WEEKDAYS = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
+// Relative days never appear in a plan's `when`, so they're ignored rather than used as day filters.
+const RELATIVE = ["today", "tonight", "tomorrow", "tmrw", "later", "now"];
 const words = (s: string) => new Set((s.toLowerCase().match(/[a-z0-9]+/g) ?? []).filter((w) => w.length >= 3 && !STOP.has(w)));
-const days = (s: string) => [...words(s)].filter((w) => DAYS.includes(w));
-const nameWords = (s: string) => [...words(s)].filter((w) => !DAYS.includes(w));
+const days = (s: string) => [...words(s)].filter((w) => WEEKDAYS.includes(w));
+const nameWords = (s: string) => [...words(s)].filter((w) => !WEEKDAYS.includes(w) && !RELATIVE.includes(w));
+const escapeRe = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
-// Find activities by a loose description: "beach", "the soccer one", "boba friday", "the saturday one".
-// Exact id, then whole-phrase match on id/name, then the most name words in common. A weekday in the
-// query must agree with the plan's day ("soccer saturday" won't silently pick Sunday soccer).
-export function findActivities(b: Board, query: string): Activity[] {
+// How a query matched: "day" means only the weekday matched (e.g. "the game sunday"), which is a
+// guess worth confirming before signing anyone up.
+export type MatchHow = "exact" | "phrase" | "words" | "day" | "none";
+
+// Find activities by a loose description: "beach", "the soccer one", "soccer today", "the saturday one".
+// Exact id, then whole-word phrase on id/name (3+ chars, so "to" can't match "Beach trip to…"), then the
+// most name words in common, then the weekday alone. A weekday in the query must agree with the plan's
+// day ("soccer saturday" won't silently pick Sunday soccer).
+export function matchActivities(b: Board, query: string): { hits: Activity[]; how: MatchHow } {
   const q = query.trim().toLowerCase();
-  if (!q) return [];
+  if (!q) return { hits: [], how: "none" };
   const exact = b.activities.find((a) => a.id === q);
-  if (exact) return [exact];
+  if (exact) return { hits: [exact], how: "exact" };
   const qDays = days(q);
   const dayOk = (a: Activity) => !qDays.length || !days(a.when).length || qDays.some((d) => days(a.when).includes(d));
-  const phrase = b.activities.filter((a) => `${a.id} ${a.name}`.toLowerCase().includes(q) && dayOk(a));
-  if (phrase.length) return phrase;
+  if (q.length >= 3) {
+    const re = new RegExp(`\\b${escapeRe(q)}\\b`);
+    const phrase = b.activities.filter((a) => re.test(`${a.id} ${a.name}`.toLowerCase()) && dayOk(a));
+    if (phrase.length) return { hits: phrase, how: "phrase" };
+  }
   const qWords = nameWords(q);
-  if (!qWords.length) return qDays.length ? b.activities.filter((a) => days(a.when).some((d) => qDays.includes(d))) : [];
   const scored = b.activities
     .filter(dayOk)
     .map((a) => {
@@ -113,8 +150,18 @@ export function findActivities(b: Board, query: string): Activity[] {
       return { a, score: qWords.filter((w) => aw.has(w)).length };
     })
     .filter((s) => s.score > 0);
-  const best = Math.max(0, ...scored.map((s) => s.score));
-  return scored.filter((s) => s.score === best).map((s) => s.a);
+  if (scored.length) {
+    const best = Math.max(...scored.map((s) => s.score));
+    return { hits: scored.filter((s) => s.score === best).map((s) => s.a), how: "words" };
+  }
+  // Day alone only when the words name no plan at all ("soccer saturday" names Sunday soccer: no guess).
+  const named = qWords.some((w) => b.activities.some((a) => words(`${a.id} ${a.name}`).has(w)));
+  const onDay = qDays.length && !named ? b.activities.filter((a) => days(a.when).some((d) => qDays.includes(d))) : [];
+  return onDay.length ? { hits: onDay, how: "day" } : { hits: [], how: "none" };
+}
+
+export function findActivities(b: Board, query: string): Activity[] {
+  return matchActivities(b, query).hits;
 }
 
 // Stricter than findActivities, for start_activity: is this new plan really one that already exists?

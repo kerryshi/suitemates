@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { affordVerdict, categorize, diffNew, matchActivity, parsePurchaseDate, purchaseFacts } from "../personas/financial/money.ts";
 import { watchWith } from "../personas/financial/watch.ts";
 import financial from "../personas/financial/index.ts";
-import { getPurchases, type Purchase } from "../personas/financial/nessie.ts";
+import { getPurchases, postPurchase, type Purchase } from "../personas/financial/nessie.ts";
 import type { Ctx, UserProfile } from "../core/types.ts";
 import { loadPersonas } from "../core/personas.ts";
 import { keywordRoute } from "../core/router.ts";
@@ -152,6 +152,31 @@ test("a fresh Nessie account (404 on the purchase list) reads as no purchases, o
     globalThis.fetch = realFetch;
     delete process.env.NESSIE_API_KEY;
     delete process.env.NESSIE_ACCOUNT_ID;
+  }
+});
+
+// Live run 2026-10-10: a purchase POSTed without `status` was stored, then every GET of the account's purchases
+// returned 400 ("validation error for Purchase: status field required"), so Penny never saw a purchase again.
+test("a real Nessie purchase is posted with a status, or Nessie can't list the account's purchases afterwards", async () => {
+  const realFetch = globalThis.fetch;
+  process.env.NESSIE_API_KEY = "k";
+  process.env.NESSIE_ACCOUNT_ID = "acct";
+  process.env.NESSIE_MERCHANT_ID = "m";
+  const sent: { url: string; body: Record<string, unknown> }[] = [];
+  try {
+    globalThis.fetch = (async (url: string | URL | Request, init?: RequestInit) => {
+      sent.push({ url: String(url), body: JSON.parse(String(init?.body)) });
+      return new Response('{"code":201,"message":"Created purchase","objectCreated":{"_id":"p1"}}', { status: 201 });
+    }) as typeof fetch;
+    assert.deepEqual(await postPurchase({ merchant: "Sheetz", amount: 4.29, now: new Date(2026, 9, 10, 18, 31) }), { _id: "p1" });
+    assert.equal(sent.length, 1);
+    assert.match(sent[0].url, /\/accounts\/acct\/purchases\?key=k$/);
+    assert.deepEqual(sent[0].body, { merchant_id: "m", medium: "balance", purchase_date: "2026-10-10", amount: 4.29, status: "completed", description: "Sheetz" });
+  } finally {
+    globalThis.fetch = realFetch;
+    delete process.env.NESSIE_API_KEY;
+    delete process.env.NESSIE_ACCOUNT_ID;
+    delete process.env.NESSIE_MERCHANT_ID;
   }
 });
 

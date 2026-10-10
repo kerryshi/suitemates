@@ -1,0 +1,128 @@
+# fail-first: Nessie purchase POST carries a status — 2026-10-10 18:35 EDT, main c281f0b, nessie.ts unchanged
+
+> hacknc-agents@0.1.0 test
+> tsx --test tests/*.test.ts personas/*/*.test.ts
+
+✔ get_due_assignments lists the week soonest first and marks the exam (36.076959ms)
+✔ get_due_assignments respects days (0.278583ms)
+✔ a Saturday plan collides with the Sunday-night deadlines (0.512584ms)
+✔ a clear day says so and still warns about an exam right after (0.272709ms)
+✔ tonight skips what's already past and keeps what's still due (0.173958ms)
+✔ an unreadable day falls back to the next 3 days instead of guessing (0.206458ms)
+✔ planWindow: weekend from a weekday is Sat through Mon; a weekday is that day plus the next (0.484667ms)
+✔ morning_due lists today's two items with one dedupe key per day (0.244041ms)
+✔ watch warns once per assignment due within 24h (0.24ms)
+✔ group chat: a plan with a day wakes Academic, small talk doesn't (0.426417ms)
+✔ proactive facts read as a text to the student (core sends them raw if Gemini fails) (0.182166ms)
+✔ intro introduces Dean once per phone and names the next deadline (0.185417ms)
+✔ join_activity adds the user and names who they matched with (2.726584ms)
+✔ joining twice says already in and doesn't duplicate (0.810667ms)
+✔ join_activity with no or unknown activity lists the plans instead of guessing (0.757708ms)
+✔ leave_activity removes the user (0.655416ms)
+✔ start_activity creates a new plan but refuses a duplicate (2.83275ms)
+✔ find_matches ranks the crew by plans in common and suggests their other plans (0.98775ms)
+✔ find_matches by interest, and with no plans yet (0.560083ms)
+✔ two new phones joining the same plan are matched with each other by name (0.681208ms)
+✔ someone with no name shows as 'someone new' (no phone digits) and the model is told to ask (0.571542ms)
+✔ my_name names a new phone for everyone else (0.491958ms)
+✔ start_activity only blocks real duplicates, and new_plan overrides (1.248791ms)
+✔ findActivities: day words must agree, trip/run still count, no double counting (5.124ms)
+✔ join_activity never signs anyone up on a short or day-only guess (1.282625ms)
+✔ names and plans stay one short line, so they can't inject text into other people's results (0.588208ms)
+✔ a corrupt board file is set aside and reseeded; SOCIAL_FILE is read lazily (1.536417ms)
+✔ keyword routing wakes Social for boba and soccer plans, still nobody for small talk (0.417458ms)
+✔ watch: nothing to say on a fresh board (no texts right after onboarding) (0.205875ms)
+✔ watch: someone joining after you is a match, and it can be resent (no state used up) (0.415125ms)
+✔ watch: the plan's starter hears when the first person joins (two phones matched) (0.220583ms)
+✔ watch: a live join that makes a plan hot is one heads-up, after any matches (0.302917ms)
+✔ watch: leaving a plan doesn't get you a 'taking off without you' text for it (0.220667ms)
+✔ watch: two plans taking off between checks are both offered (the older one isn't dropped) (0.34175ms)
+✔ watch: someone already in a plan from the seed never hears 'you're not in yet' about it (0.178208ms)
+✔ watch: a reseeded board gets new dedupeKeys, so rehearsal texts don't block the live demo (0.643ms)
+✔ the persona exports watch for core (0.472833ms)
+✔ clean caps by code point, so an emoji at the limit is kept whole or dropped, never split (0.236333ms)
+✔ start_activity tells the model when it shortened a long plan name (0.583792ms)
+✔ the on-cue match trigger sends only the newest match; the poll sends all, newest first (0.647708ms)
+✔ watch/cue order by join time, not board order (0.758166ms)
+✔ leaving a plan that doesn't exist asks which one, and never offers to start it (0.497125ms)
+✔ a first name cut to 30 characters is mentioned to the model, from join and start (0.539041ms)
+✔ a comment after an empty value is not the value (the .env.example shape) (1.94075ms)
+✔ comments, quotes and # inside values (0.649333ms)
+✔ a straight copy of .env.example loads every blank key as blank (5.924292ms)
+✔ first poll baselines existing purchases and roasts nothing (1.141167ms)
+✔ a new purchase is roasted exactly once (33.014042ms)
+✔ a burst after downtime roasts at most 3 but marks all seen (0.462959ms)
+✔ a date-only Nessie purchase from today is stamped with the time it was first seen (0.185042ms)
+✔ low balance warns once per day (0.087125ms)
+✔ Nessie YYYY-MM-DD dates parse as local days, not UTC (0.071917ms)
+✔ categories come from the merchant name unless given (0.12725ms)
+✔ afford verdict boundaries: over budget, half of what's left, small (0.064875ms)
+✔ purchase facts carry the numbers the roast needs (0.155375ms)
+✔ a 3 AM delivery order is flagged late night (0.147333ms)
+✔ a real (date-only) purchase from an earlier day is not called late night or given a fake time (0.147667ms)
+✔ a date-only purchase stamped with first-seen time is roasted with that time (0.181833ms)
+✔ purchase roasts go only to the account owner when NESSIE_OWNER_PHONE is set (0.113125ms)
+✔ the weekly check-in also goes only to the account owner when NESSIE_OWNER_PHONE is set (0.6195ms)
+✔ a fresh Nessie account (404 on the purchase list) reads as no purchases, other errors still throw (14.659708ms)
+✖ a real Nessie purchase is posted with a status, or Nessie can't list the account's purchases afterwards (0.98925ms)
+✔ the beach trip matches its cost estimate (0.836917ms)
+✔ keyword routing (keyless mode) wakes Financial for 'how much is the beach trip', nobody for small talk (0.7275ms)
+✔ hi → budget → goal finishes onboarding with Canvas linked (1.107584ms)
+✔ a non-number budget is re-asked once, then defaults to 500 (0.3455ms)
+✔ budget parsing handles $ signs, commas and k (0.121417ms)
+✔ a DM from a new user gets onboarding, not the LLM (2.013041ms)
+✔ all three persona folders satisfy the contract (1.124208ms)
+✔ two tools with the same name are refused (0.657ms)
+✔ a required parameter missing from properties is refused (0.216334ms)
+✔ a persona exported under the wrong id is refused (0.148792ms)
+✔ a non-snake_case tool name is refused (0.163ms)
+✔ finishing onboarding baselines the watchers right away (a buy made just after isn't swallowed) (4.907292ms)
+✔ re-running onboarding (/skip by habit after a buy) delivers the watcher's events instead of discarding them (23.391042ms)
+✔ a proactive text whose LLM call fails sends the plain facts, not a glitch message (0.418292ms)
+✔ the watch poll defaults to 5 s so poll + LLM stays under the 10 s roast goal (2.035667ms)
+✔ three line copies of one group message run the router once (15.06525ms)
+✔ each chosen persona replies through its own line's handle (0.536583ms)
+✔ the same text after the dedupe window is a new message (0.375167ms)
+✔ a chosen persona whose line got no copy speaks through another line, name-tagged (30.359667ms)
+✔ keyword routing (keyless mode) wakes Social for the beach trip and nobody for small talk (0.342792ms)
+✔ one shared number with no *_LINE set routes inbound to DEFAULT_PERSONA, not whichever persona is first (2.133042ms)
+✔ a dedicated line still routes to its persona; an unknown or missing line falls back to DEFAULT_PERSONA (0.30075ms)
+✔ on one shared number a proactive DM says which persona sent it (0.575625ms)
+✔ no tag when that persona has its own line or project, and never twice (0.3675ms)
+✔ replies in the user's own DM or the group are left as they are (proactive only) (0.07975ms)
+✔ a cue with a real phone but no SERVER_URL says on stderr that it only printed (242.664666ms)
+ℹ tests 88
+ℹ suites 0
+ℹ pass 87
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1146.47175
+
+✖ failing tests:
+
+test at tests/financial.test.ts:160:1
+✖ a real Nessie purchase is posted with a status, or Nessie can't list the account's purchases afterwards (0.98925ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+  
+    {
+      amount: 4.29,
+      description: 'Sheetz',
+      medium: 'balance',
+      merchant_id: 'm',
+      purchase_date: '2026-10-10',
+  -   status: 'completed'
+    }
+  
+      at TestContext.<anonymous> (/private/var/folders/mf/f9_qkd4x21l6t1h5hz7gzvfc0000gn/T/hacknc-plan.7aYbKRxyjo/wt-nessie/tests/financial.test.ts:174:12)
+      at async Test.run (node:internal/test_runner/test:1069:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:752:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: { merchant_id: 'm', medium: 'balance', purchase_date: '2026-10-10', amount: 4.29, description: 'Sheetz' },
+    expected: { merchant_id: 'm', medium: 'balance', purchase_date: '2026-10-10', amount: 4.29, status: 'completed', description: 'Sheetz' },
+    operator: 'deepStrictEqual'
+  }
+test exit=1

@@ -2,7 +2,7 @@
 
 Frutiger Aero look, matching the HackNC 2026 theme. `<persona>.png` is the contact photo; `<persona>-icon.png` is the glass-orb icon for the Devpost page and slides.
 
-AI-generated at HackNC on Sat Oct 10 with **Z-Image-Turbo** (Tongyi-MAI, Apache-2.0), run locally on Kerry's RTX 5070: 1024×1024, 9 steps, guidance 0, seed 22, downscaled to 512×512. Kerry picked seed 22 from three seeds per image. Each prompt below is the style template with the persona's description and background filled in.
+AI-generated during HackNC (Sat Oct 10) with **Z-Image-Turbo** (Tongyi-MAI, Apache-2.0), run locally on Kerry's RTX 5070: 1024×1024, 9 steps, guidance 0, seed 22, downscaled to 512×512. Kerry picked seed 22 from three seeds per image. Each prompt below is the style template with the persona's description and background filled in.
 
 ## Contact photos (`<persona>.png`)
 
@@ -32,3 +32,4 @@ AI-generated at HackNC on Sat Oct 10 with **Z-Image-Turbo** (Tongyi-MAI, Apache-
 
 > Frutiger Aero style glossy icon, a shiny translucent glass orb in sunshine yellow and warm orange with a smiling cartoon sun and sparkles floating inside, water droplets and small bubbles around it, bright white highlight reflection across the top of the orb, soft drop shadow, clean white-to-sky-blue gradient background with a soft sun glow, Windows Vista Aqua aesthetic, polished 3D render, centered, square composition. No text, no letters, no logos, no watermark.
 
+The generation script and prompt file are in `generation/` (`gen_avatars.py`, `prompts.json`). The desktop run produced all 18 candidates (3 personas × 2 styles × seeds 11/22/33) between 16:29 and 16:33 EDT on Sat Oct 10. The render settings (bf16 weights with fp8 casting, CPU offload, 9 steps, guidance 0) reuse the Z-Image configuration from Kerry's Oct 3 local benchmark. Like the model weights, that is tool configuration; the script, prompts and images were all made during the event.

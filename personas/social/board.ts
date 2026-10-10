@@ -93,7 +93,8 @@ export const NAME_MAX = 30;
 export const TEXT_MAX = 60;
 export function clean(s: unknown, max: number): string {
   if (typeof s !== "string") return "";
-  return s.replace(/\p{Cf}/gu, "").replace(/[\s\p{Cc}]+/gu, " ").trim().slice(0, max).trim();
+  const one = s.replace(/\p{Cf}/gu, "").replace(/[\s\p{Cc}]+/gu, " ").trim();
+  return [...one].slice(0, max).join("").trim(); // by code point, so an emoji is never cut in half
 }
 
 // Remember the user's first name so their matches see it. Onboarding doesn't ask for one, so tools
@@ -126,7 +127,8 @@ const escapeRe = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 // guess worth confirming before signing anyone up.
 export type MatchHow = "exact" | "phrase" | "words" | "day" | "none";
 
-// Find activities by a loose description: "beach", "the soccer one", "soccer today", "the saturday one".
+// Find activities by a loose description: "beach", "the soccer one", "soccer today". A day alone
+// ("the saturday one") is a "day" guess: join/leave ask the user before acting on it.
 // Exact id, then whole-word phrase on id/name (3+ chars, so "to" can't match "Beach trip to…"), then the
 // most name words in common, then the weekday alone. A weekday in the query must agree with the plan's
 // day ("soccer saturday" won't silently pick Sunday soccer).

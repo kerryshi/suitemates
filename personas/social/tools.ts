@@ -22,13 +22,13 @@ export type { Activity } from "./board.ts";
 
 const str = (v: unknown) => clean(v, TEXT_MAX);
 
-// Resolve the activity the model asked for, or explain what to ask the user.
-function pick(b: Board, query: string): Activity | string {
+// Resolve the activity the model asked for, or explain what to ask the user before `doing` anything.
+function pick(b: Board, query: string, doing: string): Activity | string {
   const options = b.activities.map((a) => `- ${a.name}, ${a.when}`).join("\n");
   if (!query) return `Which plan? Ask the user to pick one:\n${options}`;
   const { hits, how } = matchActivities(b, query);
   if (how === "day") {
-    return `No plan called "${query}", but on that day there's:\n${hits.map((a) => `- ${a.name}, ${a.when}`).join("\n")}\nAsk if they mean one of these before signing them up.`;
+    return `No plan called "${query}", but on that day there's:\n${hits.map((a) => `- ${a.name}, ${a.when}`).join("\n")}\nAsk if they mean one of these before ${doing}.`;
   }
   if (hits.length === 1) return hits[0];
   if (hits.length === 0) return `No plan matches "${query}". Current plans:\n${options}\nOffer start_activity if they want to start it.`;
@@ -76,7 +76,7 @@ const joinActivity: Tool = {
   },
   async run(args, ctx) {
     const b = loadBoard();
-    const a = pick(b, str(args.activity));
+    const a = pick(b, str(args.activity), "signing them up");
     if (typeof a === "string") return a;
     const crew = others(b, a, ctx);
     const matched = crew.length ? ` Matched with: ${crew.join(", ")}.` : " Nobody else yet; they're first.";
@@ -99,7 +99,7 @@ const leaveActivity: Tool = {
   },
   async run(args, ctx) {
     const b = loadBoard();
-    const a = pick(b, str(args.activity));
+    const a = pick(b, str(args.activity), "taking them off");
     if (typeof a === "string") return a;
     if (!a.signups.includes(ctx.user.phone)) return `The user wasn't signed up for ${a.name}.`;
     a.signups = a.signups.filter((p) => p !== ctx.user.phone);
@@ -127,6 +127,7 @@ const startActivity: Tool = {
   async run(args, ctx) {
     const name = str(args.name);
     const when = str(args.when);
+    const cut = [args.name, args.when].some((v) => [...clean(v, 10 * TEXT_MAX)].length > TEXT_MAX);
     if (!name || !when) return "Need a plan name and a day/time. Ask the user what and when.";
     const b = loadBoard();
     const same = args.new_plan === true ? undefined : findDuplicate(b, name);
@@ -137,7 +138,8 @@ const startActivity: Tool = {
     addSignup(b, a, ctx.user.phone);
     const named = rememberUser(b, ctx, str(args.my_name));
     saveBoard(b);
-    return `Started. ${describe(b, a, ctx)}. Others can join now.${named ? "" : ASK_NAME}`;
+    const note = cut ? ` (Name/time shortened to ${TEXT_MAX} characters; tell the user how it was saved.)` : "";
+    return `Started. ${describe(b, a, ctx)}. Others can join now.${note}${named ? "" : ASK_NAME}`;
   },
 };
 

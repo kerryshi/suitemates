@@ -1,4 +1,4 @@
-// The shared sign-up board (owner: Abdallah). ctx.kv is per user, but plans are shared by everyone,
+// The shared sign-up board (owner: Abdullah). ctx.kv is per user, but plans are shared by everyone,
 // so they live in one JSON file (data/social.json, gitignored), seeded from mock/students.json.
 // The file is re-read on every call so `npm run chat` and `npm run dev` see each other's sign-ups.
 // Reset between rehearsals: `rm data/social.json` (chat's /reset doesn't touch it). SOCIAL_FILE overrides the path.

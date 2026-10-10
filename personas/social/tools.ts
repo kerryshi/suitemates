@@ -1,9 +1,10 @@
-// Social tools (owner: Abdallah). Sign-ups live on the shared board (board.ts) so every user sees them.
+// Social tools (owner: Abdullah). Sign-ups live on the shared board (board.ts) so every user sees them.
 // Keep list_signups first: the keyless fake LLM calls the first tool whose name words match, with args = {}.
 import type { Ctx, Tool } from "../../core/types.ts";
 import {
   type Activity,
   type Board,
+  NAME_MAX,
   TEXT_MAX,
   addSignup,
   clean,
@@ -31,7 +32,8 @@ function pick(b: Board, query: string, doing: string): Activity | string {
     return `No plan called "${query}", but on that day there's:\n${hits.map((a) => `- ${a.name}, ${a.when}`).join("\n")}\nAsk if they mean one of these before ${doing}.`;
   }
   if (hits.length === 1) return hits[0];
-  if (hits.length === 0) return `No plan matches "${query}". Current plans:\n${options}\nOffer start_activity if they want to start it.`;
+  const next = doing === "taking them off" ? "Ask which plan they meant." : "Offer start_activity if they want to start it.";
+  if (hits.length === 0) return `No plan matches "${query}". Current plans:\n${options}\n${next}`;
   return `"${query}" matches ${hits.length} plans; ask which one:\n${hits.map((a) => `- ${a.name}, ${a.when}`).join("\n")}`;
 }
 
@@ -40,6 +42,10 @@ const MY_NAME = {
   description: "The user's first name, if they've told you, so their matches know who they are.",
 };
 const ASK_NAME = " (We don't know the user's name, so others see them as 'someone new'. Ask for their first name and pass it as my_name next time.)";
+
+// rememberUser caps my_name at NAME_MAX; tell the model when that cut something, like plan names.
+const nameNote = (v: unknown) =>
+  [...clean(v, 10 * NAME_MAX)].length > NAME_MAX ? ` (First name shortened to ${NAME_MAX} characters; tell the user how it was saved.)` : "";
 
 const others = (b: Board, a: Activity, ctx: Ctx) => a.signups.filter((p) => p !== ctx.user.phone).map((p) => nameOf(b, p, ctx));
 
@@ -84,7 +90,7 @@ const joinActivity: Tool = {
     const already = a.signups.includes(ctx.user.phone);
     if (!already) addSignup(b, a, ctx.user.phone); // they just heard who's in; watch() texts about people who join after this
     saveBoard(b);
-    return `${already ? "Already in" : "Joined"}. ${describe(b, a, ctx)}.${matched}${named ? "" : ASK_NAME}`;
+    return `${already ? "Already in" : "Joined"}. ${describe(b, a, ctx)}.${matched}${nameNote(args.my_name)}${named ? "" : ASK_NAME}`;
   },
 };
 
@@ -139,7 +145,7 @@ const startActivity: Tool = {
     const named = rememberUser(b, ctx, str(args.my_name));
     saveBoard(b);
     const note = cut ? ` (Name/time shortened to ${TEXT_MAX} characters; tell the user how it was saved.)` : "";
-    return `Started. ${describe(b, a, ctx)}. Others can join now.${note}${named ? "" : ASK_NAME}`;
+    return `Started. ${describe(b, a, ctx)}. Others can join now.${note}${nameNote(args.my_name)}${named ? "" : ASK_NAME}`;
   },
 };
 

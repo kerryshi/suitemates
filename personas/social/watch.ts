@@ -1,6 +1,7 @@
-// Proactive texts for Social (owner: Abdallah). Core writes the DM in Social's voice from `facts`;
+// Proactive texts for Social (owner: Abdullah). Core writes the DM in Social's voice from `facts`;
 // if that LLM call fails, core sends `facts` as-is, so they're written to the user ("you").
-// Polled only if "social" is in WATCH (e.g. WATCH=financial,social). On cue: npm run trigger -- social match
+// Polled only if "social" is in WATCH (e.g. WATCH=financial,social). On cue, to a real phone over iMessage:
+// SERVER_URL=http://localhost:3000 npm run trigger -- social match +1<phone> (without SERVER_URL it only prints).
 // Use the poll OR the cue in a demo, not both: the cue is forced, so it resends what the poll already sent.
 // Stateless on purpose: who-joined-after-whom lives on the shared board (joinedAt), and core's dedupeKey
 // claim makes each text go out once, while the forced demo trigger can always resend it.

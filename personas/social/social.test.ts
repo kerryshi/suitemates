@@ -36,7 +36,7 @@ beforeEach(() => {
 test("join_activity adds the user and names who they matched with", async () => {
   const out = await run("join_activity", { activity: "beach trip" });
   assert.match(out, /^Joined\. Beach trip to Wrightsville/);
-  assert.match(out, /Matched with: Ismail, Abdallah, Priya/);
+  assert.match(out, /Matched with: Ismail, Abdullah, Priya/);
   assert.ok(signups("beach").includes(ME));
 });
 
@@ -73,13 +73,13 @@ test("find_matches ranks the crew by plans in common and suggests their other pl
   await run("join_activity", { activity: "soccer" });
   const out = await run("find_matches", {});
   const lines = out.split("\n");
-  assert.match(lines[0], /^Abdallah: 2 plans in common/);
+  assert.match(lines[0], /^Abdullah: 2 plans in common/);
   assert.match(lines[1], /^Priya: 2 plans in common/);
   assert.match(out, /Plans their crew is in that they aren't:\nBoba run on Franklin St, Friday 8 PM: Sam/);
 });
 
 test("find_matches by interest, and with no plans yet", async () => {
-  assert.match(await run("find_matches", { interest: "soccer" }), /Pickup soccer.*Abdallah, Priya, Sam \(user not in yet\)/);
+  assert.match(await run("find_matches", { interest: "soccer" }), /Pickup soccer.*Abdullah, Priya, Sam \(user not in yet\)/);
   assert.match(await run("find_matches", {}), /isn't in any plans yet\. Most popular:\nBeach trip/);
 });
 
@@ -203,7 +203,7 @@ test("watch: someone joining after you is a match, and it can be resent (no stat
   await run("join_activity", { activity: "soccer", my_name: "Jordan" }, ctx(NEW));
   const first = await watch(ctx());
   assert.deepEqual(kinds(first), ["match"]);
-  assert.equal(first[0].facts, "Jordan joined Pickup soccer at Hooker Fields (Sunday 4 PM) after you. Now 5 in: Abdallah, Priya, Sam, you, Jordan.");
+  assert.equal(first[0].facts, "Jordan joined Pickup soccer at Hooker Fields (Sunday 4 PM) after you. Now 5 in: Abdullah, Priya, Sam, you, Jordan.");
   assert.match(first[0].dedupeKey, new RegExp(`^social:match:[a-z0-9]+:\\${ME}:soccer:\\${NEW}$`));
   assert.deepEqual(await watch(ctx()), first);
   assert.deepEqual(await triggers.match(ctx()), first);
@@ -293,4 +293,32 @@ test("the on-cue match trigger sends only the newest match; the poll sends all, 
   const cued = await triggers.match(ctx());
   assert.equal(cued.length, 1);
   assert.deepEqual(cued[0], polled[0]);
+});
+
+// Ported from Kerry's PR #3: the newest join is on the later-listed plan, so board order would give
+// [Jordan, Riley] and only the newest-first sort gives [Riley, Jordan].
+test("watch/cue order by join time, not board order", async () => {
+  await run("join_activity", { activity: "soccer" });
+  await run("join_activity", { activity: "boba" });
+  await run("join_activity", { activity: "soccer", my_name: "Jordan" }, ctx(NEW));
+  await run("join_activity", { activity: "boba", my_name: "Riley" }, ctx(THIRD)); // newest, on the later-listed plan
+  const who = (ev: { facts: string }[]) => ev.map((e) => e.facts.split(" joined")[0]);
+  assert.deepEqual(who(await watch(ctx())), ["Riley", "Jordan"]); // the poll still hears about both, newest first
+  const cue = await triggers.match(ctx());
+  assert.deepEqual(who(cue), ["Riley"]);
+  assert.deepEqual(await triggers.match(ctx()), cue); // cueing again sends the same one text, not a burst
+});
+
+test("leaving a plan that doesn't exist asks which one, and never offers to start it", async () => {
+  const out = await run("leave_activity", { activity: "skydiving" });
+  assert.match(out, /No plan matches "skydiving"[\s\S]*Ask which plan they meant\.$/);
+  assert.doesNotMatch(out, /start_activity/);
+  assert.match(await run("join_activity", { activity: "skydiving" }), /Offer start_activity/);
+});
+
+test("a first name cut to 30 characters is mentioned to the model, from join and start", async () => {
+  const long = "J".repeat(40);
+  assert.match(await run("join_activity", { activity: "boba", my_name: long }, ctx(NEW)), /First name shortened to 30 characters/);
+  assert.match(await run("start_activity", { name: "Tennis at Cobb", when: "Sunday 2 PM", my_name: long }), /First name shortened to 30 characters/);
+  assert.doesNotMatch(await run("join_activity", { activity: "beach", my_name: "Jordan" }, ctx(THIRD)), /shortened/);
 });

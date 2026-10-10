@@ -81,12 +81,14 @@ export async function getBalance(ctx: Ctx): Promise<number> {
 }
 
 // Real Nessie only. The merchant is a single demo merchant; the description carries the store name.
+// `status` is required: Nessie stores a purchase without it, then 400s every GET of the account's purchases.
 export async function postPurchase(p: { merchant: string; amount: number; now: Date }): Promise<{ _id: string }> {
   return nessie("POST", `/accounts/${accountId()}/purchases`, {
     merchant_id: merchantId(),
     medium: "balance",
     purchase_date: ymd(p.now),
     amount: p.amount,
+    status: "completed",
     description: p.merchant,
   });
 }

@@ -1,4 +1,4 @@
-// Social persona (owner: Abdallah). Abdallah also owns router-prompt.md (the group chat router).
+// Social persona (owner: Abdullah). Abdullah also owns router-prompt.md (the group chat router).
 import type { Persona } from "../../core/types.ts";
 import { loadText } from "../../core/kit.ts";
 import { tools } from "./tools.ts";

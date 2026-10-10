@@ -1,0 +1,47 @@
+# green: after round-2 residual fixes — Sat Oct 10 16:43:42 EDT 2026
+
+> hacknc-agents@0.1.0 test
+> tsx --test tests/*.test.ts
+
+✔ first poll baselines existing purchases and roasts nothing (0.88325ms)
+✔ a new purchase is roasted exactly once (19.383166ms)
+✔ a burst after downtime roasts at most 3 but marks all seen (2.065708ms)
+✔ a date-only Nessie purchase from today is stamped with the time it was first seen (0.233667ms)
+✔ low balance warns once per day (0.096667ms)
+✔ Nessie YYYY-MM-DD dates parse as local days, not UTC (0.07825ms)
+✔ categories come from the merchant name unless given (0.136042ms)
+✔ afford verdict boundaries: over budget, half of what's left, small (0.071625ms)
+✔ purchase facts carry the numbers the roast needs (0.147459ms)
+✔ a 3 AM delivery order is flagged late night (0.139375ms)
+✔ a real (date-only) purchase from an earlier day is not called late night or given a fake time (0.20225ms)
+✔ a date-only purchase stamped with first-seen time is roasted with that time (0.254041ms)
+✔ purchase roasts go only to the account owner when NESSIE_OWNER_PHONE is set (0.136834ms)
+✔ the weekly check-in also goes only to the account owner when NESSIE_OWNER_PHONE is set (0.931417ms)
+✔ a fresh Nessie account (404 on the purchase list) reads as no purchases, other errors still throw (12.897959ms)
+✔ the beach trip matches its cost estimate (0.607958ms)
+✔ hi → budget → goal finishes onboarding with Canvas linked (0.518917ms)
+✔ a non-number budget is re-asked once, then defaults to 500 (0.150833ms)
+✔ budget parsing handles $ signs, commas and k (0.054834ms)
+✔ a DM from a new user gets onboarding, not the LLM (0.309125ms)
+✔ all three persona folders satisfy the contract (0.852875ms)
+✔ two tools with the same name are refused (0.268958ms)
+✔ a required parameter missing from properties is refused (0.08575ms)
+✔ a persona exported under the wrong id is refused (0.058791ms)
+✔ a non-snake_case tool name is refused (0.063459ms)
+✔ finishing onboarding baselines the watchers right away (a buy made just after isn't swallowed) (1.257083ms)
+✔ re-running onboarding (/skip by habit after a buy) delivers the watcher's events instead of discarding them (12.754708ms)
+✔ a proactive text whose LLM call fails sends the plain facts, not a glitch message (0.333125ms)
+✔ the watch poll defaults to 5 s so poll + LLM stays under the 10 s roast goal (2.0555ms)
+✔ three line copies of one group message run the router once (17.551416ms)
+✔ each chosen persona replies through its own line's handle (0.506083ms)
+✔ the same text after the dedupe window is a new message (0.397625ms)
+✔ a chosen persona whose line got no copy speaks through another line, name-tagged (30.092625ms)
+✔ keyword routing (keyless mode) wakes Social for the beach trip and nobody for small talk (0.350458ms)
+ℹ tests 34
+ℹ suites 0
+ℹ pass 34
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 294.157542

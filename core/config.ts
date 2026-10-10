@@ -37,6 +37,7 @@ const Env = z.object({
 
   NESSIE_API_KEY: opt,
   NESSIE_ACCOUNT_ID: opt,
+  NESSIE_OWNER_PHONE: opt, // read by personas/financial: only this phone gets purchase/weekly texts
   CANVAS_TOKEN: opt,
   CANVAS_BASE_URL: str.default("https://uncch.instructure.com"),
 

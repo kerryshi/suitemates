@@ -15,12 +15,13 @@ export interface WatchDeps {
 }
 
 const digits = (s?: string) => (s ?? "").replace(/\D/g, "").slice(-10);
+const isOwner = (phone: string, owner = process.env.NESSIE_OWNER_PHONE) => !owner || digits(owner) === digits(phone);
 
 // Polled every WATCH_MS (financial is in WATCH by default). One event per NEW purchase; core
 // texts the user in Penny's voice from `facts`. The first poll only records what's already there.
 export async function watchWith(ctx: Ctx, deps: WatchDeps): Promise<WatchEvent[]> {
   // One demo bank account: without this, every onboarded user is texted about every purchase.
-  if (deps.owner && digits(deps.owner) !== digits(ctx.user.phone)) return [];
+  if (!isOwner(ctx.user.phone, deps.owner ?? "")) return [];
   const all = await deps.getPurchases(ctx);
   const balance = await deps.getBalance(ctx);
   const { baselined, fresh, seen } = diffNew(ctx.kv.get<string[]>(SEEN_KEY), all);
@@ -53,6 +54,7 @@ export const watch = (ctx: Ctx) => watchWith(ctx, { getPurchases, getBalance, ow
 export const triggers = {
   // Scheduled at WEEKLY_AT, and fired on cue with: npm run trigger -- financial weekly_money
   async weekly_money(ctx: Ctx): Promise<WatchEvent[]> {
+    if (!isOwner(ctx.user.phone)) return []; // the account's numbers go to its owner only
     const weekAgo = ctx.now.getTime() - 7 * 86_400_000;
     const week = (await getPurchases(ctx)).filter((p) => p.at.getTime() >= weekAgo && p.at <= ctx.now);
     const spent = week.reduce((s, p) => s + p.amount, 0);

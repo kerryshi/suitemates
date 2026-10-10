@@ -50,8 +50,8 @@ export class Engine {
       const n = this.d.config.names;
       const r = onboard(user, ev.text ?? "", { me: ev.persona, product: this.d.config.PRODUCT_NAME, ...n });
       this.d.store.saveUser(r.user);
-      if (r.user.onboardingStep === "done") await this.onboarded(r.user.phone);
-      return [{ persona: ev.persona, handle: ev.handle, text: r.reply }];
+      const extra = r.user.onboardingStep === "done" ? await this.onboarded(r.user.phone) : [];
+      return [{ persona: ev.persona, handle: ev.handle, text: r.reply }, ...extra];
     }
     const text = await this.reply(ev.persona, user, ev.text ?? "", ev.image, "dm");
     return [{ persona: ev.persona, handle: ev.handle, text }];
@@ -103,17 +103,19 @@ export class Engine {
 
   // Run each watcher once as soon as a user is onboarded, so its first poll (the baseline that
   // records what already exists) happens now, not up to WATCH_MS later. Otherwise a purchase made
-  // right after "you're all set" would be counted as pre-existing and never roasted.
-  async onboarded(phone: string): Promise<void> {
+  // right after "you're all set" would be counted as pre-existing and never roasted. Runs through
+  // trigger(), so if it isn't the first poll (e.g. /skip again after a buy) the events are delivered.
+  async onboarded(phone: string): Promise<Outbound[]> {
+    const out: Outbound[] = [];
     for (const id of this.d.config.watchList ?? []) {
-      const persona = this.d.personas.get(id);
-      if (!persona?.watch) continue;
+      if (!this.d.personas.get(id)?.watch) continue;
       try {
-        await persona.watch(this.ctx(id, this.d.store.user(phone)));
+        out.push(...(await this.trigger(id, "watch", { phone })));
       } catch (err) {
         this.log(`WARN ${id} baseline at onboarding failed: ${err instanceof Error ? err.message : err}`);
       }
     }
+    return out;
   }
 
   // Proactive: run a persona's named trigger (or "watch") and turn its events into DMs.

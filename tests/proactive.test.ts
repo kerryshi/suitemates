@@ -26,10 +26,26 @@ test("finishing onboarding baselines the watchers right away (a buy made just af
   const calls: string[] = [];
   const watched: Persona = { id: "financial", prompt: "p", routerLine: "r", tools: [], watch: async (ctx) => (calls.push(ctx.user.phone), []) };
   const engine = engineWith(watched, okLlm);
-  for (const text of ["hi", "800", "spring break, $400"]) {
+  for (const text of ["hi", "800"]) {
     await engine.handle({ persona: "financial", kind: "dm", sender: "+5", text, handle: "h", messageId: text });
   }
+  assert.equal(calls.length, 0, "no baseline before onboarding is done");
+  await engine.handle({ persona: "financial", kind: "dm", sender: "+5", text: "spring break, $400", handle: "h", messageId: "3" });
   assert.deepEqual(calls, ["+5"]);
+});
+
+test("re-running onboarding (/skip by habit after a buy) delivers the watcher's events instead of discarding them", async () => {
+  let polls = 0;
+  const watched: Persona = {
+    id: "financial", prompt: "p", routerLine: "r", tools: [],
+    watch: async (ctx) => (++polls === 1 ? [] : [{ kind: "purchase", userPhone: ctx.user.phone, facts: "New purchase: Sheetz $4.29.", dedupeKey: `k${polls}` }]),
+  };
+  const store = new Store(null);
+  store.saveUser({ phone: "+5", canvasLinked: true, onboardingStep: "done" });
+  const engine = engineWith(watched, okLlm, store);
+  assert.deepEqual(await engine.onboarded("+5"), []); // baseline
+  const out = await engine.onboarded("+5"); // a purchase landed in between
+  assert.deepEqual(out, [{ persona: "financial", handle: "dm:+5", text: "roast" }]);
 });
 
 test("a proactive text whose LLM call fails sends the plain facts, not a glitch message", async () => {

@@ -127,6 +127,16 @@ test("purchase roasts go only to the account owner when NESSIE_OWNER_PHONE is se
   assert.equal(mine.length, 1); // low balance for the owner
 });
 
+test("the weekly check-in also goes only to the account owner when NESSIE_OWNER_PHONE is set", async () => {
+  process.env.NESSIE_OWNER_PHONE = "+19195550002";
+  try {
+    assert.deepEqual(await financial.triggers!.weekly_money(ctxWith()), []);
+  } finally {
+    delete process.env.NESSIE_OWNER_PHONE;
+  }
+  assert.equal((await financial.triggers!.weekly_money(ctxWith())).length, 1);
+});
+
 test("a fresh Nessie account (404 on the purchase list) reads as no purchases, other errors still throw", async () => {
   const realFetch = globalThis.fetch;
   process.env.NESSIE_API_KEY = "k";

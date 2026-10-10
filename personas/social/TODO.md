@@ -15,3 +15,8 @@ Sign-ups persist in `data/social.json` (shared by chat + dev). Reset between reh
 - [ ] Group chat creation + intros (needs a Photon dedicated line; fallback: DM each match the others' names)
 - [ ] Voice in `prompt.md`: hype friend who knows everyone. Activities and outings only.
 - [ ] Social avatar
+
+## Sign-up flow (see docs/SIGNUP-PLAN.md), added by Ismail
+- [ ] Sunny `intro` trigger: introduce + the plan that matches their interests
+- [ ] Use `user.interests` from sign-up on the board
+- [ ] Create the group chat by hand in iMessage; write the steps in STATUS

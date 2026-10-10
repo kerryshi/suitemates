@@ -15,7 +15,7 @@ if (args[0] === "--reset") {
 const [merchant, rawAmount, category] = args;
 const amount = Number((rawAmount ?? "").replace(/[$,]/g, ""));
 if (!merchant || !(amount > 0)) {
-  console.error('usage: npm run buy -- "<merchant>" <amount> [category]   e.g. npm run buy -- Sheetz 4.29');
+  console.error('usage: npm run buy -- "<merchant>" <amount> [category]   e.g. npm run buy -- Sheetz 4 (MOCK=0: whole dollars, Nessie drops cents)');
   process.exit(1);
 }
 

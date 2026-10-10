@@ -30,13 +30,15 @@ Plan of record: `docs/PLAN.md` (architect). Owners: Kerry = core + Financial, Is
   confirmed on the phone. Group chat over iMessage is untested.
 - Nessie verified live 18:36 (PR #9, `docs/evidence/nessie-live-run.txt`): `npm run buy` → GET 200 → one Penny event 2 s later,
   console transport, FAKE_LLM=1. Needed PR #8: a purchase POSTed without `status` made every later GET 400, and Nessie has no
-  DELETE route, so the first sandbox account is abandoned (`data/nessie.json.poisoned`). Nessie drops cents (open question).
+  DELETE route, so the first sandbox account is abandoned (`data/nessie.json.poisoned`). Nessie drops cents: demo uses whole dollars.
 - Gemini: Kerry's key is valid (first call returned a correct functionCall) but every call after that gets 429 quota exceeded on
   gemini-3.6-flash and 3.5-flash, even after 65 s idle. A key- or project-level limit; Kerry is getting a better key. No Gemini calls until then.
 - NOT yet run for real: Gemini (Social join/match has only run keyless, where the fake LLM calls `join_activity({})` and can't join),
   iMessage group chat, Canvas.
 
 ## Demo runbook
+- Penny purchase on real Nessie: `MOCK=0 npm run buy -- Sheetz 4`. Whole dollars only (ruling 2026-10-10, Kerry): the sandbox stores
+  $4.29 as $4 and the seed balance reads $412.00. If a judge asks, it's a sandbox limit.
 - `rm data/social.json` before each rehearsal (chat's `/reset` doesn't touch the sign-up board); `rm data/chat-state.json` to re-onboard.
 - Social match texts: scheduler (`WATCH=financial,social`) OR the cue, never both. Cue, with `npm run dev` up:
   `SERVER_URL=http://localhost:3000 npm run trigger -- social match +1<real phone>`. Without `SERVER_URL` the trigger runs in-process
@@ -59,8 +61,6 @@ Plan of record: `docs/PLAN.md` (architect). Owners: Kerry = core + Financial, Is
    whether a group thread reaches us when members are routed through different pool numbers (Photon bullet above).
 
 ## Open questions
-- Nessie drops cents: `buy -- Sheetz 4.29` is stored as $4 and the $412.55 seed balance reads back as $412.00, so Penny says
-  "Sheetz $4.00". Demo with whole-dollar buys (`npm run buy -- Sheetz 4`), or change how amounts are posted? Product call.
 - `getPurchases` tolerates only 404 (`personas/financial/nessie.ts:58-61`): any other Nessie error logs on every poll. Follow-up.
 - Someone who onboards after a plan already hit 3 gets Sunny's hot_plan text right with "you're all set" (onboarding runs
   watch() and delivers). Keep as a demo beat, or suppress?

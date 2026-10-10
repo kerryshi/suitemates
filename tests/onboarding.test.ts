@@ -6,17 +6,18 @@ import { Store } from "../core/store.ts";
 import { loadPersonas } from "../core/personas.ts";
 import type { UserProfile } from "../core/types.ts";
 
-const n = { me: "academic" as const, product: "Canopy", academic: "Oak", financial: "Clover", social: "Breeze" };
-const run = (...texts: string[]) => {
+const n = { me: "financial" as const, product: "Canopy", academic: "Oak", financial: "Clover", social: "Breeze" };
+const runAs = (me: "academic" | "financial", ...texts: string[]) => {
   let u: UserProfile = { phone: "+1", canvasLinked: false, onboardingStep: 0 };
   const replies: string[] = [];
   for (const t of texts) {
-    const r = onboard(u, t, n);
+    const r = onboard(u, t, { ...n, me });
     u = r.user;
     replies.push(r.reply);
   }
   return { u, replies };
 };
+const run = (...texts: string[]) => runAs("financial", ...texts);
 
 test("hi → budget → goal finishes onboarding with Canvas linked", () => {
   const { u } = run("hi", "800", "spring break, $400");
@@ -33,6 +34,14 @@ test("a non-number budget is re-asked once, then defaults to 500", () => {
   const twice = run("hi", "lots", "idk");
   assert.equal(twice.u.budgetMonthly, 500);
   assert.equal(twice.u.onboardingStep, 2);
+});
+
+test("Academic asks only for Canvas, and any answer links the demo Canvas", () => {
+  const { u, replies } = runAs("academic", "hi", "literally anything");
+  assert.match(replies[0], /i'm Oak from Canopy.*Canvas login/);
+  assert.doesNotMatch(replies.join(" "), /budget|saving/);
+  assert.equal(u.canvasLinked, true);
+  assert.equal(u.onboardingStep, "done");
 });
 
 test("budget parsing handles $ signs, commas and k", () => {

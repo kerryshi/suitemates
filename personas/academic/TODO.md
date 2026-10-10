@@ -23,3 +23,9 @@ Already working (keyless): `MOCK=1 npm run chat -- academic` then type `what's d
 - [x] `intro` trigger: Dean texts first after sign-up (`/demo/trigger?persona=academic&name=intro&phone=…`)
 - [ ] `web/index.html` sign-up page → `POST /signup` (needs Kerry's endpoint)
 - [ ] Canvas layer prep: per-user token (`ctx.user.canvasToken`) → env `CANVAS_TOKEN` → mock
+
+## Fake Canvas + school-only setup (Sat night)
+- [x] `mock-canvas.json`: 4 classes with grades, graded assignments/quizzes/exams, this week's assignments + quizzes, exams soon
+- [x] `get_grades` tool; `get_due_assignments` takes `kind` (assignment | quiz | exam)
+- [x] Dean's first-text setup asks only for Canvas (any answer links the mock) — change in `core/onboarding.ts`, tell Kerry
+- [ ] Side item, NOT now: syllabus parser (paste/upload a syllabus → exam dates, grading weights)

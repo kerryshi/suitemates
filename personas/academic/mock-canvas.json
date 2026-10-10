@@ -1,0 +1,31 @@
+{
+  "_note": "Fake Canvas for MOCK=1 (Academic only). Dates are relative so the demo works any day: dueInDays 0 = today, dueWeekday \"sun\" = the coming Sunday, daysAgo 3 = three days ago. time is HH:MM local. score = points earned (graded work only). type: assignment | quiz | exam | discussion.",
+  "courses": [
+    { "code": "COMP 421", "name": "Files and Databases", "grade": 91.4 },
+    { "code": "STOR 435", "name": "Intro to Probability", "grade": 84.7 },
+    { "code": "COMP 577", "name": "Computer Vision", "grade": 88.9 },
+    { "code": "ENGL 105", "name": "Writing at the Research University", "grade": 95.2 }
+  ],
+  "assignments": [
+    { "id": "g1", "course": "COMP 421", "name": "Midterm 1", "type": "exam", "daysAgo": 18, "time": "14:00", "points": 100, "score": 87 },
+    { "id": "g2", "course": "COMP 421", "name": "HW3: SQL Queries", "type": "assignment", "daysAgo": 9, "points": 50, "score": 46 },
+    { "id": "g3", "course": "COMP 421", "name": "Quiz 3", "type": "quiz", "daysAgo": 4, "time": "10:00", "points": 10, "score": 9 },
+    { "id": "g4", "course": "STOR 435", "name": "Midterm 1", "type": "exam", "daysAgo": 20, "time": "09:30", "points": 100, "score": 78 },
+    { "id": "g5", "course": "STOR 435", "name": "Problem Set 5", "type": "assignment", "daysAgo": 6, "time": "17:00", "points": 20, "score": 17 },
+    { "id": "g6", "course": "STOR 435", "name": "Quiz 4", "type": "quiz", "daysAgo": 3, "time": "09:30", "points": 10, "score": 7 },
+    { "id": "g7", "course": "COMP 577", "name": "HW1: Image Filtering", "type": "assignment", "daysAgo": 12, "points": 50, "score": 44 },
+    { "id": "g8", "course": "COMP 577", "name": "Quiz 2", "type": "quiz", "daysAgo": 5, "time": "13:00", "points": 10, "score": 8 },
+    { "id": "g9", "course": "ENGL 105", "name": "Essay 1: Literacy Narrative", "type": "assignment", "daysAgo": 14, "points": 100, "score": 96 },
+    { "id": "g10", "course": "ENGL 105", "name": "Discussion post: peer review", "type": "discussion", "daysAgo": 7, "points": 5, "score": 5 },
+
+    { "id": "a1", "course": "STOR 435", "name": "Problem Set 6", "type": "assignment", "dueInDays": 0, "time": "17:00", "points": 20 },
+    { "id": "a2", "course": "ENGL 105", "name": "Discussion post: source analysis", "type": "discussion", "dueInDays": 0, "time": "23:59", "points": 5 },
+    { "id": "q1", "course": "COMP 421", "name": "Quiz 4", "type": "quiz", "dueInDays": 2, "time": "10:00", "points": 10 },
+    { "id": "a3", "course": "COMP 421", "name": "Project 1: Buffer Pool Manager", "type": "assignment", "dueWeekday": "sun", "time": "23:59", "points": 100 },
+    { "id": "a4", "course": "COMP 577", "name": "HW2: Feature Matching", "type": "assignment", "dueInDays": 3, "time": "23:59", "points": 50 },
+    { "id": "q2", "course": "COMP 577", "name": "Quiz 3", "type": "quiz", "dueInDays": 4, "time": "13:00", "points": 10 },
+    { "id": "a6", "course": "ENGL 105", "name": "Essay 2 draft", "type": "assignment", "dueInDays": 5, "time": "23:59", "points": 50 },
+    { "id": "a5", "course": "STOR 435", "name": "Midterm 2", "type": "exam", "dueInDays": 6, "time": "09:30", "points": 100 },
+    { "id": "e2", "course": "COMP 421", "name": "Midterm 2", "type": "exam", "dueInDays": 9, "time": "14:00", "points": 100 }
+  ]
+}

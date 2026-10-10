@@ -1,6 +1,7 @@
-// Academic tools, triggers and routing over mock/canvas.json. Run: npx tsx --test personas/academic/*.test.ts
+// Academic tools, triggers and routing over mock-canvas.json. Run: npx tsx --test personas/academic/*.test.ts
 // "now" is pinned to Thursday 2026-10-08 10:00 local, so the mock's relative dates land on:
-//   today (Thu): STOR 435 PS6 17:00, ENGL 105 post 23:59 · Sun: COMP 421 Project 1, COMP 577 HW2 · next Wed 9:30: STOR 435 Midterm 2
+//   Thu: STOR 435 PS6 17:00, ENGL 105 post 23:59 · Sat: COMP 421 Quiz 4 · Sun: COMP 421 Project 1, COMP 577 HW2
+//   Mon: COMP 577 Quiz 3 · Tue: ENGL 105 Essay 2 draft · Wed 9:30: STOR 435 Midterm 2 · Sat 10/17: COMP 421 Midterm 2
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import type { Ctx } from "../../core/types.ts";
@@ -26,9 +27,9 @@ const run = (name: string, args: Record<string, unknown> = {}) => tools.find((t)
 
 test("get_due_assignments lists the week soonest first and marks the exam", async () => {
   const lines = (await run("get_due_assignments")).split("\n");
-  assert.equal(lines.length, 5);
+  assert.equal(lines.length, 8);
   assert.match(lines[0], /^STOR 435: Problem Set 6, due today 5:00 PM, 20 pts$/);
-  assert.match(lines[4], /^STOR 435: Midterm 2 \(EXAM\), due Wednesday 9:30 AM/);
+  assert.match(lines[7], /^STOR 435: Midterm 2 \(EXAM\), due Wednesday 9:30 AM/);
 });
 
 test("get_due_assignments respects days", async () => {
@@ -46,9 +47,34 @@ test("a Saturday plan collides with the Sunday-night deadlines", async () => {
 });
 
 test("a clear day says so and still warns about an exam right after", async () => {
-  const out = await run("check_plan_conflicts", { day: "monday" });
+  const out = await run("check_plan_conflicts", { day: "2026-10-15" });
   assert.match(out, /Nothing due during it or right after\. Clear\./);
-  assert.match(out, /Exam coming up after: STOR 435: Midterm 2 \(EXAM\)/);
+  assert.match(out, /Exam coming up after: COMP 421: Midterm 2 \(EXAM\)/);
+});
+
+test("kind filters to this week's quizzes, or exams over two weeks", async () => {
+  assert.deepEqual((await run("get_due_assignments", { kind: "quiz" })).split("\n"), [
+    "COMP 421: Quiz 4 (QUIZ), due Saturday 10:00 AM, 10 pts",
+    "COMP 577: Quiz 3 (QUIZ), due Monday 1:00 PM, 10 pts",
+  ]);
+  const exams = await run("get_due_assignments", { kind: "exam", days: 14 });
+  assert.match(exams, /^STOR 435: Midterm 2 \(EXAM\).*\nCOMP 421: Midterm 2 \(EXAM\)/);
+  assert.equal(await run("get_due_assignments", { kind: "exam", days: 1 }), "No exams due in the next 1 days.");
+});
+
+test("get_grades shows every class grade with its graded work", async () => {
+  const out = await run("get_grades");
+  assert.match(out, /^COMP 421 Files and Databases: 91\.4%\n  - Quiz 3 \(QUIZ\): 9\/10/);
+  assert.match(out, /STOR 435 Intro to Probability: 84\.7%/);
+  assert.match(out, /  - Midterm 1 \(EXAM\): 78\/100/);
+  assert.equal(out.match(/%/g)?.length, 4);
+});
+
+test("get_grades for one class, and an unknown class lists the real ones", async () => {
+  const one = await run("get_grades", { course: "comp421" });
+  assert.match(one, /^COMP 421/);
+  assert.doesNotMatch(one, /STOR 435/);
+  assert.match(await run("get_grades", { course: "BIOL 101" }), /No class matching "BIOL 101"\. Classes: COMP 421, STOR 435, COMP 577, ENGL 105\./);
 });
 
 test("tonight skips what's already past and keeps what's still due", async () => {

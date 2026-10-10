@@ -15,6 +15,9 @@ Plan of record: `docs/PLAN.md` (architect). Owners: Kerry = core + Financial, Is
 - Photon (Abdallah, PR #2): the Pro plan is ONE shared number, invite-only, no dedicated lines; the SDK can't create group
   chats or say which number a message hit. 325bd69: with no `*_LINE` set, inbound DMs now go to `DEFAULT_PERSONA`
   (before: always academic); `tests/transport.test.ts`.
+- Proactive DMs on the shared number carry the persona's name (`core/transport.ts` `send`: `Penny: …`; off for a persona with its
+  own `*_LINE`/project; inbound DM replies untagged on purpose), `tests/transport.test.ts`, 7227497. On the shared number leave every
+  `*_LINE` empty: a set line both drops that persona's tag and routes all inbound to it.
 - NOT yet run for real: Gemini (Social join/match has only run keyless, where the fake LLM calls `join_activity({})` and can't join),
   Photon iMessage transport, Canvas, Nessie.
 
@@ -36,9 +39,7 @@ Plan of record: `docs/PLAN.md` (architect). Owners: Kerry = core + Financial, Is
 4. Nessie key + account (`npm run setup-nessie`), and set `NESSIE_OWNER_PHONE` in `.env` to your phone before the demo.
 
 ## Open questions
-- PR #3 (`kerry/social-cue-newest`, cue sends newest match only) overlaps PR #4, already merged: close it, or rebase to keep only its test/evidence.
-- One shared number: proactive DMs from all three personas arrive from it with no name (`core/engine.ts:146`). Name-tag them
-  like the group path does (`core/engine.ts:100`)? Product call.
+- PR #3 closed in favor of PR #4 (same cue fix); Abdallah is porting its join-order test in PR #5 (open).
 - Someone who onboards after a plan already hit 3 gets Sunny's hot_plan text right with "you're all set" (onboarding runs
   watch() and delivers). Keep as a demo beat, or suppress?
 - Proactive texts go to DMs only; Social broadcasting into the group needs a group-handle registry (not built).

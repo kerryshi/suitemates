@@ -76,7 +76,7 @@ SERVER_URL=http://localhost:3000 npm run trigger -- social match +1919...   # se
 ```
 
 ## How we built it
-Built at HackNC 2026 by Kerry Shi (@kerryshi), Ismail (@ismail-gasmi) and Abdallah (@abhassan1).
+Built at HackNC 2026 by Kerry Shi (@kerryshi), Ismail (@ismail-gasmi) and Abdullah (@abhassan1).
 
 **AI tools we used**, disclosed under MLH's AI policy:
 - **Claude Code** (Anthropic's AI coding agent) generated the initial scaffold on Sat Oct 10 from our team's project doc. That scaffold was `core/` (engine, group router, onboarding, Gemini client, Photon transport, scheduler, demo trigger), the starter tool in each persona folder, the mock data, the tests, and this README. The design plan in `docs/PLAN.md` was also drafted with Claude. We made the product, scope, and ownership decisions and reviewed and ran everything. Claude Code also helped with code and debugging during the event.
@@ -84,14 +84,14 @@ Built at HackNC 2026 by Kerry Shi (@kerryshi), Ismail (@ismail-gasmi) and Abdall
 - The Photon transport and Gemini client in `core/` were adapted from Kerry's solo prototype (`hacknc-tab`, first commit Sat Oct 10, 12:40 PM, after hacking began at 11:30 AM).
 - **Financial persona** (`personas/financial/`): Kerry made the design calls (voice, what gets roasted, no money transfers); Claude Code wrote the code: the purchase watcher, money math, tools, prompt, demo scripts and tests. Claude subagents also planned and reviewed it.
 - **Academic persona** (`personas/academic/`): Ismail directed the work and reviewed it: voice and when Dean speaks up. Claude Code wrote the prompt voice (`prompt.md`), the group-chat `routerLine` and tool description tuning, the `check_plan_conflicts` tool and the Academic tests. Dean's avatar is Kerry's (see `docs/avatars/`).
-- **Social persona** (`personas/social/`): Abdallah directed the work and made the calls: what counts as a match, when Sunny texts first, and how we set up Photon. Claude Code wrote the code: the shared sign-up board, the join/leave/start/match tools, the `watch()` match texts, the tool rules in `prompt.md`, the `routerLine` tuning and the tests. Claude subagents reviewed it, and Kerry reviewed it before merging.
+- **Social persona** (`personas/social/`): Abdullah directed the work and made the calls: what counts as a match, when Sunny texts first, and how we set up Photon. Claude Code wrote the code: the shared sign-up board, the join/leave/start/match tools, the `watch()` match texts, the tool rules in `prompt.md`, the `routerLine` tuning and the tests. Claude subagents reviewed it, and Kerry reviewed it before merging.
 - **Everyone:** list any other AI tool you use here before merging (ChatGPT, Copilot, Cursor).
 - **Avatars** (`docs/avatars/`): AI-generated during HackNC (Sat Oct 10) with Z-Image-Turbo (open-weights, Apache-2.0) running locally on Kerry's GPU. Claude Code wrote the prompts from the persona descriptions, and Kerry picked the final images. Exact prompts and settings are in `docs/avatars/README.md`.
 
 **Who owns what** (update with what each person actually built before submitting):
 - Kerry: shared layer (`core/`) and the Financial persona (Nessie)
 - Ismail: the Academic persona (Canvas)
-- Abdallah: the Social persona and the group-chat router prompt
+- Abdullah: the Social persona and the group-chat router prompt
 
 ## Data, privacy and Gemini's terms
 - **Demo data is fake.** Canvas courses, Nessie purchases and students come from `mock/` or Capital One's mock bank. No real student or bank data is needed to run or demo this.

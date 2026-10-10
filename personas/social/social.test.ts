@@ -7,7 +7,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { keywordRoute } from "../../core/router.ts";
 import { loadPersonas } from "../../core/personas.ts";
-import { findActivities, loadBoard, saveBoard, useBoardFile } from "./board.ts";
+import { clean, findActivities, loadBoard, saveBoard, useBoardFile } from "./board.ts";
 import { tools } from "./tools.ts";
 import { triggers, watch } from "./watch.ts";
 
@@ -118,7 +118,7 @@ test("findActivities: day words must agree, trip/run still count, no double coun
   assert.deepEqual(ids("soccer sunday"), ["soccer"]);
   assert.deepEqual(ids("the food run"), ["boba"]);
   assert.deepEqual(ids("the trip"), ["beach"]);
-  assert.deepEqual(ids("the saturday one"), ["beach"]);
+  assert.deepEqual(ids("the saturday one"), ["beach"]); // day-only guess: join/leave ask first (next test)
   assert.deepEqual(ids("soccer today"), ["soccer"]);
   assert.deepEqual(ids("soccer tonight"), ["soccer"]);
   assert.deepEqual(ids("boba tonight"), ["boba"]);
@@ -136,7 +136,11 @@ test("join_activity never signs anyone up on a short or day-only guess", async (
     await run("join_activity", { activity: "saturday hike" }),
     /No plan called "saturday hike", but on that day there's:\n- Beach trip[\s\S]*Ask if they mean/,
   );
+  assert.match(await run("join_activity", { activity: "the saturday one" }), /on that day there's:\n- Beach trip[\s\S]*before signing them up\.$/);
   assert.equal(signups("beach").includes(ME), false);
+  await run("join_activity", { activity: "beach" });
+  assert.match(await run("leave_activity", { activity: "the saturday one" }), /before taking them off\.$/);
+  assert.ok(signups("beach").includes(ME));
 });
 
 test("names and plans stay one short line, so they can't inject text into other people's results", async () => {
@@ -266,4 +270,27 @@ test("watch: a reseeded board gets new dedupeKeys, so rehearsal texts don't bloc
 
 test("the persona exports watch for core", () => {
   assert.equal(typeof loadPersonas().get("social")?.watch, "function");
+});
+
+test("clean caps by code point, so an emoji at the limit is kept whole or dropped, never split", () => {
+  assert.equal(clean("x".repeat(29) + "😀", 30), "x".repeat(29) + "😀");
+  assert.equal(clean("x".repeat(30) + "😀", 30), "x".repeat(30));
+  assert.doesNotMatch(clean("x".repeat(29) + "😀😀", 30), /[\ud800-\udbff](?![\udc00-\udfff])/);
+});
+
+test("start_activity tells the model when it shortened a long plan name", async () => {
+  const out = await run("start_activity", { name: "Sunset kayak paddle " + "and picnic ".repeat(10), when: "Sunday 6 PM" });
+  assert.match(out, /^Started\.[\s\S]*shortened to 60 characters/);
+  assert.doesNotMatch(await run("start_activity", { name: "Chess club", when: "Monday" }), /shortened/);
+});
+
+test("the on-cue match trigger sends only the newest match; the poll sends all, newest first", async () => {
+  await run("join_activity", { activity: "soccer" });
+  await run("join_activity", { activity: "soccer", my_name: "Jordan" }, ctx(NEW));
+  await run("join_activity", { activity: "soccer", my_name: "Riley" }, ctx(THIRD));
+  const polled = await watch(ctx());
+  assert.deepEqual(polled.map((e) => e.facts.split(" ")[0]), ["Riley", "Jordan"]);
+  const cued = await triggers.match(ctx());
+  assert.equal(cued.length, 1);
+  assert.deepEqual(cued[0], polled[0]);
 });

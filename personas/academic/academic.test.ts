@@ -75,7 +75,7 @@ test("planWindow: weekend from a weekday is Sat through Mon; a weekday is that d
 
 test("morning_due lists today's two items with one dedupe key per day", async () => {
   const [ev] = await triggers.morning_due(ctx());
-  assert.match(ev.facts, /2 things due today: STOR 435 Problem Set 6 at 5:00 PM; ENGL 105 Discussion post/);
+  assert.match(ev.facts, /You have 2 things due today: STOR 435 Problem Set 6 at 5:00 PM; ENGL 105 Discussion post/);
   assert.equal(ev.dedupeKey, "academic:morning:+19195550001:2026-10-08");
 });
 
@@ -90,4 +90,9 @@ test("group chat: a plan with a day wakes Academic, small talk doesn't", () => {
   assert.ok(keywordRoute("I'm going on the beach trip Saturday", personas).includes("academic"));
   assert.ok(keywordRoute("midterm is killing me", personas).includes("academic"));
   assert.ok(!keywordRoute("lol ok", personas).includes("academic"));
+});
+
+test("proactive facts read as a text to the student (core sends them raw if Gemini fails)", async () => {
+  const [ev] = await watch(ctx());
+  assert.equal(ev.facts, "Heads up: STOR 435 Problem Set 6 is due today 5:00 PM.");
 });

@@ -1,0 +1,102 @@
+# proactive name tag — wt-core on main ddae0ee + fix
+
+> hacknc-agents@0.1.0 typecheck
+> tsc --noEmit -p .
+
+typecheck exit=0
+
+> hacknc-agents@0.1.0 test
+> tsx --test tests/*.test.ts personas/*/*.test.ts
+
+✔ get_due_assignments lists the week soonest first and marks the exam (20.91725ms)
+✔ get_due_assignments respects days (0.295333ms)
+✔ a Saturday plan collides with the Sunday-night deadlines (0.568875ms)
+✔ a clear day says so and still warns about an exam right after (0.274041ms)
+✔ tonight skips what's already past and keeps what's still due (0.177917ms)
+✔ an unreadable day falls back to the next 3 days instead of guessing (0.206541ms)
+✔ planWindow: weekend from a weekday is Sat through Mon; a weekday is that day plus the next (0.481833ms)
+✔ morning_due lists today's two items with one dedupe key per day (0.245916ms)
+✔ watch warns once per assignment due within 24h (0.239166ms)
+✔ group chat: a plan with a day wakes Academic, small talk doesn't (0.423292ms)
+✔ proactive facts read as a text to the student (core sends them raw if Gemini fails) (0.1985ms)
+✔ join_activity adds the user and names who they matched with (1.683667ms)
+✔ joining twice says already in and doesn't duplicate (0.747541ms)
+✔ join_activity with no or unknown activity lists the plans instead of guessing (0.422458ms)
+✔ leave_activity removes the user (0.56ms)
+✔ start_activity creates a new plan but refuses a duplicate (0.771708ms)
+✔ find_matches ranks the crew by plans in common and suggests their other plans (0.390709ms)
+✔ find_matches by interest, and with no plans yet (0.872917ms)
+✔ two new phones joining the same plan are matched with each other by name (0.296042ms)
+✔ someone with no name shows as 'someone new' (no phone digits) and the model is told to ask (0.209333ms)
+✔ my_name names a new phone for everyone else (0.163875ms)
+✔ start_activity only blocks real duplicates, and new_plan overrides (0.4195ms)
+✔ findActivities: day words must agree, trip/run still count, no double counting (0.732208ms)
+✔ join_activity never signs anyone up on a short or day-only guess (0.339167ms)
+✔ names and plans stay one short line, so they can't inject text into other people's results (0.714334ms)
+✔ a corrupt board file is set aside and reseeded; SOCIAL_FILE is read lazily (1.155792ms)
+✔ keyword routing wakes Social for boba and soccer plans, still nobody for small talk (0.4005ms)
+✔ watch: nothing to say on a fresh board (no texts right after onboarding) (0.271791ms)
+✔ watch: someone joining after you is a match, and it can be resent (no state used up) (0.433334ms)
+✔ watch: the plan's starter hears when the first person joins (two phones matched) (0.222917ms)
+✔ watch: a live join that makes a plan hot is one heads-up, after any matches (1.391167ms)
+✔ watch: leaving a plan doesn't get you a 'taking off without you' text for it (0.384125ms)
+✔ watch: two plans taking off between checks are both offered (the older one isn't dropped) (0.508625ms)
+✔ watch: someone already in a plan from the seed never hears 'you're not in yet' about it (0.206625ms)
+✔ watch: a reseeded board gets new dedupeKeys, so rehearsal texts don't block the live demo (0.283917ms)
+✔ the persona exports watch for core (0.084917ms)
+✔ clean caps by code point, so an emoji at the limit is kept whole or dropped, never split (0.069375ms)
+✔ start_activity tells the model when it shortened a long plan name (0.204916ms)
+✔ the on-cue match trigger sends only the newest match; the poll sends all, newest first (0.241833ms)
+✔ first poll baselines existing purchases and roasts nothing (0.917458ms)
+✔ a new purchase is roasted exactly once (17.614791ms)
+✔ a burst after downtime roasts at most 3 but marks all seen (1.748583ms)
+✔ a date-only Nessie purchase from today is stamped with the time it was first seen (0.848ms)
+✔ low balance warns once per day (0.12225ms)
+✔ Nessie YYYY-MM-DD dates parse as local days, not UTC (0.085458ms)
+✔ categories come from the merchant name unless given (0.137375ms)
+✔ afford verdict boundaries: over budget, half of what's left, small (0.06625ms)
+✔ purchase facts carry the numbers the roast needs (0.163958ms)
+✔ a 3 AM delivery order is flagged late night (2.260875ms)
+✔ a real (date-only) purchase from an earlier day is not called late night or given a fake time (0.196584ms)
+✔ a date-only purchase stamped with first-seen time is roasted with that time (0.224083ms)
+✔ purchase roasts go only to the account owner when NESSIE_OWNER_PHONE is set (0.12275ms)
+✔ the weekly check-in also goes only to the account owner when NESSIE_OWNER_PHONE is set (0.697792ms)
+✔ a fresh Nessie account (404 on the purchase list) reads as no purchases, other errors still throw (13.6775ms)
+✔ the beach trip matches its cost estimate (0.629875ms)
+✔ keyword routing (keyless mode) wakes Financial for 'how much is the beach trip', nobody for small talk (0.353667ms)
+✔ hi → budget → goal finishes onboarding with Canvas linked (0.543584ms)
+✔ a non-number budget is re-asked once, then defaults to 500 (0.1555ms)
+✔ budget parsing handles $ signs, commas and k (0.055041ms)
+✔ a DM from a new user gets onboarding, not the LLM (0.3365ms)
+✔ all three persona folders satisfy the contract (2.732041ms)
+✔ two tools with the same name are refused (0.304084ms)
+✔ a required parameter missing from properties is refused (0.092792ms)
+✔ a persona exported under the wrong id is refused (0.065875ms)
+✔ a non-snake_case tool name is refused (0.074542ms)
+✔ finishing onboarding baselines the watchers right away (a buy made just after isn't swallowed) (1.658334ms)
+✔ re-running onboarding (/skip by habit after a buy) delivers the watcher's events instead of discarding them (13.56675ms)
+✔ a proactive text whose LLM call fails sends the plain facts, not a glitch message (0.397125ms)
+✔ the watch poll defaults to 5 s so poll + LLM stays under the 10 s roast goal (2.1095ms)
+✔ three line copies of one group message run the router once (23.534292ms)
+✔ each chosen persona replies through its own line's handle (0.525792ms)
+✔ the same text after the dedupe window is a new message (0.368542ms)
+✔ a chosen persona whose line got no copy speaks through another line, name-tagged (30.970292ms)
+✔ keyword routing (keyless mode) wakes Social for the beach trip and nobody for small talk (0.422834ms)
+✔ one shared number with no *_LINE set routes inbound to DEFAULT_PERSONA, not whichever persona is first (2.183583ms)
+✔ a dedicated line still routes to its persona; an unknown or missing line falls back to DEFAULT_PERSONA (0.319167ms)
+✔ on one shared number a proactive DM says which persona sent it (0.590375ms)
+✔ no tag when that persona has its own line or project, and never twice (0.327625ms)
+✔ replies in the user's own DM or the group are left as they are (proactive only) (0.091208ms)
+ℹ tests 79
+ℹ suites 0
+ℹ pass 79
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 937.198541
+test exit=0
+
+## probes
+probe tags: ["Penny:roast","  Penny: roast","Penny: Pennyroast"]
+constructs with no Spectrum creds: true

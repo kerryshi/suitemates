@@ -54,8 +54,7 @@ function setup(o: { addDelayMs?: number; addResults?: Partial<Record<PersonaId, 
     personas: loadPersonas(),
     store,
     llm: spy,
-    config: { names: NAMES, PRODUCT_NAME: "Suitemates", mock: true, fakeRoute: undefined, GROUP_SETTLE_MS: 10 },
-    routerPrompt: "",
+    config: { names: NAMES, PRODUCT_NAME: "Suitemates", mock: true },
     log: () => {},
     addUser: async (phone, _name, persona) => {
       adds.push({ phone, persona });
@@ -76,7 +75,7 @@ function setup(o: { addDelayMs?: number; addResults?: Partial<Record<PersonaId, 
   });
   let n = 0;
   const dm = (text: string, persona: PersonaId = "social", extra: Partial<Inbound> = {}) =>
-    engine.handle({ persona, kind: "dm", sender: PHONE, text, handle: HANDLE[persona], messageId: `m${++n}`, lineKnown: true, ...extra });
+    engine.handle({ persona, sender: PHONE, text, handle: HANDLE[persona], messageId: `m${++n}`, lineKnown: true, ...extra });
   const pending = () => store.kv("shared", PHONE).get<{ from: PersonaId; agents: { id: PersonaId; consent: string }[] }>("recruit");
   return { store, engine, dm, adds, pending, user: () => store.user(PHONE) };
 }

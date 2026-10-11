@@ -23,8 +23,7 @@ async function setup() {
     personas: loadPersonas(),
     store,
     llm: new FakeLlm(),
-    config: { names: { academic: "Dean", financial: "Penny", social: "Sunny" }, PRODUCT_NAME: "Suitemates", mock: true, fakeRoute: undefined, GROUP_SETTLE_MS: 10 },
-    routerPrompt: "",
+    config: { names: { academic: "Dean", financial: "Penny", social: "Sunny" }, PRODUCT_NAME: "Suitemates", mock: true },
     log: () => {},
   });
   const http = startHttp({ engine, transport: { start: async () => {}, send: async () => {} }, port: 0, addUser: async () => ({ ok: true, line: "+16465550177" }) });
@@ -34,7 +33,7 @@ async function setup() {
     const res = await fetch(base + path, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
     return { status: res.status, body: (await res.json()) as Record<string, string> };
   };
-  const hey = (phone: string) => engine.handle({ persona: "financial", kind: "dm", sender: phone, text: "hey Penny", handle: `h${phone}`, messageId: `m${Math.random()}` });
+  const hey = (phone: string) => engine.handle({ persona: "financial", sender: phone, text: "hey Penny", handle: `h${phone}`, messageId: `m${Math.random()}` });
   return { store, engine, post, hey, close: () => http.close() };
 }
 

@@ -1,6 +1,6 @@
 # hacknc-agents
 
-Three AI texting agents that help UNC students balance school, money, and social life, with no app to download. Each agent has its own iMessage number, and all three share one group chat. HackNC 2026.
+Three AI texting agents that help UNC students balance school, money, and social life, with no app to download. Each agent texts from its own iMessage number, and all three share one brain about you: when your life overlaps (a beach trip that costs money and lands on a midterm weekend), the agent you're texting brings the others in, and they text you first. HackNC 2026.
 
 | Persona | Folder | Data | Proactive |
 |---|---|---|---|
@@ -24,9 +24,10 @@ In the chat, say `hi` to onboard (or `/skip`), then try `show my recent purchase
 
 ## Talk to things
 ```bash
-npm run chat -- academic | financial | social   # 1:1 DM with one persona
-npm run chat -- group                           # the group chat: router picks who answers
-FAKE_ROUTE=social,financial,academic npm run chat -- group   # force the 3-persona hand-off
+npm run chat                                    # starts on Sunny, the front door
+npm run chat -- academic | financial | social   # 1:1 DM with one agent
+# the hand-off (needs GEMINI_API_KEY): to Sunny, "I'm going on the beach trip Saturday" → she asks → "yes"
+# → Penny prices it and Dean checks your deadlines, each from their own number
 npm run trigger -- academic morning_due         # fire a proactive text (prints it)
 npm run trigger -- financial weekly_money
 ```
@@ -45,7 +46,7 @@ Every `personas/<id>/index.ts` default-exports:
 - `tools`: functions Gemini can call
 - `watch(ctx)`: optional, polled every 10 s (personas listed in `WATCH`); returns events like "new purchase"
 - `triggers`: optional named proactive messages (`morning_due`, `weekly_money`), fired by the scheduler or `/demo/trigger`
-- `routerLine`: one sentence telling the group router when you should speak
+- `routerLine`: one sentence on what you handle (picks who answers a DM on a shared number)
 
 Events are just facts (`{ kind, userPhone, facts, dedupeKey }`). Core writes the actual text in your voice and never sends the same `dedupeKey` twice.
 
@@ -53,26 +54,32 @@ Events are just facts (`{ kind, userPhone, facts, dedupeKey }`). Core writes the
 ```
 iMessage (Photon) ─┐                       ┌─ personas/academic   (prompt, tools, watch)
 terminal chat ─────┼─> core/engine ─ agent ┼─ personas/financial
-/demo/trigger ─────┤      │ group: dedupe  └─ personas/social     (+ router-prompt.md)
-scheduler ─────────┘      └ router (Gemini JSON, keyword fallback)
+/demo/trigger ─────┤      │                └─ personas/social
+scheduler ─────────┘      └ recruit: bring_in → consent → add to Photon → that agent texts first
 ```
 - **DM:** onboarding (budget → goal → Canvas) until done, then the persona answers with its tools.
-- **Group chat:** each persona's number receives its own copy of every message. Core treats the copies as one message, runs the router once, and each chosen persona replies from its own number.
+- **Agents recruit each other** (`core/recruit.ts`): every agent gets a core `bring_in` tool. When a message needs another
+  agent's area, it asks once ("want penny + dean to check the cost and your deadlines?"). On "yes", core adds the student to
+  that agent's own Photon project and the agent texts first from its own number with its hello, contact card and an answer.
+  Naming an agent ("ask penny…") is consent; an agent they already have answers in its own thread. If an agent can't be
+  added (project full, token expired), it answers through the thread they're already in, name-tagged. There is no group
+  chat: a text in an iMessage group is ignored.
 - **Proactive:** `watch()` / `triggers` → events → core composes → DM from that persona's number.
 - **Shared memory:** every agent gets a core `remember` tool for durable facts the user mentions ("vegetarian, no car").
   All three agents see the user's newest 15 notes in every prompt, so reading them costs no Gemini call; saving rides along
   with the agent's other tool calls. No exact balances or grades. Notes live per server (`data/state.json`), `/reset` clears
   them, `/notes` in `npm run chat` lists them (`core/memory.ts`). Nothing to change in your persona folder; don't name a tool `remember`.
 
-**Numbers and plan tiers.** The design above gives each persona its own number, which is Photon's Business plan
-(dedicated lines). For the demo we run on the Pro plan, a shared pool: each tester is added to the project's allowlist and
-gets a pool number, which may differ from person to person, and every persona answers from it. Core is already built for
-dedicated lines: set `ACADEMIC_LINE` / `FINANCIAL_LINE` / `SOCIAL_LINE` and it routes and sends per line, so the upgrade is
-configuration, not code (not yet run on a Business account).
+**Numbers and plan tiers.** Each agent is its own Photon project (`<AGENT>_PROJECT_ID/SECRET`, plus `<AGENT>_PHOTON_API_TOKEN`
+for adding people), so each one reaches a student from its own pool number. A Pro project allows 100 people, a Free one 10.
+Sunny is the front door. `npm run check-photon` checks all three before a demo. With only one shared project configured,
+everything still works: the agents share that number and say who's talking. Dedicated lines (Business) are configuration
+(`*_LINE`), not code, and haven't been run.
 
 ## Run the real thing (Kerry)
 ```bash
-npm run dev                          # terminal group chat + :3000/demo/trigger + scheduler
+npm run dev                          # terminal chat with Sunny + :3000/demo/trigger + scheduler
+npm run check-photon                 # each agent's Photon project + token answers (run before the demo)
 TRANSPORT=imessage npm run dev       # Photon (needs SPECTRUM_*; add *_LINE on dedicated lines, else DEFAULT_PERSONA answers)
 curl -X POST localhost:3000/demo/trigger -H 'content-type: application/json' \
   -d '{"persona":"academic","name":"morning_due","phone":"+1919..."}'
@@ -84,19 +91,20 @@ Built at HackNC 2026 by Kerry Shi (@kerryshi), Ismail (@ismail-gasmi) and Abdull
 
 **AI tools we used**, disclosed under MLH's AI policy:
 - **Claude Code** (Anthropic's AI coding agent) generated the initial scaffold on Sat Oct 10 from our team's project doc. That scaffold was `core/` (engine, group router, onboarding, Gemini client, Photon transport, scheduler, demo trigger), the starter tool in each persona folder, the mock data, the tests, and this README. The design plan in `docs/PLAN.md` was also drafted with Claude. We made the product, scope, and ownership decisions and reviewed and ran everything. Claude Code also helped with code and debugging during the event.
-- **Gemini API** (Flash) is the runtime model. It powers every persona's replies, the group-chat router, and receipt-photo reading.
+- **Gemini API** (Flash) is the runtime model. It powers every agent's replies, the hand-offs between agents, and receipt-photo reading.
 - The Photon transport and Gemini client in `core/` were adapted from Kerry's solo prototype (`hacknc-tab`, first commit Sat Oct 10, 12:40 PM, after hacking began at 11:30 AM).
 - **Financial persona** (`personas/financial/`): Kerry made the design calls (voice, what gets roasted, no money transfers); Claude Code wrote the code: the purchase watcher, money math, tools, prompt, demo scripts and tests. Claude subagents also planned and reviewed it.
 - **Academic persona** (`personas/academic/`): Ismail directed the work and reviewed it: voice and when Dean speaks up. Claude Code wrote the prompt voice (`prompt.md`), the group-chat `routerLine` and tool description tuning, the `check_plan_conflicts` tool and the Academic tests, the live Canvas layer (`canvas.ts`: grades, announcements, syllabus, `grade_impact`, weekly plan and exam alerts) and the mock Canvas data. Dean's avatar is Kerry's (see `docs/avatars/`).
 - **Sign-up flow** (`web/`, `core/signup.ts`, `core/http.ts` routes): Ismail decided the flow (sign up on the web, we add them in Photon, Dean texts first); Claude Code wrote the pages, endpoints, the QR page, the Photon CLI auto-add (`core/photon-users.ts`), the persona contact cards, the per-agent landing/join pages, the shared calendar feed (`core/calendar.ts`, `personas/academic/calendar.ts`) and the sign-up/agents/calendar tests.
 - **Social persona** (`personas/social/`): Abdullah directed the work and made the calls: what counts as a match, when Sunny texts first, and how we set up Photon. Claude Code wrote the code: the shared sign-up board, the join/leave/start/match tools, the `watch()` match texts, the tool rules in `prompt.md`, the `routerLine` tuning and the tests. Claude subagents reviewed it, and Kerry reviewed it before merging.
+- **Agents recruit each other** (`core/recruit.ts`, per-agent Photon projects, `npm run check-photon`): Kerry made the product calls (separate numbers, one shared brain, consent before an agent texts, Sunny as the front door, no group chat); Claude Code planned it (a Fable architect subagent), wrote the code and tests, and a separate Claude reviewer checked it before merging. Abdullah's PR #22 (per-agent sign-up) is its base.
 - **Everyone:** list any other AI tool you use here before merging (ChatGPT, Copilot, Cursor).
 - **Avatars** (`docs/avatars/`): AI-generated during HackNC (Sat Oct 10) with Z-Image-Turbo (open-weights, Apache-2.0) running locally on Kerry's GPU. Claude Code wrote the prompts from the persona descriptions, and Kerry picked the final images. Exact prompts and settings are in `docs/avatars/README.md`.
 
 **Who owns what** (update with what each person actually built before submitting):
 - Kerry: shared layer (`core/`) and the Financial persona (Nessie)
 - Ismail: the Academic persona (Canvas)
-- Abdullah: the Social persona and the group-chat router prompt
+- Abdullah: the Social persona and per-agent Photon sign-up (#22)
 
 ## Data, privacy and Gemini's terms
 - **Demo data is fake.** Canvas courses, Nessie purchases and students come from `mock/` or Capital One's mock bank. No real student or bank data is needed to run or demo this.
@@ -106,11 +114,11 @@ Built at HackNC 2026 by Kerry Shi (@kerryshi), Ismail (@ismail-gasmi) and Abdull
 
 ## Layout
 ```
-core/        Kerry: engine, router runner, agent loop, Gemini, Photon transport, scheduler, /demo/trigger, store, memory
+core/        Kerry: engine, recruit (agent hand-offs), agent loop, Gemini, Photon transport, scheduler, /demo/trigger, store, memory
 personas/    one folder per persona, owned by one person (see TEAM.md)
 mock/        fake Canvas courses, Nessie purchases, students + sign-ups (dates are relative to today)
-scripts/     chat, trigger, check-gemini
-tests/       contract loader, group dedupe + router, onboarding
+scripts/     chat, trigger, check-gemini, check-photon
+tests/       contract loader, onboarding, sign-up, recruiting, own numbers
 docs/        PLAN.md (design), evidence/, avatars/ (persona images + prompts)
 ```
 

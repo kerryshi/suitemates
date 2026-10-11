@@ -32,12 +32,11 @@ function setup(llm?: LlmClient) {
     personas: loadPersonas(),
     store,
     llm: llm ?? spy,
-    config: { names, PRODUCT_NAME: "Suitemates", mock: true, fakeRoute: undefined, GROUP_SETTLE_MS: 20 },
-    routerPrompt: "{{ROUTER_LINES}}",
+    config: { names, PRODUCT_NAME: "Suitemates", mock: true },
     log: () => {},
   });
   const dm = (persona: PersonaId, text: string) =>
-    engine.handle({ persona, kind: "dm", sender: "+1", text, handle: `h-${persona}`, messageId: `m-${Math.random()}` } as Inbound);
+    engine.handle({ persona, sender: "+1", text, handle: `h-${persona}`, messageId: `m-${Math.random()}` } as Inbound);
   return { engine, store, calls, dm };
 }
 
@@ -80,13 +79,11 @@ test("notes keep the newest 15, skip duplicates, and refuse balances and grades"
   assert.equal(listNotes(store, "+2").length, 2);
 });
 
-test("every agent gets remember in DMs and the group; proactive texts see the notes but get no tools", async () => {
+test("every agent gets remember in its DMs; proactive texts see the notes but get no tools", async () => {
   const s = setup();
   await s.dm("financial", "hi");
   assert.equal(s.calls.at(-1)!.tools.at(-1), "remember");
-  await Promise.all((["academic", "financial", "social"] as const).map((p) =>
-    s.engine.handle({ persona: p, kind: "group", sender: "+1", text: "anyone down for boba", handle: `g-${p}`, messageId: `g-${p}` } as Inbound),
-  ));
+  await s.dm("social", "anyone down for boba");
   assert.ok(s.calls.filter((c) => c.who === "Sunny").at(-1)!.tools.includes("remember"));
   await s.engine.trigger("academic", "intro", { phone: "+1", force: true });
   const intro = s.calls.filter((c) => c.who === "Dean").at(-1)!;

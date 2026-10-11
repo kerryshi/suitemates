@@ -10,7 +10,6 @@ const Env = z.object({
   TRANSPORT: z.enum(["terminal", "imessage"]).default("terminal"),
   MOCK: z.string().default("1"),
   FAKE_LLM: z.string().default("0"),
-  FAKE_ROUTE: opt,
   GEMINI_API_KEY: opt,
   GEMINI_MODEL: str.default("gemini-3.6-flash"),
 
@@ -44,7 +43,6 @@ const Env = z.object({
   PORT: z.coerce.number().default(3000),
   DEMO_TOKEN: opt,
   WATCH_MS: z.coerce.number().default(5_000), // poll + LLM must fit the 10 s roast goal
-  GROUP_SETTLE_MS: z.coerce.number().default(1500),
   MORNING_AT: str.default("08:00"),
   WEEKLY_AT: str.default("sun 18:00"),
   DATA_FILE: str.default("data/state.json"),
@@ -77,7 +75,6 @@ export function loadConfig(env: Record<string, string | undefined> = (loadDotEnv
     mock: e.MOCK !== "0",
     fakeLlm: e.FAKE_LLM === "1" || !e.GEMINI_API_KEY,
     watchList: e.WATCH.split(",").map((s) => s.trim()).filter(Boolean) as PersonaId[],
-    fakeRoute: e.FAKE_ROUTE?.split(",").map((s) => s.trim()).filter(Boolean) as PersonaId[] | undefined,
     names,
     lines,
     projects,

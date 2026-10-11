@@ -5,7 +5,9 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import type { Ctx } from "../../core/types.ts";
-import { keywordRoute } from "../../core/router.ts";
+import { keywordScores } from "../../core/router.ts";
+// Which agents a text is about (DM routing on a shared number).
+const keywordRoute = (text: string, personas: Parameters<typeof keywordScores>[1]) => [...keywordScores(text, personas)].filter(([, n]) => n > 0).map(([id]) => id);
 import { loadPersonas } from "../../core/personas.ts";
 import { tools } from "./tools.ts";
 import { watch, triggers } from "./watch.ts";

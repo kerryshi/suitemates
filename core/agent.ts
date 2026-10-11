@@ -7,7 +7,7 @@ const MAX_TOOL_ROUNDS = 3;
 const TOOL_TIMEOUT_MS = 10_000;
 const PROACTIVE_HISTORY = 4; // turns of chat a proactive text sees (enough to not repeat itself)
 
-export type Setting = "dm" | "group" | "proactive" | "recruit";
+export type Setting = "dm" | "proactive" | "recruit";
 
 const FOCUS = { school: "ace their classes", money: "save money", social: "meet people", balance: "keep school, money and social life balanced" };
 
@@ -78,7 +78,6 @@ function contextBlock(a: RespondArgs): string {
   const u = a.ctx.user;
   const setting = {
     dm: "a 1:1 iMessage conversation with the user.",
-    group: `the group chat with the user, ${others}. Speak ONLY about your own area; the others cover theirs. One short text.`,
     proactive: "a text you are sending first, unprompted. One short text; no question unless it helps.",
     recruit:
       "a text you are sending first, from your own number, because another agent just brought you in (the brief says why). " +

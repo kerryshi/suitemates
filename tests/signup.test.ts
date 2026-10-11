@@ -45,8 +45,7 @@ async function server(token?: string, addUser: AddUser = async () => ({ ok: fals
     personas: loadPersonas(),
     store,
     llm: new FakeLlm(),
-    config: { names: { academic: "Dean", financial: "Penny", social: "Sunny" }, PRODUCT_NAME: "Suitemates", mock: true, fakeRoute: undefined, GROUP_SETTLE_MS: 10 },
-    routerPrompt: "",
+    config: { names: { academic: "Dean", financial: "Penny", social: "Sunny" }, PRODUCT_NAME: "Suitemates", mock: true },
     log: () => {},
   });
   const transport = { start: async () => {}, send: async (o: Outbound) => void sent.push(o) };
@@ -162,14 +161,14 @@ test("QR flow: sign up → added to Photon → page gets the number → their 'h
     assert.deepEqual(calls, [["+19195550123", "Sam"]]);
     assert.equal(s.sent.length, 0); // we wait for their "hey"
 
-    const hey = await s.engine.handle({ persona: "academic", kind: "dm", sender: "+19195550123", text: "hey", handle: "space-1", messageId: "m1" });
+    const hey = await s.engine.handle({ persona: "academic", sender: "+19195550123", text: "hey", handle: "space-1", messageId: "m1" });
     assert.deepEqual(hey.map((o) => [o.persona, o.card ? "card" : "text"]), [
       ["academic", "text"], ["academic", "card"], ["academic", "text"], ["financial", "text"], ["financial", "card"], ["financial", "text"], ["social", "text"], ["social", "card"],
     ]);
     assert.ok(hey.every((o) => o.handle === "space-1")); // answered in the conversation they started
     assert.equal(s.store.user("+19195550123").signupStatus, "invited");
 
-    const next = await s.engine.handle({ persona: "academic", kind: "dm", sender: "+19195550123", text: "what's due?", handle: "space-1", messageId: "m2" });
+    const next = await s.engine.handle({ persona: "academic", sender: "+19195550123", text: "what's due?", handle: "space-1", messageId: "m2" });
     assert.equal(next.length, 1); // after the intros, a normal reply
     assert.equal((await s.post("/signup", { name: "Sam", phone: "9195550123" }).then((r) => r.json())).status, "invited");
     assert.equal(calls.length, 1); // signing up again doesn't re-add

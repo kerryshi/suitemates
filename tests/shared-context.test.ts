@@ -1,5 +1,4 @@
-// Personas planning together: Persona.context lines reach the OTHER personas' prompts, and in the group chat
-// each persona sees what the earlier ones just said (router order).
+// Agents planning together: Persona.context lines reach the OTHER agents' prompts.
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { Engine } from "../core/engine.ts";
@@ -10,7 +9,7 @@ import type { Inbound, PersonaId } from "../core/types.ts";
 
 const names = { academic: "Dean", financial: "Penny", social: "Sunny" };
 
-function setup(route: PersonaId[]) {
+function setup() {
   const calls: { who: string; system: string; last: string }[] = [];
   const llm: LlmClient = {
     name: "spy",
@@ -20,7 +19,7 @@ function setup(route: PersonaId[]) {
       calls.push({ who, system, last });
       return { text: who === "Sunny" ? "soccer sunday 4pm, you in?" : `${who} reply` };
     },
-    json: async () => JSON.stringify({ personas: route }),
+    json: async () => "{}",
   };
   const personas = loadPersonas();
   const store = new Store(null);
@@ -29,30 +28,17 @@ function setup(route: PersonaId[]) {
     personas,
     store,
     llm,
-    config: { names, PRODUCT_NAME: "Suitemates", mock: true, fakeRoute: undefined, GROUP_SETTLE_MS: 20 },
-    routerPrompt: "{{ROUTER_LINES}}",
+    config: { names, PRODUCT_NAME: "Suitemates", mock: true },
     log: () => {},
   });
-  const group = (text: string) =>
-    Promise.all((["academic", "financial", "social"] as const).map((p) =>
-      engine.handle({ persona: p, kind: "group", sender: "+1", text, handle: `h-${p}`, messageId: `m-${p}` } as Inbound),
-    ));
-  return { engine, calls, personas, group };
+  const dm = (persona: PersonaId, text: string) => engine.handle({ persona, sender: "+1", text, handle: `h-${persona}`, messageId: `m-${persona}` } as Inbound);
+  return { engine, calls, personas, dm };
 }
 
-test("in the group, Dean sees Sunny's plan from this round before he answers", async () => {
-  const s = setup(["social", "academic"]);
-  const outs = (await s.group("anyone down for something this weekend")).flat();
-  assert.deepEqual(outs.map((o) => o.persona), ["social", "academic"]);
-  const sunny = s.calls.find((c) => c.who === "Sunny")!;
-  const dean = s.calls.find((c) => c.who === "Dean")!;
-  assert.equal(sunny.last, "anyone down for something this weekend");
-  assert.match(dean.last, /Already said in this chat just now: Sunny: "soccer sunday 4pm, you in\?"/);
-});
-
 test("Dean's context reaches Sunny's and Penny's prompts, not his own", async () => {
-  const s = setup(["social", "academic"]);
-  await s.group("what's the plan");
+  const s = setup();
+  await s.dm("social", "what's the plan");
+  await s.dm("academic", "what's the plan");
   const sunny = s.calls.find((c) => c.who === "Sunny")!;
   const dean = s.calls.find((c) => c.who === "Dean")!;
   assert.match(sunny.system, /What the others know .*Dean: \d+ things due in the next 4 days.*next exam: /);
@@ -61,14 +47,14 @@ test("Dean's context reaches Sunny's and Penny's prompts, not his own", async ()
 });
 
 test("a failing context is skipped, the reply still goes out", async () => {
-  const s = setup(["social"]);
+  const s = setup();
   const dean = s.personas.get("academic")!;
   const real = dean.context;
   dean.context = async () => {
     throw new Error("Canvas down");
   };
   try {
-    const outs = (await s.group("anyone free")).flat();
+    const outs = await s.dm("social", "anyone free");
     assert.equal(outs.length, 1);
     assert.equal(outs[0].text, "soccer sunday 4pm, you in?");
     assert.doesNotMatch(s.calls[0].system, /What the others know/);

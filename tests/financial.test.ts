@@ -6,7 +6,9 @@ import financial from "../personas/financial/index.ts";
 import { getPurchases, postPurchase, type Purchase } from "../personas/financial/nessie.ts";
 import type { Ctx, UserProfile } from "../core/types.ts";
 import { loadPersonas } from "../core/personas.ts";
-import { keywordRoute } from "../core/router.ts";
+import { keywordScores } from "../core/router.ts";
+// Which agents a text is about (DM routing on a shared number).
+const keywordRoute = (text: string, personas: Parameters<typeof keywordScores>[1]) => [...keywordScores(text, personas)].filter(([, n]) => n > 0).map(([id]) => id);
 
 const NOW = new Date(2026, 9, 10, 23, 2); // Sat Oct 10 2026, 11:02 PM local
 const user: UserProfile = { phone: "+1", budgetMonthly: 800, savingsGoal: "spring break, $400", canvasLinked: true, onboardingStep: "done" };

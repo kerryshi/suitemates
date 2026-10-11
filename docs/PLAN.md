@@ -1,3 +1,5 @@
+> Historical. The group chat (and the per-agent QR as the front door) were superseded on Sun Oct 11 by agents recruiting each other: see core/recruit.ts and #24 (e8bdad8).
+
 # PLAN — hacknc-agents scaffold (first commit)
 
 Author: `architect` (fable), 2026-10-10 15:33 EDT. Rulings folded in (Kerry, 15:31): TypeScript everywhere; repo local only for now.

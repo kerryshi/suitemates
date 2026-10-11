@@ -1,0 +1,5 @@
+# fail-first: group inbound is still forwarded before the removal (2026-10-11 00:46, base e8bdad8 + toInbound refactor)
+✖ no group chat: a text in an iMessage group is ignored (never answered into a chat with strangers); DMs still come through (2.356416ms)
+ℹ pass 8
+ℹ fail 1
+✖ no group chat: a text in an iMessage group is ignored (never answered into a chat with strangers); DMs still come through (2.356416ms)

@@ -36,8 +36,7 @@ function setup(delayMs = 0, user: Partial<UserProfile> = {}) {
     personas: loadPersonas(),
     store,
     llm: spy,
-    config: { names: NAMES, PRODUCT_NAME: "Suitemates", mock: true, fakeRoute: undefined, GROUP_SETTLE_MS: 10 },
-    routerPrompt: "",
+    config: { names: NAMES, PRODUCT_NAME: "Suitemates", mock: true },
     log: () => {},
     addUser: async (_p, _n, persona) => {
       adds.push(persona);
@@ -47,7 +46,7 @@ function setup(delayMs = 0, user: Partial<UserProfile> = {}) {
   });
   store.saveUser({ phone: PHONE, name: "Sam", canvasLinked: false, onboardingStep: "done", signupStatus: "invited", agents: ["social"], greeted: ["social"], poolLines: { "p-s": "+16465550001" }, ...user });
   let n = 0;
-  const dm = (text: string) => engine.handle({ persona: "social", kind: "dm", sender: PHONE, text, handle: "sunny-space", messageId: `m${++n}`, lineKnown: true } as Inbound);
+  const dm = (text: string) => engine.handle({ persona: "social", sender: PHONE, text, handle: "sunny-space", messageId: `m${++n}`, lineKnown: true } as Inbound);
   return { engine, store, adds, dm };
 }
 const tool = (store: Store, text: string) => recruitTool({ store, names: NAMES, from: "social", text, now: () => Date.now(), needsAdd: () => false, startAdd: () => {} });

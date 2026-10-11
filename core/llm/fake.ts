@@ -1,6 +1,6 @@
 // Keyless, deterministic stand-in for Gemini so everyone can build without an API key.
 // Persona chat: calls the first tool whose name words (or, failing that, description words of 5+
-// letters) appear in the message, with args = {}, then echoes the tool result. Router: see keywordRoute in core/router.ts.
+// letters) appear in the message, with args = {}, then echoes the tool result.
 import type { Tool } from "../types.ts";
 import type { LlmClient, LlmMessage, LlmStep } from "./client.ts";
 

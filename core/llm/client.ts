@@ -17,7 +17,8 @@ export type LlmStep = { text: string } | { toolCalls: ToolCall[]; raw?: unknown[
 
 export interface LlmClient {
   readonly name: string;
-  chat(req: { system: string; messages: LlmMessage[]; tools: Tool[] }): Promise<LlmStep>;
+  // noTools: out of tool rounds; the model must answer in text from the tool results already in `messages`.
+  chat(req: { system: string; messages: LlmMessage[]; tools: Tool[]; noTools?: boolean }): Promise<LlmStep>;
   // JSON-mode completion; returns the raw JSON text.
   json(req: { system: string; text: string }): Promise<string>;
 }

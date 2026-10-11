@@ -127,3 +127,178 @@ test("S8: with a deliver hook, 'yes' answers with the ack at once; each agent's 
   const penny = delivered.flat().filter((o) => o.persona === "financial");
   assert.ok(penny.some((o) => o.card) && penny.some((o) => o.text === "Penny answer"), JSON.stringify(delivered));
 });
+
+test("a 'yes' in the thread of an agent from the same hand-off counts (Penny answered first, so they said yes to her)", async () => {
+  // They already have Penny: on the beach text she answers at once in her own thread, Dean waits for a yes.
+  const s = setup(0, { agents: ["social", "financial"], greeted: ["social", "financial"] });
+  const both: LlmClient = {
+    ...spy,
+    chat: async (req) => {
+      const last = req.messages.at(-1) as LlmMessage;
+      if (/You are Sunny,/.test(req.system) && last.role === "user" && /beach/i.test(last.text))
+        return { toolCalls: [{ name: "bring_in", args: { agent: "financial", ask: "price it" } }, { name: "bring_in", args: { agent: "academic", ask: "check saturday" } }] };
+      return spy.chat(req);
+    },
+  };
+  (s.engine.d as { llm: LlmClient }).llm = both;
+  await s.dm("I'm going on the beach trip Saturday");
+  const penny = s.engine.handle({ persona: "financial", sender: PHONE, text: "Yes", handle: "penny-space", messageId: "y1", lineKnown: true } as Inbound);
+  const out = await penny;
+  assert.ok(out.some((o) => o.persona === "academic" && o.text === "Dean answer"), JSON.stringify(out.map((o) => [o.persona, o.text])));
+  assert.equal(out[0].persona, "financial", "the ack comes from the agent they said yes to");
+  assert.equal(s.store.kv("shared", PHONE).get("recruit"), undefined);
+});
+
+test("a 'yes' to an agent outside the hand-off still doesn't accept it", async () => {
+  const s = setup(0, { agents: ["social", "financial"], greeted: ["social", "financial"] }); // Sunny offers Penny? no: Penny is theirs
+  // Sunny offers Dean only; a yes texted to Penny (not part of this hand-off) is just a message to Penny.
+  (s.engine.d as { llm: LlmClient }).llm = {
+    ...spy,
+    chat: async (req) => {
+      const last = req.messages.at(-1) as LlmMessage;
+      if (/You are Sunny,/.test(req.system) && last.role === "user" && /beach/i.test(last.text)) return { toolCalls: [{ name: "bring_in", args: { agent: "academic", ask: "check saturday" } }] };
+      return spy.chat(req);
+    },
+  };
+  await s.dm("I'm going on the beach trip Saturday");
+  const out = await s.engine.handle({ persona: "financial", sender: PHONE, text: "yes", handle: "penny-space", messageId: "y2", lineKnown: true } as Inbound);
+  assert.ok(!out.some((o) => o.persona === "academic"));
+});
+
+// Review of kerry/yes-any-thread (3-lens workflow): another hand-off agent's thread may only ACCEPT, never consume.
+function partySetup(lastFromDean?: string) {
+  const s = setup(0, { agents: ["social", "financial", "academic"].slice(0, lastFromDean ? 3 : 2) as PersonaId[], greeted: ["social", "financial", "academic"].slice(0, lastFromDean ? 3 : 2) as PersonaId[] });
+  (s.engine.d as { llm: LlmClient }).llm = {
+    ...spy,
+    chat: async (req) => {
+      const last = req.messages.at(-1) as LlmMessage;
+      if (/You are Sunny,/.test(req.system) && last.role === "user" && /beach/i.test(last.text))
+        return { toolCalls: lastFromDean
+          ? [{ name: "bring_in", args: { agent: "academic", ask: "check saturday" } }, { name: "bring_in", args: { agent: "financial", ask: "price it" } }]
+          : [{ name: "bring_in", args: { agent: "financial", ask: "price it" } }, { name: "bring_in", args: { agent: "academic", ask: "check saturday" } }] };
+      if (lastFromDean && /You are Dean,/.test(req.system) && last.role === "user" && last.text.startsWith("[handoff")) return { text: lastFromDean };
+      return spy.chat(req);
+    },
+  };
+  const to = (persona: PersonaId, text: string) => s.engine.handle({ persona, sender: PHONE, text, handle: `${persona}-space`, messageId: `x${Math.random()}`, lineKnown: true } as Inbound);
+  return { s, to };
+}
+
+test("review #1: a non-answer to Penny keeps Sunny's offer; a later yes to Sunny still brings Dean", async () => {
+  const { s, to } = partySetup();
+  await to("social", "I'm going on the beach trip Saturday");
+  const thanks = await to("financial", "thanks penny");
+  assert.deepEqual(thanks.map((o) => [o.persona, o.text]), [["financial", "Penny reply"]], "Penny hears it");
+  const yes = await to("social", "yes");
+  assert.ok(yes.some((o) => o.persona === "academic" && o.text === "Dean answer"), JSON.stringify(yes.map((o) => [o.persona, o.text])));
+  void s;
+});
+
+test("review #2: 'ok option 1' to Dean (answering his own 'your call') goes to Dean, doesn't recruit Penny or drop her offer", async () => {
+  // They have Sunny and Dean: Sunny brings Dean (theirs: answers at once, ending in a question) and offers Penny.
+  const { s, to } = partySetup("option 1: take it then go (~85%). option 2: skip it (~61%). your call.");
+  s.store.saveUser({ ...s.store.user(PHONE), agents: ["social", "academic"], greeted: ["social", "academic"] });
+  await to("social", "I'm going on the beach trip Saturday");
+  const ok = await to("academic", "ok option 1");
+  assert.ok(!ok.some((o) => o.persona === "financial"), "Penny not recruited off Dean's question");
+  assert.deepEqual(ok.map((o) => o.persona), ["academic"]);
+  const yes = await to("social", "yes"); // the offer is still there in Sunny's thread
+  assert.ok(yes.some((o) => o.persona === "financial" && o.text === "Penny answer"));
+});
+
+test("review #2b: in another agent's thread only a real yes counts, not 'ok' / 'k' / 'bet'", async () => {
+  const { to } = partySetup();
+  await to("social", "I'm going on the beach trip Saturday");
+  const ok = await to("financial", "ok");
+  assert.deepEqual(ok.map((o) => o.persona), ["financial"]);
+  const yes = await to("financial", "yeah");
+  assert.ok(yes.some((o) => o.persona === "academic" && o.text === "Dean answer"));
+});
+
+test("review #4: the party window is ~3 minutes: a yes to Penny at 2.5 min still counts", async () => {
+  const { s, to } = partySetup();
+  await to("social", "I'm going on the beach trip Saturday");
+  const at = Date.now() + 150_000;
+  (s.engine as unknown as { now: () => number }).now = () => at;
+  const yes = await to("financial", "yes");
+  assert.ok(yes.some((o) => o.persona === "academic" && o.text === "Dean answer"));
+});
+
+test("an agent that just answered a hand-off isn't run again for the same plan a minute later (no duplicate texts)", async () => {
+  // Live 02:04: they had all three; Sunny brought Penny+Dean (both answered at once), still asked "want penny + dean…?",
+  // they said "Yes", and Sunny called bring_in for both again: every agent answered the NYC trip twice.
+  const s = setup(0, { agents: ["social", "financial", "academic"], greeted: ["social", "financial", "academic"] });
+  const both = [{ name: "bring_in", args: { agent: "financial", ask: "price nyc" } }, { name: "bring_in", args: { agent: "academic", ask: "check fall break" } }];
+  (s.engine.d as { llm: LlmClient }).llm = {
+    ...spy,
+    chat: async (req) => {
+      const last = req.messages.at(-1) as LlmMessage;
+      if (/You are Sunny,/.test(req.system) && last.role === "user" && /nyc|yes/i.test(last.text)) return { toolCalls: both };
+      return spy.chat(req);
+    },
+  };
+  const first = await s.dm("I want to go to nyc for fall break");
+  assert.equal(first.filter((o) => o.text === "Penny answer" || o.text === "Dean answer").length, 2);
+  const again = await s.dm("Yes");
+  assert.deepEqual(again.filter((o) => o.persona !== "social").map((o) => o.text), [], "no second round of answers");
+});
+
+test("consent reads natural answers: 'sure, i don't mind' and 'yes that would be great' are yes; 'please no' and 'nah im good' are no", () => {
+  for (const t of ["sure, i don't mind", "yes that would be great", "yes please, go ahead", "yeah do it", "yes!", "Yes", "sure thing"]) assert.equal(consentFromText(t), "yes", t);
+  for (const t of ["please no", "no thanks", "nah im good", "nope", "not now", "don't", "no, i'm good"]) assert.equal(consentFromText(t), "no", t);
+  for (const t of ["ok so what time?", "what's the cost?", "maybe later, what else is going on this weekend at unc"]) assert.equal(consentFromText(t), undefined, t);
+});
+
+// Review of cf08678 (workflow wf_63527478-ed9): the cooldown only stops a duplicate (a bare yes), never a new request.
+function allThree(extra?: (req: { system: string; messages: LlmMessage[] }) => ReturnType<LlmClient["chat"]> | undefined) {
+  const s = setup(0, { agents: ["social", "financial", "academic"], greeted: ["social", "financial", "academic"] });
+  (s.engine.d as { llm: LlmClient }).llm = {
+    ...spy,
+    chat: async (req) => {
+      const hit = extra?.(req);
+      if (hit) return hit;
+      const last = req.messages.at(-1) as LlmMessage;
+      if (/You are Sunny,/.test(req.system) && last.role === "user") {
+        if (/ask penny/i.test(last.text)) return { toolCalls: [{ name: "bring_in", args: { agent: "financial", ask: "the hotel", asked: true } }] };
+        if (/nyc|yes/i.test(last.text)) return { toolCalls: [{ name: "bring_in", args: { agent: "financial", ask: "price it" } }] };
+      }
+      return spy.chat(req);
+    },
+  };
+  return s;
+}
+const pennyAnswered = (out: Outbound[]) => out.some((o) => o.persona === "financial" && o.text === "Penny answer");
+
+test("review: a changed plan within 3 min still reaches Penny ('actually nyc instead…')", async () => {
+  const s = allThree();
+  assert.ok(pennyAnswered(await s.dm("I want to go to nyc for fall break")), "first plan priced");
+  assert.ok(pennyAnswered(await s.dm("actually nyc instead, how much is that")), "changed plan priced too");
+});
+
+test("review: naming Penny within 3 min still reaches her ('ask penny about the hotel too')", async () => {
+  const s = allThree();
+  await s.dm("I want to go to nyc for fall break");
+  assert.ok(pennyAnswered(await s.dm("ask penny about the hotel too")), "named request reaches Penny");
+});
+
+test("review: if Penny's hand-off answer failed, a yes a minute later runs her again (no false 'already answered')", async () => {
+  let failing = true;
+  const s = allThree((req) => {
+    const last = req.messages.at(-1) as LlmMessage;
+    if (failing && /You are Penny,/.test(req.system) && last.role === "user" && last.text.startsWith("[handoff")) throw new Error("model returned no text");
+    return undefined;
+  });
+  const first = await s.dm("I want to go to nyc for fall break");
+  assert.equal(pennyAnswered(first), false, "Penny's answer failed");
+  failing = false;
+  const again = await s.dm("yes");
+  assert.equal(pennyAnswered(again), true, "a yes runs Penny again");
+});
+
+test("review: the cooldown message points at the right thread when Penny speaks through Sunny's (via)", async () => {
+  const s = setup(0, { agents: ["social", "financial"], greeted: ["social", "financial"], via: { financial: "social" } });
+  s.store.kv("shared", PHONE).set("handoffs", { financial: Date.now() });
+  const out = await recruitTool({ store: s.store, names: NAMES, from: "social", text: "yes", now: () => Date.now(), needsAdd: () => false, startAdd: () => {} })
+    .run({ agent: "financial", ask: "price it" }, s.engine.ctx("social", s.store.user(PHONE)));
+  assert.match(out, /right here/);
+});

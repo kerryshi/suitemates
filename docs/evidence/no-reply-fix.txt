@@ -1,0 +1,69 @@
+# '(no reply)' on real phones (Penny x2, Dean x1, 01:58-02:05) — fix evidence 2026-10-11 02:13
+## cause: after 3 tool rounds the final no-tools call came back with a function call; core sent the literal '(no reply)'
+## live probe 1 (real Gemini): functionCallingConfig NONE is IGNORED by gemini-3.6-flash
+noTools call → toolCalls (BAD): canvas__get_todo_items ,canvas__list_courses ,google_calendar__list_events
+## live probe 2: flattened history, no tools, explicit instruction → 3/3 plain text, 0 calls
+## red before (tests/no-reply.test.ts, duplicate hand-off test)
+✖ the last step after the tool rounds forbids tools (so the model answers in text) and never yields '(no reply)' (15.47725ms)
+✖ if the model still has nothing to say, respond throws (callers fall back) instead of returning '(no reply)' (1.862209ms)
+✖ Gemini: noTools sends functionCallingConfig NONE with the declarations kept (9.084208ms)
+ℹ pass 0
+ℹ fail 3
+✖ failing tests:
+✖ the last step after the tool rounds forbids tools (so the model answers in text) and never yields '(no reply)' (15.47725ms)
+✖ if the model still has nothing to say, respond throws (callers fall back) instead of returning '(no reply)' (1.862209ms)
+✖ Gemini: noTools sends functionCallingConfig NONE with the declarations kept (9.084208ms)
+✔ the last step after the tool rounds forbids tools (so the model answers in text) and never yields '(no reply)' (15.186042ms)
+✔ if the model still has nothing to say, respond throws (callers fall back) instead of returning '(no reply)' (2.111125ms)
+✖ Gemini noTools: no tool declarations, the tool calls and results flattened to text, and stray calls ignored (10.1085ms)
+ℹ pass 2
+ℹ fail 1
+✖ failing tests:
+✖ Gemini noTools: no tool declarations, the tool calls and results flattened to text, and stray calls ignored (10.1085ms)
+✖ an agent that just answered a hand-off isn't run again for the same plan a minute later (no duplicate texts) (2.921417ms)
+ℹ pass 14
+ℹ fail 1
+✖ an agent that just answered a hand-off isn't run again for the same plan a minute later (no duplicate texts) (2.921417ms)
+## green
+✔ the last step after the tool rounds forbids tools (so the model answers in text) and never yields '(no reply)' (16.486875ms)
+✔ if the model still has nothing to say, respond throws (callers fall back) instead of returning '(no reply)' (1.978417ms)
+✔ Gemini noTools: no tool declarations, the tool calls and results flattened to text, and stray calls ignored (13.24575ms)
+✔ an agent that just answered a hand-off isn't run again for the same plan a minute later (no duplicate texts) (2.621167ms)
+ℹ pass 18
+ℹ fail 0
+ℹ tests 246
+ℹ pass 246
+ℹ fail 0
+typecheck clean
+## live probe 3 (real Gemini, real tool loop, fixed code): Dean used 3 tool rounds (5 tools), answer-now step returned text
+LLM calls: 4; reply: 140 chars: you've got comp 421 project 1 due tonight at 11:59 and a stor midterm saturday 💀 clear project 1 today before you even think about packing.
+
+# review round 2 of cf08678 (workflow wf_63527478-ed9: SHIP WITH FIXES) + consent finding from the judge-demo red-team, 2026-10-11 02:27
+## red before
+✖ consent reads natural answers: 'sure, i don't mind' and 'yes that would be great' are yes; 'please no' and 'nah im good' are no (1.009666ms)
+ℹ fail 5
+✖ failing tests:
+ℹ pass 15
+✖ review: a changed plan within 3 min still reaches Penny ('actually nyc instead…') (2.961375ms)
+✖ review: if Penny's hand-off answer failed, a yes a minute later runs her again (no false 'already answered') (2.842209ms)
+✖ review: naming Penny within 3 min still reaches her ('ask penny about the hotel too') (2.239625ms)
+✖ review: the cooldown message points at the right thread when Penny speaks through Sunny's (via) (0.285583ms)
+(+ Gemini noTools keeps the student's photo: red)
+## green
+✔ Gemini noTools keeps the student's photo (a receipt after 3 tool rounds is still visible) (13.23ms)
+✔ review #1: a non-answer to Penny keeps Sunny's offer; a later yes to Sunny still brings Dean (2.734208ms)
+✔ review #2: 'ok option 1' to Dean (answering his own 'your call') goes to Dean, doesn't recruit Penny or drop her offer (3.130291ms)
+✔ review #2b: in another agent's thread only a real yes counts, not 'ok' / 'k' / 'bet' (2.449583ms)
+✔ review #4: the party window is ~3 minutes: a yes to Penny at 2.5 min still counts (1.930583ms)
+✔ consent reads natural answers: 'sure, i don't mind' and 'yes that would be great' are yes; 'please no' and 'nah im good' are no (0.071583ms)
+✔ review: a changed plan within 3 min still reaches Penny ('actually nyc instead…') (2.128334ms)
+✔ review: naming Penny within 3 min still reaches her ('ask penny about the hotel too') (1.956875ms)
+✔ review: if Penny's hand-off answer failed, a yes a minute later runs her again (no false 'already answered') (2.391083ms)
+✔ review: the cooldown message points at the right thread when Penny speaks through Sunny's (via) (0.116708ms)
+ℹ fail 0
+ℹ pass 252
+ℹ tests 252
+typecheck clean
+## live (real Gemini, fixed code): Dean, 3 tool rounds + answer-now
+LLM calls: 4; reply: 197 chars: you got comp 421 project 1 due tonight and stor 435 midterm saturday morning. option 1: crush those first and hit nyc with an 85% in stor. o…
+## note: a test run hung under node:test only when assert.ok(expr) failed with no message (node builds the message from the transpiled source); the tests now pass messages.

@@ -13,6 +13,13 @@ import { photonProjectFor, type AddResult } from "./photon-users.ts";
 import { introTexts } from "./signup.ts";
 
 export const OFFER_TTL_MS = 10 * 60_000;
+// A yes texted to another agent of the same hand-off (Penny answered first, so they replied in her thread) counts
+// for a shorter while: later on, a "yes" there is more likely about that agent's own question.
+export const PARTY_TTL_MS = 3 * 60_000;
+// An agent that just answered a hand-off isn't run again for this person this soon (the offerer asked anyway and they
+// said yes, or the model called bring_in twice): one answer per agent, not two.
+export const HANDOFF_COOLDOWN_MS = 3 * 60_000;
+const handoffs = (store: Store, phone: string) => store.kv("shared", phone).get<Partial<Record<PersonaId, number>>>("handoffs") ?? {};
 
 export interface RecruitAsk {
   id: PersonaId;
@@ -24,6 +31,16 @@ export interface Pending {
   text: string; // what the student said
   offeredAt: number;
   agents: RecruitAsk[];
+  party?: PersonaId[]; // every agent in this hand-off (the offerer + everyone it brought in): a yes to any of them counts
+}
+
+// May this inbound answer the offer? On a shared number any thread; else the offerer's thread, or (briefly) the
+// thread of another agent from the same hand-off.
+export function answersOffer(p: Pending, persona: PersonaId, lineKnown: boolean | undefined, now: number): boolean {
+  const age = now - p.offeredAt;
+  if (age >= OFFER_TTL_MS) return false;
+  if (!lineKnown || p.from === persona) return true;
+  return age < PARTY_TTL_MS && Boolean(p.party?.includes(persona));
 }
 
 export const getPending = (store: Store, phone: string) => store.kv("shared", phone).get<Pending>("recruit");
@@ -31,11 +48,18 @@ export const setPending = (store: Store, phone: string, p: Pending | undefined) 
   store.kv("shared", phone).set("recruit", p?.agents.length ? p : undefined);
 
 const YES = /^\s*(y|ya|yes|yea|yeah|yep|yup|sure|ok|okay|k|please|pls|do it|go ahead|sounds good|bet|let'?s go|absolutely|of course)\b/i;
-const NO = /\b(n|no|nah|nope|not now|no thanks|nvm|never ?mind|don'?t)\b/i;
+const NO_START = /^\s*(n|no|nah|nope|not now|no thanks|nvm|never ?mind|don'?t)\b/i;
+const NO_WORD = /\b(no|nah|nope)\b/i; // "please no"; not "don't" ("sure, i don't mind" is a yes)
 // A short answer to the offer. "no" anywhere wins ("please no"); a question or a long message isn't an answer.
+// In another agent's thread (not the offerer's) only a plain yes accepts; "ok" / "k" / "bet" there are about that agent.
+export const PLAIN_YES = /^\s*(y|ya|yes|yea|yeah|yep|yup|sure)\b/i;
+
+// A natural short answer: "sure, i don't mind" and "yes that would be great" are yes; "please no" is no; a question
+// or a long message about something else is neither.
 export function consentFromText(text: string): "yes" | "no" | undefined {
-  if (NO.test(text) && text.trim().split(/\s+/).length <= 5) return "no";
-  if (text.includes("?") || text.trim().split(/\s+/).length > 4) return undefined;
+  const words = text.trim().split(/\s+/).length;
+  if (NO_START.test(text) || (NO_WORD.test(text) && words <= 5)) return "no";
+  if (text.includes("?") || words > 8) return undefined;
   return YES.test(text) ? "yes" : undefined;
 }
 
@@ -84,10 +108,21 @@ export function recruitTool(d: RecruitDeps): Tool {
       const ask = typeof args.ask === "string" && args.ask.trim() ? args.ask.trim().slice(0, 200) : said(d.text).slice(0, 200);
       const user = ctx.user;
       const consent = has(user, agent) ? "none" : asked ? "given" : "pending";
+      const n0 = d.names[agent];
+      const lastRun = handoffs(d.store, user.phone)[agent];
+      // Only a duplicate is stopped: a bare yes to a question that hand-off already answered. A new plan ("actually nyc
+      // instead") or naming the agent ("ask penny about the hotel") always goes through.
+      const bareYes = consentFromText(said(d.text)) === "yes";
+      if (consent === "none" && !asked && bareYes && lastRun !== undefined && d.now() - lastRun < HANDOFF_COOLDOWN_MS)
+        return `${n0} already answered this a moment ago ${user.via?.[agent] ? "right here" : `in ${n0}'s own thread`}. Don't ask about ${n0} again; just point them there.`;
       const p = getPending(d.store, user.phone);
       const sameTurn = p && p.from === d.from && p.text === said(d.text) && d.now() - p.offeredAt < OFFER_TTL_MS;
       const base: Pending = sameTurn ? p : { from: d.from, text: said(d.text), offeredAt: d.now(), agents: [] };
-      setPending(d.store, user.phone, { ...base, agents: [...base.agents.filter((a) => a.id !== agent), { id: agent, ask, consent }] });
+      setPending(d.store, user.phone, {
+        ...base,
+        agents: [...base.agents.filter((a) => a.id !== agent), { id: agent, ask, consent }],
+        party: [...new Set([...(base.party ?? [d.from]), agent])],
+      });
       if (consent !== "none" && d.needsAdd(agent, user)) d.startAdd(agent, user);
       const n = d.names[agent];
       if (consent === "none")
@@ -152,6 +187,8 @@ export async function runRecruit(engine: Engine, phone: string, p: Pending): Pro
         engine.log(`WARN ${a.id} handoff answer failed (try ${attempt}): ${err instanceof Error ? err.message : err}`);
       }
     }
+    // Recorded only once the agent actually answered: a failed answer must not read as "already answered".
+    if (answer) store.kv("shared", phone).set("handoffs", { ...handoffs(store, phone), [a.id]: engine.time() });
     const route = user.via?.[a.id];
     const said: Outbound[] = answer ? [{ persona: a.id, handle: `dm:${phone}`, text: answer }] : [];
     // Through another agent's thread: no contact card (it would carry that agent's number under this one's name,
@@ -174,13 +211,22 @@ export async function runRecruit(engine: Engine, phone: string, p: Pending): Pro
 
 // The offering agent's "on it", sent before the others' texts land. Only an agent on its own Photon project texts
 // from its own number; on one shared project (or via) it jumps in here, name-tagged.
-export function ackText(names: Record<PersonaId, string>, ids: PersonaId[], viaFrom: PersonaId[], ownNumber = (id: PersonaId) => photonProjectFor(id).own): string {
+// viaThread: the offerer, when the yes came in another agent's thread: a fallback agent speaks in the offerer's thread.
+export function ackText(
+  names: Record<PersonaId, string>,
+  ids: PersonaId[],
+  viaFrom: PersonaId[],
+  ownNumber = (id: PersonaId) => photonProjectFor(id).own,
+  viaThread?: PersonaId,
+): string {
   const own = ids.filter((id) => !viaFrom.includes(id) && ownNumber(id)).map((id) => names[id]);
-  const here = ids.filter((id) => viaFrom.includes(id) || !ownNumber(id)).map((id) => names[id]);
+  const there = viaThread ? ids.filter((id) => viaFrom.includes(id)).map((id) => names[id]) : [];
+  const here = ids.filter((id) => (viaFrom.includes(id) && !viaThread) || (!viaFrom.includes(id) && !ownNumber(id))).map((id) => names[id]);
   const and = (xs: string[]) => xs.join(" and ");
   const parts = [
     own.length ? `${and(own)} ${own.length > 1 ? "are" : "is"} texting you now from ${own.length > 1 ? "their own numbers" : "their own number"} 📲` : "",
     here.length ? `${and(here)} ${here.length > 1 ? "are" : "is"} jumping in right here` : "",
+    there.length ? `${and(there)} ${there.length > 1 ? "are" : "is"} jumping in over in ${names[viaThread!]}'s thread` : "",
   ].filter(Boolean);
   const filter = own.length ? " (nothing showing? check Messages → Unknown Senders)" : "";
   return `on it! ${parts.join(", and ")}${filter}`;

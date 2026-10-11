@@ -1,0 +1,62 @@
+# Review fix: bare pictographs count toward the 1-emoji cap. RED before the fix.
+# 2026-10-11T07:16:59Z worktree kerry/voice, HEAD b5a0d73 + tests/voice.test.ts edit only (core/voice.ts unchanged)
+$ npx tsx --test tests/voice.test.ts
+✔ no emoji: text is byte-identical (digits, $, #, *, urls and phone numbers are not emoji) (0.752ms)
+✔ one emoji: unchanged wherever it sits (0.125334ms)
+✔ adjacent pair with a VS16 emoji: the first (🏖️, kept whole) stays, the second goes, the words stay apart (0.172417ms)
+✔ a second emoji at the end goes with its space (no trailing space) (0.0685ms)
+✔ a ZWJ sequence counts as one emoji: kept whole when first (0.064458ms)
+✔ a ZWJ sequence counts as one emoji: dropped whole when not first (0.052833ms)
+✔ skin tones stay with their hand (0.055875ms)
+✔ a flag is one emoji (0.25775ms)
+✔ keycaps are one emoji; a bare # or digit is none (0.100375ms)
+✔ a VS16 heart is an emoji (0.093084ms)
+✔ punctuation and spacing are tidied only around what was removed (0.083625ms)
+✔ emoji glued to words: removed without gluing the words together (0.049416ms)
+✔ three or more: only the first survives (0.11475ms)
+✔ idempotent: capping a capped text changes nothing (1.308334ms)
+✔ countEmoji counts grapheme clusters (0.049833ms)
+✖ bare pictographs without VS16 (❤ ☀ ✈ ⚠ ☺ ✌ ♥) count toward the cap (0.4845ms)
+ℹ tests 16
+ℹ suites 0
+ℹ pass 15
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 139.463917
+
+✖ failing tests:
+
+test at tests/voice.test.ts:112:1
+✖ bare pictographs without VS16 (❤ ☀ ✈ ⚠ ☺ ✌ ♥) count toward the cap (0.4845ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  1 !== 2
+  
+      at TestContext.<anonymous> (/Users/kerryshi/Projects/hacknc-agents-voice/tests/voice.test.ts:113:10)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1062:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:752:18)
+      at Test.postRun (node:internal/test_runner/test:1191:19)
+      at Test.run (node:internal/test_runner/test:1119:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:752:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 1,
+    expected: 2,
+    operator: 'strictEqual'
+  }
+exit=1
+
+# The review's probe (bare U+2764 + one emoji) and edge cases, same unchanged core/voice.ts
+$ npx tsx scratchpad/pict-probe.mts
+"love that ❤ 🔥" count=1 cap="love that ❤ 🔥"
+"❤ 💸" count=1 cap="❤ 💸"
+"⚽︎ 🌞" count=2 cap="⚽︎"
+"🏳️‍🌈 🏳️‍⚧️" count=2 cap="🏳️‍🌈"
+"👨‍👩‍👧‍👦 👍🏽" count=2 cap="👨‍👩‍👧‍👦"
+"hey 🌞\n😂 ok" count=2 cap="hey 🌞\nok"
+"😭😭😭" count=3 cap="😭"
+"© 2026 ™ ★ → ok" count=0 cap="© 2026 ™ ★ → ok"
+exit=0

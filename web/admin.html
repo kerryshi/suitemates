@@ -4,28 +4,39 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Suitemates Admin</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Ubuntu:wght@400;500;700&display=swap">
 <style>
-  :root { --bg: #2a2b2f; --card: #313237; --line: #3c3d43; --text: #f2f3f5; --muted: #a3a6ae; }
+  :root {
+    --navy: #173771; --blue: #1554c9; --green: #147842; --ink: #0f2a5a; --muted: #3f5a84; --hi: #ffffffbf;
+    --bg: #eef8ff; --line: rgba(23,55,113,.12); --text: var(--ink);
+    --card: linear-gradient(180deg, rgba(255,255,255,.82), rgba(255,255,255,.6));
+  }
   * { box-sizing: border-box; }
-  body { margin: 0; min-height: 100vh; background: var(--bg); color: var(--text); font: 15px/1.45 "Segoe UI", "Helvetica Neue", Arial, sans-serif; }
+  body { margin: 0; min-height: 100vh; color: var(--text); font: 15px/1.45 "Ubuntu", "Trebuchet MS", "Segoe UI", sans-serif;
+    background: linear-gradient(180deg, #bfe5fc 0, #dcf1fe 220px, var(--bg) 460px) 0 0 / 100% 460px no-repeat, var(--bg); }
   main { max-width: 1040px; margin: 0 auto; padding: 28px 16px; }
-  h1 { margin: 0 0 4px; }
+  h1 { margin: 0 0 4px; color: var(--navy); text-shadow: 0 1px 0 #fff; }
   .steps { color: var(--muted); margin: 0 0 18px; padding-left: 20px; }
   code { color: var(--text); }
-  .table { overflow-x: auto; background: var(--card); border: 1px solid var(--line); border-radius: 16px; }
+  .table { overflow-x: auto; background: var(--card); border: 1px solid rgba(255,255,255,.9); border-radius: 22px;
+    box-shadow: inset 0 1px 0 #fff, 0 10px 30px rgba(23,55,113,.18); -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px); }
   table { width: 100%; border-collapse: collapse; }
   th, td { text-align: left; padding: 12px 14px; border-bottom: 1px solid var(--line); vertical-align: middle; }
   tr:last-child td { border-bottom: 0; }
   th { font-size: .74rem; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
   .pill { display: inline-block; padding: 3px 10px; border-radius: 999px; font-size: .8rem; font-weight: 700; }
-  .pending { background: rgb(250 204 21 / .15); color: rgb(250 204 21); }
-  .added { background: rgb(59 130 246 / .2); color: #93c5fd; }
-  .invited { background: rgb(126 226 168 / .15); color: rgb(126 226 168); }
+  .pending { background: rgb(250 204 21 / .3); color: #7a4d00; }
+  .added { background: rgb(21 84 201 / .12); color: var(--blue); }
+  .invited { background: rgb(20 120 66 / .14); color: var(--green); }
   .dot { display: inline-flex; align-items: center; gap: 6px; margin-right: 10px; white-space: nowrap; }
-  .dot::before { content: ""; width: 9px; height: 9px; border-radius: 50%; background: rgb(var(--c)); box-shadow: 0 0 8px rgb(var(--c) / .8); }
-  button { font: inherit; padding: 7px 12px; border-radius: 10px; border: 0; color: #fff; background: rgb(59 130 246); cursor: pointer; white-space: nowrap; }
+  .dot::before { content: ""; width: 9px; height: 9px; border-radius: 50%; background: rgb(var(--c)); box-shadow: 0 0 6px rgb(var(--c) / .6); }
+  button { font: inherit; font-weight: 700; padding: 7px 14px; border-radius: 999px; border: 0; color: #fff; cursor: pointer; white-space: nowrap;
+    text-shadow: 0 1px 0 rgba(0,0,0,.25); background: linear-gradient(180deg, rgba(255,255,255,.35), rgba(255,255,255,0) 50%, rgba(0,0,0,.12)), var(--blue);
+    box-shadow: inset 0 1px 0 var(--hi), inset 0 -4px 8px rgba(0,0,0,.15), 0 4px 10px rgb(21 84 201 / .3); }
   button:disabled { opacity: .6; cursor: wait; }
-  .copy { background: transparent; color: var(--muted); border: 1px solid var(--line); padding: 3px 8px; font-size: .8rem; margin-left: 6px; }
+  .copy { background: #fff; color: var(--muted); border: 1px solid rgba(23,55,113,.18); padding: 3px 9px; font-size: .8rem; font-weight: 500; margin-left: 6px; text-shadow: none; box-shadow: none; }
   .msg { min-height: 1.4em; color: var(--muted); }
   .empty { text-align: center; color: var(--muted); padding: 28px; }
   small { color: var(--muted); }
@@ -53,7 +64,7 @@
   const msg = document.getElementById("msg");
   const rows = document.getElementById("rows");
   const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
-  const AGENT = { academic: ["Dean", "59 130 246"], financial: ["Penny", "236 72 153"], social: ["Sunny", "249 115 22"] };
+  const AGENT = { academic: ["Dean", "21 84 201"], financial: ["Penny", "20 120 66"], social: ["Sunny", "194 65 12"] };
   const LABEL = { pending: "pending", added: "added", invited: "greeted" };
   const agents = (list) => list && list.length
     ? list.filter((a) => AGENT[a]).map((a) => `<span class="dot" style="--c:${AGENT[a][1]}">${AGENT[a][0]}</span>`).join("")

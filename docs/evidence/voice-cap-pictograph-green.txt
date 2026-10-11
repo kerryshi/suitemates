@@ -1,0 +1,39 @@
+# Review fix: bare pictographs count toward the 1-emoji cap. GREEN after the fix (core/voice.ts isEmoji).
+# 2026-10-11T07:17:18Z worktree kerry/voice, HEAD b5a0d73 + tests/voice.test.ts + core/voice.ts
+$ npx tsx --test tests/voice.test.ts
+✔ no emoji: text is byte-identical (digits, $, #, *, urls and phone numbers are not emoji) (0.830166ms)
+✔ one emoji: unchanged wherever it sits (0.157584ms)
+✔ adjacent pair with a VS16 emoji: the first (🏖️, kept whole) stays, the second goes, the words stay apart (0.205291ms)
+✔ a second emoji at the end goes with its space (no trailing space) (0.078791ms)
+✔ a ZWJ sequence counts as one emoji: kept whole when first (0.073708ms)
+✔ a ZWJ sequence counts as one emoji: dropped whole when not first (0.10075ms)
+✔ skin tones stay with their hand (0.065583ms)
+✔ a flag is one emoji (0.273292ms)
+✔ keycaps are one emoji; a bare # or digit is none (0.112208ms)
+✔ a VS16 heart is an emoji (0.101667ms)
+✔ punctuation and spacing are tidied only around what was removed (0.080334ms)
+✔ emoji glued to words: removed without gluing the words together (0.057291ms)
+✔ three or more: only the first survives (0.1415ms)
+✔ idempotent: capping a capped text changes nothing (1.451708ms)
+✔ countEmoji counts grapheme clusters (0.084291ms)
+✔ bare pictographs without VS16 (❤ ☀ ✈ ⚠ ☺ ✌ ♥) count toward the cap (0.095209ms)
+ℹ tests 16
+ℹ suites 0
+ℹ pass 16
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 199.77575
+exit=0
+
+$ npx tsx scratchpad/pict-probe.mts
+"love that ❤ 🔥" count=2 cap="love that ❤"
+"❤ 💸" count=2 cap="❤"
+"⚽︎ 🌞" count=2 cap="⚽︎"
+"🏳️‍🌈 🏳️‍⚧️" count=2 cap="🏳️‍🌈"
+"👨‍👩‍👧‍👦 👍🏽" count=2 cap="👨‍👩‍👧‍👦"
+"hey 🌞\n😂 ok" count=2 cap="hey 🌞\nok"
+"😭😭😭" count=3 cap="😭"
+"© 2026 ™ ★ → ok" count=0 cap="© 2026 ™ ★ → ok"
+exit=0

@@ -185,9 +185,14 @@ test("proactive facts read as a text to the student (core sends them raw if Gemi
 test("intro: first who Dean is (no assignments), then the next deadline as its own text", async () => {
   const [hello, next] = await triggers.intro(ctx());
   assert.equal(hello.kind, "intro");
-  assert.match(hello.facts, /^Hey, I'm Dean\. I keep track of your Canvas.*Text me "what's due\?" anytime\.$/);
+  assert.match(hello.facts, /^Hey, I'm Dean\. I keep track of your Canvas.*Text me "what's due\?" anytime\.( \(for now.*\))?$/);
   assert.doesNotMatch(hello.facts, /STOR|due today/);
   assert.equal(hello.dedupeKey, "academic:intro:+19195550001");
   assert.equal(next.kind, "intro_next_up");
   assert.equal(next.facts, "first thing on your list: STOR 435 Problem Set 6, due today 5:00 PM.");
+});
+
+test("intro on mock Canvas says it's a demo Canvas, so nobody thinks it's their real classes", async () => {
+  const [hello] = await triggers.intro(ctx());
+  assert.match(hello.facts, /\(for now that's a demo Canvas with sample classes, not your real one\.\)$/);
 });

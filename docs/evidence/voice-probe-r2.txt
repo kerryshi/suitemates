@@ -1,0 +1,95 @@
+Suitemates voice AFTER probe, workflow round 2 (Penny + Sunny; real Gemini, terminal path)
+(Separate from the 'round 2' section inside docs/evidence/voice-probe.txt, which ran at 29fe85a + uncommitted edits.)
+worktree: /Users/kerryshi/Projects/hacknc-agents-voice  branch: kerry/voice  HEAD: fbdd31b (clean tree)
+run: 2026-10-11T07:06:16.593Z
+banner: Suitemates chat · LLM=gemini:gemini-3.6-flash · MOCK=1 · state=/private/tmp/claude-501/-Users-kerryshi/91b58c5b-c4ca-4331-b741-b72c684a6b7a/scratchpad/voice-probe-state-r2.json
+env overrides (command line, so .env cannot turn on side effects): TRANSPORT=terminal MOCK=1 CANVAS_LIVE=0 PHOTON_AUTO_ADD=0 WATCH= NESSIE_OWNER_PHONE= FAKE_LLM=0 SOCIAL_FILE=<fresh scratchpad board> MOCK_PURCHASES_FILE=<scratchpad> DATA_FILE=<scratchpad> CHAT_STATE=<scratchpad>/voice-probe-state-r2.json
+driver: scratchpad/voice-probe-wf-r2.mts (createApp + ConsoleTransport.onLine + engine.handle/trigger; no npm run dev, no tunnel, no TRANSPORT=imessage; model calls spaced >=15 s, cap 30, 60 s back-off on 429, stop after two 429s in a row)
+probe set: voice-plan.md section D, Penny and Sunny rows (P1-P4, S1-S4). 'sent' = what ConsoleTransport.send printed (capEmoji(o.text)); 'model raw' = Gemini's own final text before the cap.
+SCORED = the first agent text per probe (plan D); any further texts a probe produced are listed as 'also sent'.
+
+== setup (0 model calls) ==
+  /to social
+  /reset
+  hi               [Sunny] (emoji 0) hey, i'm Sunny from Suitemates. i'm the plans person: i find people who want to do the same stuff you do. what's your first name?
+  kerry            [Sunny] (emoji 0) nice to meet you, Kerry! what are you into? (sports, food, outdoors, gaming, concerts, parties…)
+  soccer, beach    [Sunny] (emoji 0) love it. text me "what's happening this weekend?" and i'll find your people.
+  /skip
+  profile: name=Kerry budget=$600 goal="spring break, $400" interests=["soccer","beach"] canvasLinked=true
+
+== probes ==
+
+[P1] Penny · greeting · input: hey penny
+  model calls: 2 · tool call: get_recent_purchases({})
+  SCORED [Penny] (emoji 0) $412.55 left for the month. i saw saturday's 3 a.m. doordash but we're moving past it.
+  model raw #1 (emoji 0): $412.55 left for the month. i saw saturday's 3 a.m. doordash but we're moving past it.
+
+[S1] Sunny · greeting · input: hey sunny
+  model calls: 2 · tool call: list_signups({})
+  SCORED [Sunny] (emoji 0) kerry. soccer sunday 4 pm at hooker fields, omar, priya, and sam are in. clear your afternoon, you're coming.
+  model raw #1 (emoji 0): kerry. soccer sunday 4 pm at hooker fields, omar, priya, and sam are in. clear your afternoon, you're coming.
+
+[P2] Penny · tool (can_i_afford) · input: can i afford a $60 hoodie
+  model calls: 2 · tool call: can_i_afford({"price":60,"item":"hoodie"})
+  SCORED [Penny] (emoji 0) yeah, you can. it leaves you at $19.85 a day for the next 21 days, though $60 is 15% of your spring break goal.
+  model raw #1 (emoji 0): yeah, you can. it leaves you at $19.85 a day for the next 21 days, though $60 is 15% of your spring break goal.
+
+[S2] Sunny · tool (list_signups) · input: anyone down for soccer this weekend
+  model calls: 2 · tool call: list_signups({"activity":"soccer"})
+  SCORED [Sunny] (emoji 0) omar, priya, and sam are playing pickup soccer at hooker fields sunday 4 pm. want in?
+  model raw #1 (emoji 0): omar, priya, and sam are playing pickup soccer at hooker fields sunday 4 pm. want in?
+
+[P3] Penny · hand-off (estimate_plan_cost + bring_in academic offer) · input: beach trip saturday, how much would that run me
+  model calls: 2 · tool call: estimate_plan_cost({"plan":"beach trip saturday"}), bring_in({"agent":"academic","ask":"check if saturday is safe for beach trip"})
+  SCORED [Penny] (emoji 0) runs about $45, which takes 9% of what's left in your budget this month. want dean to check if saturday's safe with your workload?
+  model raw #1 (emoji 0): runs about $45, which takes 9% of what's left in your budget this month. want dean to check if saturday's safe with your workload?
+
+[S3] Sunny · hand-off (join_activity + bring_in) · input: i'm in for the beach trip saturday
+  model calls: 2 · tool call: join_activity({"my_name":"Kerry","activity":"beach trip"}), bring_in({"ask":"price beach trip against their budget","agent":"financial"}), bring_in({"ask":"check what is due around saturday","agent":"academic"})
+  SCORED [Sunny] (emoji 0) you're in. ismail, omar, and priya are going saturday 9 am, wrightsville is not ready for you four. want penny and dean to check the cost and your deadlines?
+  model raw #1 (emoji 0): you're in. ismail, omar, and priya are going saturday 9 am, wrightsville is not ready for you four. want penny and dean to check the cost and your deadlines?
+
+[P4] Penny · proactive · input: /trigger financial weekly_money
+  model calls: 1
+  SCORED [Penny] (emoji 0) spent $123.15 out of your $140 weekly budget. delivery almost beat groceries by three cents, but a win is a win.
+  model raw #1 (emoji 0): spent $123.15 out of your $140 weekly budget. delivery almost beat groceries by three cents, but a win is a win.
+
+[S4] Sunny · proactive · input: /trigger social intro
+  model calls: 1
+  SCORED [Sunny] (emoji 0) kerry! pickup soccer sunday 4 pm at hooker fields, omar, priya, and sam are locked in. bring your worst footwork, want in?
+  model raw #1 (emoji 0): kerry! pickup soccer sunday 4 pm at hooker fields, omar, priya, and sam are locked in. bring your worst footwork, want in?
+
+== summary ==
+probes run: 8/8 · model calls: 14/30
+scored (first text per probe):
+  texts: 8
+  texts with >=1 emoji: 0
+  max emojis in one text: 0
+  banned-filler hits [how can i help | i'm all ears | what's on your mind | hiii | heyyy | let's make it count]: 0
+  extended filler list from plan D bar 3 [happy to help | feel free to | just let me know | financial advice | financial emotional support | back for more | what's the move]: 0
+  texts ending in an emoji: 0
+every text sent (contact cards excluded):
+  texts: 8
+  texts with >=1 emoji: 0
+  max emojis in one text: 0
+  banned-filler hits [how can i help | i'm all ears | what's on your mind | hiii | heyyy | let's make it count]: 0
+  extended filler list from plan D bar 3 [happy to help | feel free to | just let me know | financial advice | financial emotional support | back for more | what's the move]: 0
+  texts ending in an emoji: 0
+greetings ending in "?": 0/2
+model raw texts: 8 · with >=1 emoji: 0 · with >1 emoji (cap had work to do): 0 · max 0
+
+== model call log ==
+call 1 @2026-10-11T07:02:17.461Z 1799ms → tools get_recent_purchases({})
+call 2 @2026-10-11T07:02:34.261Z 3608ms → text
+call 3 @2026-10-11T07:02:52.876Z 1956ms → tools list_signups({})
+call 4 @2026-10-11T07:03:09.836Z 4439ms → text
+call 5 @2026-10-11T07:03:29.277Z 1203ms → tools can_i_afford({"price":60,"item":"hoodie"})
+call 6 @2026-10-11T07:03:45.482Z 4024ms → text
+call 7 @2026-10-11T07:04:04.507Z 1350ms → tools list_signups({"activity":"soccer"})
+call 8 @2026-10-11T07:04:20.858Z 1761ms → text
+call 9 @2026-10-11T07:04:37.620Z 2214ms → tools estimate_plan_cost({"plan":"beach trip saturday"}), bring_in({"agent":"academic","ask":"check if saturday is safe for beach trip"})
+call 10 @2026-10-11T07:04:54.835Z 2238ms → text
+call 11 @2026-10-11T07:05:12.075Z 5238ms → tools join_activity({"my_name":"Kerry","activity":"beach trip"}), bring_in({"ask":"price beach trip against their budget","agent":"financial"}), bring_in({"ask":"check what is due around saturday","agent":"academic"})
+call 12 @2026-10-11T07:05:32.315Z 3261ms → text
+call 13 @2026-10-11T07:05:50.577Z 5568ms → text
+call 14 @2026-10-11T07:06:11.146Z 5443ms → text

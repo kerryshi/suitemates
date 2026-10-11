@@ -104,5 +104,17 @@ test("idempotent: capping a capped text changes nothing", () => {
 test("countEmoji counts grapheme clusters", () => {
   assert.equal(countEmoji("😮‍💨🇺🇸👍🏽1️⃣"), 4);
   assert.equal(countEmoji("#1 at 2:30"), 0);
-  assert.equal(countEmoji("© ™ ♥ ☀ *sigh*"), 0, "text-presentation symbols render as text");
+  assert.equal(countEmoji("© ® ™ ★ → *sigh*"), 0, "©, ®, ™ and plain symbols render as text");
+});
+
+// iMessage on iOS draws a bare ❤ (U+2764, no VS16) as a colour emoji, so the hard cap counts it: any pictograph that
+// is an emoji character counts with or without a variation selector. Only ©, ® and ™ are text.
+test("bare pictographs without VS16 (❤ ☀ ✈ ⚠ ☺ ✌ ♥) count toward the cap", () => {
+  assert.equal(countEmoji("love that ❤ 🔥"), 2);
+  assert.equal(cap("love that ❤ 🔥"), "love that ❤");
+  assert.equal(cap("🔥 love that ❤"), "🔥 love that");
+  assert.equal(countEmoji("❤ ☀ ✈ ⚠ ☺ ✌ ♥"), 7);
+  assert.equal(cap("beach ☀ then boba ✈"), "beach ☀ then boba");
+  assert.equal(cap("⚽︎ 🌞"), "⚽︎", "a text-style selector (VS15) does not hide an emoji from the cap");
+  assert.equal(cap("© 2026 ™ 🌞 ok"), "© 2026 ™ 🌞 ok");
 });

@@ -50,8 +50,8 @@ No "text this number to start". Drafted Sat Oct 10 evening by Ismail with Claude
 | Penny / Sunny `intro` triggers | ❌ |
 | Gemini replies | ✅ key works, but free tier = 5 requests/min (one group message can use ~7). Needs billing for the demo |
 | User store | ✅ `data/state.json` via `core/store.ts` |
-| `POST /signup`, `/admin/signups`, `/admin/intro` | ❌ |
-| Sign-up web page | ❌ |
+| `POST /signup`, `/admin/signups`, `/admin/intro` | ✅ `core/http.ts` + `core/signup.ts`, `tests/signup.test.ts` |
+| Sign-up web page | ✅ `web/index.html` at `GET /`; admin at `GET /admin` (`?token=` if DEMO_TOKEN) |
 | Public URL for the page (phones can't reach localhost) | ❌ e.g. `cloudflared tunnel --url http://localhost:3000` |
 | Real Canvas | ❌ needs a token; `canvas.ts` planner call unverified. Mock works |
 
@@ -65,17 +65,17 @@ No "text this number to start". Drafted Sat Oct 10 evening by Ismail with Claude
 ## Tasks
 
 **Kerry (core, shared files)**
-- [ ] `UserProfile`: add `interests?: string[]`, `signupStatus?: "pending" | "invited"`, and later `canvasToken?` (team-wide file)
-- [ ] `core/http.ts`: `POST /signup` (validate E.164 phone, save profile as onboarded + pending), `GET /admin/signups`,
+- [x] `UserProfile`: `interests`, `signupStatus`, `signedUpAt` (done by Ismail + Claude); later `canvasToken?`
+- [x] `core/http.ts`: `POST /signup` (validate E.164 phone, save profile as onboarded + pending), `GET /admin/signups`,
       `POST /admin/intro {phone}` (fires each persona's `intro`, marks invited). Protect `/admin/*` with `DEMO_TOKEN`
-- [ ] Serve the static page at `GET /` (file in `web/`)
+- [x] Serve the static page at `GET /` (file in `web/`)
 - [ ] Public URL: cloudflared/ngrok tunnel for the demo
 - [ ] Gemini billing (or a per-person key) before the group-chat demo
 - [ ] Penny `intro` trigger (`personas/financial/watch.ts`)
 
 **Ismail (Academic + sign-up page)**
 - [x] Dean `intro` trigger
-- [ ] `web/index.html`: sign-up form (name, phone, budget, savings goal, interests, Canvas yes/no) → `POST /signup`;
+- [x] `web/index.html`: sign-up form (name, phone, budget, savings goal, interests, Canvas yes/no) → `POST /signup`;
       Frutiger Aero look with the avatars from `docs/avatars/`. Plain HTML/JS, no build step
 - [ ] Canvas layer prep: `canvas.ts` reads a per-user token (`ctx.user.canvasToken`) when it exists, else env, else mock
 - [ ] Canvas token → verify the planner call with `MOCK=0` (without sending real data through free-tier Gemini)

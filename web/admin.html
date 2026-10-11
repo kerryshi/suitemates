@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Suitemates Admin</title>
+<style>
+  :root { --ink: #0d3550; --soft: #3d6680; --line: #cfe3ee; --aqua: #1aa6e0; --green: #3fae2a; --bg: #f2f9fc; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.45 "Segoe UI", "Helvetica Neue", Arial, sans-serif; }
+  main { max-width: 900px; margin: 0 auto; padding: 24px 16px; }
+  h1 { margin: 0 0 4px; }
+  .steps { color: var(--soft); margin: 0 0 18px; padding-left: 20px; }
+  table { width: 100%; border-collapse: collapse; background: #fff; border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+  th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { font-size: .8rem; text-transform: uppercase; letter-spacing: .05em; color: var(--soft); background: #f8fcfe; }
+  .pill { display: inline-block; padding: 2px 9px; border-radius: 999px; font-size: .8rem; font-weight: 600; }
+  .pending { background: #fff3cd; color: #7a5a00; }
+  .invited { background: #dff5d6; color: #22651a; }
+  button { font: inherit; padding: 7px 12px; border-radius: 9px; border: 1px solid #0b78b3; color: #fff; background: var(--aqua); cursor: pointer; }
+  button:disabled { opacity: .6; cursor: wait; }
+  .copy { background: #fff; color: var(--ink); border-color: var(--line); padding: 4px 8px; font-size: .85rem; }
+  .msg { min-height: 1.4em; color: var(--soft); }
+  .empty { text-align: center; color: var(--soft); padding: 24px; }
+  @media (max-width: 640px) { .hide-sm { display: none; } }
+</style>
+</head>
+<body>
+<main>
+  <h1>Sign-ups</h1>
+  <ol class="steps">
+    <li>Add the phone in the Photon dashboard → Spectrum → Users (they can't get texts until you do).</li>
+    <li>Press <b>Send intro</b>: Dean texts them first.</li>
+  </ol>
+  <p class="msg" id="msg"></p>
+  <table>
+    <thead><tr><th>Name</th><th>Phone</th><th class="hide-sm">Interests</th><th class="hide-sm">Budget</th><th>Status</th><th></th></tr></thead>
+    <tbody id="rows"><tr><td colspan="6" class="empty">Loading…</td></tr></tbody>
+  </table>
+</main>
+<script>
+  const token = new URLSearchParams(location.search).get("token") || "";
+  const q = token ? `?token=${encodeURIComponent(token)}` : "";
+  const msg = document.getElementById("msg");
+  const rows = document.getElementById("rows");
+  const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+
+  async function load() {
+    const res = await fetch(`/admin/signups${q}`);
+    const out = await res.json();
+    if (!res.ok) { rows.innerHTML = `<tr><td colspan="6" class="empty">${esc(out.error)}</td></tr>`; return; }
+    if (!out.users.length) { rows.innerHTML = `<tr><td colspan="6" class="empty">No sign-ups yet. Share the page: ${esc(location.origin)}/</td></tr>`; return; }
+    rows.innerHTML = out.users.map((u) => `
+      <tr>
+        <td>${esc(u.name)}</td>
+        <td>${esc(u.phone)} <button class="copy" data-copy="${esc(u.phone)}">copy</button></td>
+        <td class="hide-sm">${esc((u.interests || []).join(", "))}</td>
+        <td class="hide-sm">${u.budgetMonthly ? "$" + esc(u.budgetMonthly) : ""}</td>
+        <td><span class="pill ${esc(u.signupStatus)}">${esc(u.signupStatus)}</span></td>
+        <td><button data-phone="${esc(u.phone)}">${u.signupStatus === "invited" ? "Resend intro" : "Send intro"}</button></td>
+      </tr>`).join("");
+  }
+
+  rows.addEventListener("click", async (e) => {
+    const b = e.target.closest("button");
+    if (!b) return;
+    if (b.dataset.copy) { navigator.clipboard?.writeText(b.dataset.copy); msg.textContent = `Copied ${b.dataset.copy}`; return; }
+    b.disabled = true;
+    msg.textContent = `Sending to ${b.dataset.phone}…`;
+    try {
+      const res = await fetch(`/admin/intro${q}`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ phone: b.dataset.phone }) });
+      const out = await res.json();
+      if (!res.ok) throw new Error(out.error);
+      msg.textContent = `Sent ${out.sent} text${out.sent === 1 ? "" : "s"} to ${b.dataset.phone}.`;
+    } catch (err) {
+      msg.textContent = /not allowed/i.test(err.message)
+        ? `Photon refused: add ${b.dataset.phone} under Users in the Photon dashboard first.`
+        : `Failed: ${err.message}`;
+    }
+    b.disabled = false;
+    load();
+  });
+  load();
+</script>
+</body>
+</html>

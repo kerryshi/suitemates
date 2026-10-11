@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Suitemates</title>
+<meta name="description" content="Three texting agents for UNC students: Dean for school, Penny for money, Sunny for plans.">
+<style>
+  :root {
+    --sky-top: #5ec8f2; --sky-bottom: #e9fbff; --grass: #7ccf4a;
+    --ink: #0d3550; --ink-soft: #3d6680; --glass: rgba(255,255,255,.62); --glass-edge: rgba(255,255,255,.9);
+    --aqua: #1aa6e0; --aqua-dark: #0b78b3; --green: #3fae2a; --error: #c0392b;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; min-height: 100vh; color: var(--ink);
+    font: 16px/1.45 "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+    background: radial-gradient(ellipse 120% 40% at 50% 105%, var(--grass) 0 38%, transparent 39%),
+                linear-gradient(180deg, var(--sky-top), var(--sky-bottom) 70%);
+    background-attachment: fixed;
+  }
+  .bubbles span {
+    position: fixed; border-radius: 50%; pointer-events: none;
+    background: radial-gradient(circle at 30% 30%, rgba(255,255,255,.95), rgba(255,255,255,.15) 45%, rgba(120,210,255,.18) 70%);
+    border: 1px solid rgba(255,255,255,.6);
+  }
+  main { max-width: 520px; margin: 0 auto; padding: 28px 16px 48px; position: relative; }
+  h1 { font-size: 2.2rem; margin: 0 0 4px; letter-spacing: -.5px; text-shadow: 0 2px 0 rgba(255,255,255,.7); }
+  .tag { margin: 0 0 20px; color: var(--ink-soft); }
+  .crew { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 20px; }
+  .crew figure { margin: 0; text-align: center; }
+  .crew img { width: 100%; aspect-ratio: 1; border-radius: 50%; border: 3px solid var(--glass-edge);
+    box-shadow: 0 6px 16px rgba(13,53,80,.25); background: #fff; object-fit: cover; }
+  .crew figcaption { font-weight: 600; margin-top: 4px; }
+  .crew small { display: block; color: var(--ink-soft); font-weight: 400; }
+  .card { background: var(--glass); border: 1px solid var(--glass-edge); border-radius: 22px; padding: 20px;
+    box-shadow: 0 10px 30px rgba(13,53,80,.18), inset 0 1px 0 rgba(255,255,255,.9); backdrop-filter: blur(10px); }
+  label { display: block; font-weight: 600; margin: 14px 0 6px; }
+  label:first-child { margin-top: 0; }
+  .hint { font-weight: 400; color: var(--ink-soft); font-size: .9rem; }
+  input[type=text], input[type=tel], input[type=number] {
+    width: 100%; padding: 12px 14px; font: inherit; color: var(--ink); border-radius: 12px;
+    border: 1px solid rgba(13,53,80,.2); background: rgba(255,255,255,.9); outline: none;
+  }
+  input:focus { border-color: var(--aqua); box-shadow: 0 0 0 3px rgba(26,166,224,.25); }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chips input { position: absolute; opacity: 0; pointer-events: none; }
+  .chips label { margin: 0; font-weight: 500; padding: 7px 12px; border-radius: 999px; cursor: pointer;
+    background: rgba(255,255,255,.85); border: 1px solid rgba(13,53,80,.18); }
+  .chips input:checked + label { background: linear-gradient(180deg, #8fe06a, var(--green)); color: #fff; border-color: transparent; }
+  .chips input:focus-visible + label { box-shadow: 0 0 0 3px rgba(26,166,224,.35); }
+  .row { display: flex; align-items: center; gap: 10px; margin-top: 16px; }
+  .row input { width: 20px; height: 20px; }
+  .row label { margin: 0; font-weight: 500; }
+  button {
+    width: 100%; margin-top: 20px; padding: 14px; font-family: inherit; font-size: 1.1rem; font-weight: 700; color: #fff; cursor: pointer;
+    text-shadow: 0 1px 1px rgba(0,0,0,.25);
+    border: 1px solid var(--aqua-dark); border-radius: 14px;
+    background: linear-gradient(180deg, #7fdcff 0%, var(--aqua) 50%, var(--aqua-dark) 51%, #1593cf 100%);
+    box-shadow: 0 6px 14px rgba(11,120,179,.35), inset 0 1px 0 rgba(255,255,255,.7);
+  }
+  button:disabled { opacity: .6; cursor: wait; }
+  .error { color: var(--error); margin: 12px 0 0; min-height: 1.2em; }
+  .done { text-align: center; }
+  .done h2 { margin: 6px 0; }
+  .fine { color: var(--ink-soft); font-size: .85rem; margin-top: 18px; text-align: center; }
+</style>
+</head>
+<body>
+<div class="bubbles" aria-hidden="true">
+  <span style="width:90px;height:90px;left:6%;top:12%"></span>
+  <span style="width:46px;height:46px;right:10%;top:20%"></span>
+  <span style="width:28px;height:28px;right:22%;top:52%"></span>
+  <span style="width:60px;height:60px;left:4%;bottom:18%"></span>
+</div>
+<main>
+  <h1>Suitemates</h1>
+  <p class="tag">Three friends in your texts who keep school, money and plans in check. No app to download.</p>
+
+  <div class="crew">
+    <figure><img src="/avatars/dean.png" alt="Dean"><figcaption>Dean<small>school</small></figcaption></figure>
+    <figure><img src="/avatars/penny.png" alt="Penny"><figcaption>Penny<small>money</small></figcaption></figure>
+    <figure><img src="/avatars/sunny.png" alt="Sunny"><figcaption>Sunny<small>plans</small></figcaption></figure>
+  </div>
+
+  <form class="card" id="form" novalidate>
+    <label for="name">First name</label>
+    <input id="name" name="name" type="text" autocomplete="given-name" maxlength="60" required>
+
+    <label for="phone">iPhone number <span class="hint">(we text you first)</span></label>
+    <input id="phone" name="phone" type="tel" autocomplete="tel" inputmode="tel" placeholder="919-555-0123" required>
+
+    <label for="budget">Monthly spending budget <span class="hint">(for Penny)</span></label>
+    <input id="budget" name="budget" type="number" inputmode="numeric" min="0" step="1" placeholder="600">
+
+    <label for="goal">Saving for something? <span class="hint">(optional)</span></label>
+    <input id="goal" name="goal" type="text" maxlength="120" placeholder="spring break, $400">
+
+    <label>What are you into? <span class="hint">(Sunny finds people for these)</span></label>
+    <div class="chips" id="chips"></div>
+
+    <div class="row">
+      <input id="canvas" name="canvas" type="checkbox" checked>
+      <label for="canvas">Let Dean read my Canvas (demo data for now)</label>
+    </div>
+
+    <button type="submit" id="go">Text me</button>
+    <p class="error" id="error" role="alert"></p>
+  </form>
+
+  <div class="card done" id="done" hidden>
+    <h2 id="doneTitle">You're in!</h2>
+    <p>Dean will text you first to say hi. Reply anytime: "what's due?", "can I afford a concert?", "anyone down for soccer?"</p>
+  </div>
+
+  <p class="fine">HackNC 2026 demo. Your number is only used to text you. Reply STOP anytime.</p>
+</main>
+<script>
+  const INTERESTS = ["pickup sports", "gym", "food", "study groups", "concerts", "parties", "outdoors", "gaming", "art", "volunteering"];
+  const chips = document.getElementById("chips");
+  INTERESTS.forEach((t, i) => {
+    chips.insertAdjacentHTML("beforeend", `<input type="checkbox" id="i${i}" value="${t}"><label for="i${i}">${t}</label>`);
+  });
+
+  const form = document.getElementById("form");
+  const error = document.getElementById("error");
+  const go = document.getElementById("go");
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    error.textContent = "";
+    const body = {
+      name: form.name.value.trim(),
+      phone: form.phone.value.trim(),
+      budget: form.budget.value,
+      goal: form.goal.value.trim(),
+      interests: [...chips.querySelectorAll("input:checked")].map((c) => c.value),
+      canvas: form.canvas.checked,
+    };
+    if (!body.name) return (error.textContent = "Tell us your first name.");
+    if (body.phone.replace(/\D/g, "").length < 10) return (error.textContent = "Enter a 10-digit US phone number.");
+    go.disabled = true;
+    try {
+      const res = await fetch("/signup", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
+      const out = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(out.error || "Something went wrong. Try again.");
+      document.getElementById("doneTitle").textContent = `You're in, ${out.name}!`;
+      form.hidden = true;
+      document.getElementById("done").hidden = false;
+    } catch (err) {
+      error.textContent = err.message;
+    } finally {
+      go.disabled = false;
+    }
+  });
+</script>
+</body>
+</html>

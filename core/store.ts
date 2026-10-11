@@ -49,6 +49,10 @@ export class Store {
     this.save();
   }
 
+  allUsers(): UserProfile[] {
+    return Object.values(this.state.users);
+  }
+
   onboardedUsers(): UserProfile[] {
     return Object.values(this.state.users).filter((u) => u.onboardingStep === "done");
   }

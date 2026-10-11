@@ -20,6 +20,6 @@ Demo: set `NESSIE_OWNER_PHONE=<demo phone>` in .env so only the account owner ge
 - [ ] Financial avatar
 
 ## Sign-up flow (see docs/SIGNUP-PLAN.md), added by Ismail
-- [ ] Core: `POST /signup`, `GET /admin/signups`, `POST /admin/intro`, serve `web/`; `UserProfile.interests` + `signupStatus`
+- [x] Core: `POST /signup`, `GET /admin/signups`, `POST /admin/intro`, serve `web/`; `UserProfile.interests` + `signupStatus` (Ismail + Claude)
 - [ ] Public URL (cloudflared/ngrok) and Gemini billing before the group demo
 - [ ] Penny `intro` trigger

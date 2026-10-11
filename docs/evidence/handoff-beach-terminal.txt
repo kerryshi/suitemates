@@ -1,0 +1,32 @@
+# terminal proof, real Gemini (gemini-3.6-flash), MOCK=1, single shared project (no per-agent projects in .env yet), 2026-10-11 00:33
+# Sunny's recruit rule applied locally (uncommitted, Abdullah's folder). Found: ack overclaimed 'own numbers'; Dean's handoff got an empty Gemini reply -> glitch text. Both fixed after this run (tests: recruit.test.ts last two).
+Suitemates chat · LLM=gemini:gemini-3.6-flash · MOCK=1 · state=data/chat-state.json
+
+  <text>                   send as the current user
+
+(not onboarded yet: say "hi", or /skip)
++19195550001 → Sunny> /skip
+  onboarded: budget $600/month, saving for spring break, $400
++19195550001 → Sunny> hey i'm kerry
+[core] social: tool remember({"note":"User's name is Kerry."})
+  [Sunny] kerry!! so hype to meet you 🌞 what kind of fun are we getting into today? 🎉
++19195550001 → Sunny> I'm going on the beach trip Saturday
+[core] social: tool join_activity({"my_name":"Kerry","activity":"beach trip"})
+[core] social: tool bring_in({"ask":"price beach trip against their budget","agent":"financial"})
+[core] social: tool bring_in({"agent":"academic","ask":"check what's due around Saturday"})
+  [Sunny] you're in for beach trip to wrightsville saturday 9 am with ismail, omar, and priya 🏖️🥳 want penny + dean to check the cost and your deadlines? 👀
++19195550001 → Sunny> yes!
+[core] academic: tool check_plan_conflicts({"day":"saturday"})
+[core] financial: tool estimate_plan_cost({"plan":"beach trip Saturday"})
+[core] ERROR academic reply failed: Gemini gemini-3.6-flash returned no text
+[core] financial: tool remember({"note":"Going on beach trip Saturday."})
+  [Sunny] on it! Penny and Dean are texting you now from their own numbers 📲 (nothing showing? check Messages → Unknown Senders)
+  [Penny] (DM) hiii, i'm penny 💸 i watch your spending so your bank account stops crying. i'll tell you if you can afford stuff, and yes, i will roast the 3 a.m. doordash 💀
+  [Penny] (DM) 📇 contact card: Penny Suitemates (docs/avatars/penny.png)
+  [Penny] (DM) you have $476.85 left this month ($22.71 a day) and we are protecting that $400 spring break fund at all costs 💸👀
+  [Penny] (DM) a beach trip runs around $45, which is 9% of the $476.85 left in your budget this month 🏖️💸 totally do-able, just don't go crazy on boardwalk snacks 👀
+  [Dean] (DM) hey, i'm dean. i keep eyes on your canvas so you don't tank your grades. text me "what's due?" anytime 📚
+  [Dean] (DM) 📇 contact card: Dean Suitemates (docs/avatars/dean.png)
+  [Dean] (DM) stor 435 ps6 is due today at 5. knock it out before lunch 🙄
+  [Dean] (DM) one sec, my brain glitched 😵 try that again?
++19195550001 → Sunny> /quit

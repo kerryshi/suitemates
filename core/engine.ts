@@ -295,7 +295,7 @@ export class Engine {
     return lines.filter(Boolean);
   }
 
-  private async replyOrThrow(id: PersonaId, user: UserProfile, text: string, image: Inbound["image"], setting: Setting): Promise<string> {
+  async replyOrThrow(id: PersonaId, user: UserProfile, text: string, image: Inbound["image"], setting: Setting): Promise<string> {
     const remembered = withMemory(this.d.personas.get(id)!, { store: this.d.store, user, names: this.d.config.names, text });
     // In their own DMs every agent can bring another one in (core/recruit.ts).
     const persona =

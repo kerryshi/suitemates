@@ -137,9 +137,19 @@ export async function runRecruit(engine: Engine, phone: string, p: Pending): Pro
         `[handoff from ${n}] The student told ${n}: "${p.text}". ${n} brought you in to: ${a.ask}. ` +
         (fresh.has(a.id) ? "They said yes, and your hello and contact card were just sent: don't introduce yourself again. " : "") +
         "Answer it with your tools, in one or two short texts' worth.";
-      const answer = await engine.reply(a.id, user, brief, undefined, "recruit");
+      // A new agent's first real text: retried once (Gemini sometimes returns nothing after a tool call), and never
+      // replaced by the "my brain glitched" line; the hello and card already went out.
+      let answer: string | undefined;
+      for (let attempt = 1; attempt <= 2 && answer === undefined; attempt++) {
+        try {
+          answer = await engine.replyOrThrow(a.id, user, brief, undefined, "recruit");
+        } catch (err) {
+          engine.log(`WARN ${a.id} handoff answer failed (try ${attempt}): ${err instanceof Error ? err.message : err}`);
+        }
+      }
       const route = user.via?.[a.id];
-      return [...hello, { persona: a.id, handle: `dm:${phone}`, text: answer }].map((o): Outbound =>
+      const said: Outbound[] = answer ? [{ persona: a.id, handle: `dm:${phone}`, text: answer }] : [];
+      return [...hello, ...said].map((o): Outbound =>
         route
           ? { ...o, via: route, ...(o.card ? { card: { ...o.card, phone: fromCard, note: `${o.card.note ?? ""} Texts you through ${config.names[route]}.`.trim() } } : {}) }
           : o,
@@ -149,10 +159,11 @@ export async function runRecruit(engine: Engine, phone: string, p: Pending): Pro
   return { out: texts.flat(), viaFrom };
 }
 
-// The offering agent's "on it", sent before the others' texts land.
-export function ackText(names: Record<PersonaId, string>, ids: PersonaId[], viaFrom: PersonaId[]): string {
-  const own = ids.filter((id) => !viaFrom.includes(id)).map((id) => names[id]);
-  const here = viaFrom.map((id) => names[id]);
+// The offering agent's "on it", sent before the others' texts land. Only an agent on its own Photon project texts
+// from its own number; on one shared project (or via) it jumps in here, name-tagged.
+export function ackText(names: Record<PersonaId, string>, ids: PersonaId[], viaFrom: PersonaId[], ownNumber = (id: PersonaId) => photonProjectFor(id).own): string {
+  const own = ids.filter((id) => !viaFrom.includes(id) && ownNumber(id)).map((id) => names[id]);
+  const here = ids.filter((id) => viaFrom.includes(id) || !ownNumber(id)).map((id) => names[id]);
   const and = (xs: string[]) => xs.join(" and ");
   const parts = [
     own.length ? `${and(own)} ${own.length > 1 ? "are" : "is"} texting you now from ${own.length > 1 ? "their own numbers" : "their own number"} 📲` : "",

@@ -197,3 +197,39 @@ test("keyless model: an ordinary message with the word 'in' doesn't call bring_i
   const step = await new FakeLlm().chat({ system: "", messages: [{ role: "user", text: "meet me in the library" }], tools: [tool] });
   assert.ok("text" in step, "no tool call");
 });
+
+test("the 'on it' line only promises own numbers for agents that have one (single shared project: they jump in here)", async () => {
+  const saved = Object.fromEntries(["SOCIAL", "FINANCIAL", "ACADEMIC"].flatMap((A) => [`${A}_PROJECT_ID`, `${A}_PROJECT_SECRET`]).map((k) => [k, process.env[k]]));
+  for (const k of Object.keys(saved)) delete process.env[k];
+  try {
+    const s = setup();
+    await s.dm(BEACH);
+    const out = await s.dm("yes");
+    assert.doesNotMatch(out[0].text, /own number/);
+    assert.doesNotMatch(out[0].text, /Unknown Senders/);
+    assert.match(out[0].text, /Penny and Dean are jumping in/);
+  } finally {
+    for (const [k, v] of Object.entries(saved)) process.env[k] = v;
+  }
+});
+
+test("a handoff answer that comes back empty is retried once; if it fails again the new agent sends no glitch text", async () => {
+  for (const failures of [1, 2]) {
+    const s = setup();
+    let deanFails = failures;
+    const flaky: LlmClient = {
+      ...spy,
+      chat: async (req) => {
+        const last = req.messages.at(-1) as LlmMessage;
+        if (/You are Dean,/.test(req.system) && last.role === "user" && last.text.startsWith("[handoff") && deanFails-- > 0) throw new Error("Gemini returned no text");
+        return spy.chat(req);
+      },
+    };
+    (s.engine.d as { llm: LlmClient }).llm = flaky;
+    await s.dm(BEACH);
+    const dean = from(await s.dm("yes"), "academic");
+    assert.ok(dean.some((o) => o.card), "the hello and card still go out");
+    assert.ok(!dean.some((o) => /glitch/.test(o.text)), `no glitch text (failures=${failures})`);
+    assert.equal(dean.some((o) => o.text === "Dean answer"), failures === 1, `answer after one retry only (failures=${failures})`);
+  }
+});

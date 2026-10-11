@@ -6,3 +6,4 @@ data/
 # env dumps with real values never go in git (DEAN.md held secrets, removed 01:30 Oct 11)
 DEAN.md
 *.env.md
+deploy/vercel/public/

@@ -130,3 +130,30 @@ export function cliAddUser(runner: Run = run, env: Env = process.env): AddUser {
 }
 
 export const photonCliAddUser: AddUser = (phone, firstName, agent) => cliAddUser()(phone, firstName, agent);
+
+export interface PhotonHealth {
+  agent: PersonaId;
+  ok: boolean;
+  project?: string;
+  users?: number;
+  cap: number;
+  error?: string;
+}
+
+// Boot check (npm run check-photon): can we read each agent's own project with that agent's token? A FAIL means
+// sign-ups and recruits for that agent can't be added (they fall back to pending / via). No project = FAIL too:
+// unknown health is unhealthy.
+export async function checkPhoton(runner: Run = run, env: Env = process.env): Promise<PhotonHealth[]> {
+  const agents: PersonaId[] = ["academic", "financial", "social"];
+  return Promise.all(
+    agents.map(async (agent): Promise<PhotonHealth> => {
+      const { project, token, own } = photonProjectFor(agent, env);
+      const cap = photonCapFor(agent, env);
+      if (!own) return { agent, ok: false, cap, error: `no project: set ${agent.toUpperCase()}_PROJECT_ID and _SECRET` };
+      const auth = token && /^[\w.~-]+$/.test(token) ? ["-t", token] : [];
+      const list = await runner(["spectrum", "users", "list", "-p", project!, "--json", ...auth]);
+      if (list.code !== 0) return { agent, ok: false, project, cap, error: (list.err || list.out || `photon exited ${list.code}`).trim().slice(0, 200) };
+      return { agent, ok: true, project, users: userCount(list.out), cap };
+    }),
+  );
+}

@@ -166,3 +166,20 @@ test("transport: an Outbound with via goes out on that agent's conversation, tag
   await t.send({ persona: "financial", handle: `dm:${PHONE}`, text: "roast" });
   assert.deepEqual(sent.financial, ["roast"], "on her own project Penny is untagged");
 });
+
+test("check-photon: each agent's project answers with its own token, or says FAIL (unknown health = unhealthy)", async () => {
+  const { checkPhoton } = await import("../core/photon-users.ts");
+  const run = async (args: string[]) =>
+    args.includes("bad.token") ? { code: 1, out: "", err: "401 Unauthorized" } : { code: 0, out: users(args.includes("p-s") ? 42 : 3), err: "" };
+  const env = {
+    SOCIAL_PROJECT_ID: "p-s", SOCIAL_PROJECT_SECRET: "x", SOCIAL_PHOTON_API_TOKEN: "tok.abdullah",
+    ACADEMIC_PROJECT_ID: "p-a", ACADEMIC_PROJECT_SECRET: "x", ACADEMIC_PHOTON_API_TOKEN: "bad.token", ACADEMIC_PHOTON_CAP: "10",
+    FINANCIAL_PROJECT_ID: "p-f", FINANCIAL_PROJECT_SECRET: "x",
+  };
+  const rows = await checkPhoton(run, env);
+  assert.deepEqual(rows.map((r) => [r.agent, r.ok, r.users, r.cap]), [["academic", false, undefined, 10], ["financial", true, 3, 100], ["social", true, 42, 100]]);
+  assert.match(rows[0].error ?? "", /401/);
+  // Nothing configured for an agent at all is a failure too, not a silent pass.
+  const none = await checkPhoton(run, {});
+  assert.ok(none.every((r) => !r.ok && /no project/.test(r.error ?? "")));
+});

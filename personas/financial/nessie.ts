@@ -23,6 +23,7 @@ export interface ExtraPurchase {
   amount: number;
   at: string; // ISO
   category?: string;
+  phone?: string; // whose demo ledger (the website's "try Penny" buttons); unset = everyone's (npm run buy)
 }
 
 interface MockNessie {
@@ -32,11 +33,14 @@ interface MockNessie {
 
 const BASE = "https://api.nessieisreal.com";
 const DATA = join(dirname(fileURLToPath(import.meta.url)), "../../data");
-export const EXTRA_FILE = join(DATA, "mock-new-purchases.json");
+export const EXTRA_FILE = process.env.MOCK_PURCHASES_FILE || join(DATA, "mock-new-purchases.json"); // tests use a temp file
 export const NESSIE_IDS_FILE = join(DATA, "nessie.json");
 
-export function readExtras(): ExtraPurchase[] {
-  return existsSync(EXTRA_FILE) ? (JSON.parse(readFileSync(EXTRA_FILE, "utf8")) as ExtraPurchase[]) : [];
+export function readExtras(phone?: string): ExtraPurchase[] {
+  const all = existsSync(EXTRA_FILE) ? (JSON.parse(readFileSync(EXTRA_FILE, "utf8")) as ExtraPurchase[]) : [];
+  if (phone === undefined) return all;
+  const d = (s: string) => s.replace(/\D/g, "").slice(-10);
+  return all.filter((e) => !e.phone || d(e.phone) === d(phone)); // shared ones + only this person's own
 }
 
 export function writeExtras(list: ExtraPurchase[]) {
@@ -47,7 +51,7 @@ export function writeExtras(list: ExtraPurchase[]) {
 export async function getPurchases(ctx: Ctx): Promise<Purchase[]> {
   if (ctx.mock) {
     const base = loadMock<MockNessie>("nessie-purchases").purchases.map((p) => ({ ...p, at: relativeDate(ctx.now, p) }));
-    const extras = readExtras().map((e) => ({ ...e, at: new Date(e.at) }));
+    const extras = readExtras(ctx.user.phone).map((e) => ({ ...e, at: new Date(e.at) }));
     return [...base, ...extras].sort((a, b) => +b.at - +a.at);
   }
   type Row = { _id: string; description?: string; amount: number; purchase_date?: string; merchant_id?: string };
@@ -74,7 +78,7 @@ export async function getPurchases(ctx: Ctx): Promise<Purchase[]> {
 
 export async function getBalance(ctx: Ctx): Promise<number> {
   if (ctx.mock) {
-    const spentSince = readExtras().reduce((s, e) => s + e.amount, 0);
+    const spentSince = readExtras(ctx.user.phone).reduce((s, e) => s + e.amount, 0);
     return Math.round((loadMock<MockNessie>("nessie-purchases").balance - spentSince) * 100) / 100;
   }
   return (await nessie<{ balance: number }>("GET", `/accounts/${accountId()}`)).balance;

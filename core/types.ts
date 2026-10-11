@@ -76,6 +76,9 @@ export interface Persona {
   // Check this agent's own web sign-up fields (e.g. Dean verifies a Canvas token) and say what to save on the
   // profile. An error blocks the sign-up with that message. Optional.
   signup?(body: Record<string, unknown>, ctx: Ctx): Promise<{ error: string } | { profile: Partial<UserProfile>; note?: string }>;
+  // A website demo action (POST /try/<persona> {phone, action}), e.g. Penny's "buy a $23 DoorDash" button.
+  // Core only lets people who signed up with this agent and got its hello use it. Optional.
+  tryIt?(action: string, ctx: Ctx): Promise<{ error: string } | { note: string }>;
 }
 
 export interface CalendarItem {

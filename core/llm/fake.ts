@@ -15,7 +15,8 @@ export class FakeLlm implements LlmClient {
       return { text: `(fake LLM) ${last.results.map((r) => `${r.name} → ${r.result}`).join(" | ").slice(0, 600)}` };
     }
     const text = last?.role === "user" ? last.text : "";
-    if (text.startsWith("[proactive]")) return { text: `(fake LLM) ${text.replace(/^\[proactive\][^:]*:\s*/, "")}` };
+    // Echo just the facts: drop the "[proactive] kind:" prefix and core/agent.ts's "(This line is from …)" note.
+    if (text.startsWith("[proactive]")) return { text: `(fake LLM) ${text.replace(/^\[proactive\][^:]*:\s*/, "").replace(/\n\n\(This line is from [\s\S]*$/, "")}` };
     const tool = pickTool(text, req.tools);
     if (tool) return { toolCalls: [{ name: tool.name, args: {} }] };
     return { text: `(fake LLM) heard "${text.slice(0, 120)}" — no tool matched. Set GEMINI_API_KEY for real replies.` };

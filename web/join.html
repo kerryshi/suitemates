@@ -114,6 +114,12 @@
           <p class="fine">Deadlines, exams and plans from your agents, kept up to date. Private link: don't share it.</p>
           <div class="pair"><a class="ghost" id="calGoogle" href="#" target="_blank" rel="noopener">Add to Google Calendar</a><a class="ghost" id="calApple" href="#">Apple Calendar</a></div>
         </div>
+        <div id="tryBox" hidden>
+          <h3>Try Penny</h3>
+          <p class="fine">After you've said hey: tap a purchase and Penny reacts in iMessage within seconds (demo money, not yours).</p>
+          <div class="pair" id="tryButtons"></div>
+          <p class="fine" id="tryMsg"></p>
+        </div>
         <div id="moreBox" hidden>
           <h3>Add another agent</h3>
           <div class="pair" id="more"></div>
@@ -215,6 +221,22 @@
         document.getElementById("calGoogle").href = `https://calendar.google.com/calendar/render?cid=${encodeURIComponent(webcal)}`;
         document.getElementById("calApple").href = webcal;
         document.getElementById("calBox").hidden = false;
+      }
+      if (id === "financial") {
+        const TRY = [["doordash", "🌮 $23.40 DoorDash, 3 AM"], ["coffee", "☕ $7.25 Starbucks (again)"], ["groceries", "🥦 $38.60 groceries"], ["concert", "🎟️ $89 concert tickets"]];
+        const box = document.getElementById("tryButtons");
+        box.innerHTML = TRY.map(([k, label]) => `<a class="ghost" href="#" data-try="${k}">${label}</a>`).join("");
+        box.addEventListener("click", async (ev) => {
+          const b = ev.target.closest("[data-try]");
+          if (!b) return;
+          ev.preventDefault();
+          const msg = document.getElementById("tryMsg");
+          msg.textContent = "…";
+          const res = await fetch("/try/financial", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ phone: body.phone, action: b.dataset.try }) });
+          const r = await res.json().catch(() => ({}));
+          msg.textContent = r.note || r.error || "Something went wrong.";
+        });
+        document.getElementById("tryBox").hidden = false;
       }
       const others = Object.entries(AGENTS).filter(([k]) => !(out.agents || [id]).includes(k));
       if (others.length) {

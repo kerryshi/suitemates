@@ -94,6 +94,22 @@ export function startHttp(opts: { engine: Engine; transport: Transport; port: nu
         return reply(200, { ok: true, name: user.name, status: user.signupStatus, textTo, calendar: calUrl(phone), agents: user.agents, ...(own.note ? { note: own.note } : {}) });
       }
 
+      // A website demo button (Penny's "buy a $23 DoorDash"): only for someone signed up with that agent who has
+      // already got its hello, and the agent decides what the action does (Persona.tryIt).
+      const tryIt = /^\/try\/(academic|financial|social)$/.exec(path);
+      if (tryIt) {
+        if (req.method !== "POST") return reply(405, { error: "POST only" });
+        const id = tryIt[1] as PersonaId;
+        const persona = engine.d.personas.get(id);
+        const phone = normalizePhone(params.phone);
+        if (!persona?.tryIt || !phone) return reply(400, { error: "Nothing to try here." });
+        const user = store.user(phone);
+        if (!user.agents?.includes(id)) return reply(403, { error: `Sign up with ${engine.d.config.names[id]} first.` });
+        if (!user.greeted?.includes(id)) return reply(409, { error: `Say hey to ${engine.d.config.names[id]} in iMessage first, then try again.` });
+        const out = await persona.tryIt(String(params.action ?? ""), engine.ctx(id, user));
+        return reply("error" in out ? 400 : 200, out);
+      }
+
       const viaTunnel = Boolean(req.headers["cf-connecting-ip"] || req.headers["cf-ray"] || req.headers["x-forwarded-for"]);
       const authed = opts.token ? params.token === opts.token : !viaTunnel;
       if (path === "/admin/signups") {

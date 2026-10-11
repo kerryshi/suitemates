@@ -69,8 +69,8 @@ export function startHttp(opts: { engine: Engine; transport: Transport; port: nu
           .allUsers()
           .filter((u) => u.signedUpAt)
           .sort((a, b) => (b.signedUpAt ?? "").localeCompare(a.signedUpAt ?? ""))
-          .map(({ phone, name, budgetMonthly, savingsGoal, interests, canvasLinked, signupStatus, signedUpAt }) =>
-            ({ phone, name, budgetMonthly, savingsGoal, interests, canvasLinked, signupStatus, signedUpAt }));
+          .map(({ phone, name, budgetMonthly, savingsGoal, interests, focus, win, canvasLinked, signupStatus, signedUpAt }) =>
+            ({ phone, name, budgetMonthly, savingsGoal, interests, focus, win, canvasLinked, signupStatus, signedUpAt }));
         return reply(200, { users });
       }
       if (path === "/admin/intro") {

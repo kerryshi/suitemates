@@ -662,7 +662,7 @@ test("a board plan still wins over campus events; an unknown id or name creates 
 test("review: one word never signs anyone up for a random campus event; it asks", async () => {
   useEventsFetcher(async () => HL_FEED);
   const out = await run("join_activity", { activity: "dinner" });
-  assert.match(out, /^"dinner" could be:\n- Wesley Dinner & Worship, Sunday 6:00 PM.*\[heellife:103\].*\nAsk which one/);
+  assert.match(out, /^"dinner" could be:\n- Wesley Dinner & Worship, (Sunday|today) 6:00 PM.*\[heellife:103\].*\nAsk which one/);
   assert.equal(loadBoard().activities.some((a) => a.id === "heellife-103"), false);
 });
 

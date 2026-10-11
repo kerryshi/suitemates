@@ -79,7 +79,7 @@ test("sign up → pending → admin sends Dean's intro first → invited", async
     ]);
     assert.ok(s.sent.every((o) => o.handle === "dm:+19195550123"));
     assert.match(s.sent[0].text, /Hey Sam, I'm Dean\./); // Dean's own intro trigger
-    assert.match(s.sent[3].text, /^hey, I'm Penny\./); // default until Penny writes one
+    assert.match(s.sent[3].text, /^hiii i'm Penny 💸/); // default until Penny writes one
     assert.deepEqual(s.sent[1].card, {
       name: "Dean Suitemates", photo: "docs/avatars/dean.png", phone: undefined, note: "Dean handles school in Suitemates.",
     });

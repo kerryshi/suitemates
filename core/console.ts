@@ -52,7 +52,8 @@ export class ConsoleTransport implements Transport {
 
   async send(o: Outbound): Promise<void> {
     const where = o.handle.startsWith("dm:") ? " (DM)" : o.handle.startsWith("group") ? " (group)" : "";
-    console.log(`  [${this.app.config.names[o.persona]}]${where} ${o.text}`);
+    if (o.text) console.log(`  [${this.app.config.names[o.persona]}]${where} ${o.text}`);
+    if (o.card) console.log(`  [${this.app.config.names[o.persona]}]${where} 📇 contact card: ${o.card.name}${o.card.phone ? ` ${o.card.phone}` : ""} (${o.card.photo})`);
   }
 
   private async onLine(line: string, onInbound: (ev: Inbound) => Promise<void>) {

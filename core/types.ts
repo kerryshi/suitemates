@@ -80,4 +80,6 @@ export interface Outbound {
   persona: PersonaId; // send FROM this persona's number
   handle: string; // conversation id on that line, or "dm:<phone>" to start/continue a DM
   text: string;
+  // A contact card (vCard: name, photo, the persona's own number if it has one) sent after `text` (which may be "").
+  card?: { name: string; photo: string; phone?: string; note?: string }; // photo: repo-relative path
 }

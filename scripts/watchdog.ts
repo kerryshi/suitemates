@@ -59,7 +59,9 @@ export function classifyLine(line: string): { kind: string; detail: string } | u
   if (/^\[imessage\] handler error/.test(line)) return { kind: "handler-error", detail: line.slice(0, 160) };
   if ((m = /^\[signup\] (.+?) (\+\d{10,15}) \(pending(?:; photon: (.*))?\)$/.exec(line)))
     return { kind: "signup-pending", detail: `${m[1]} ${maskPhone(m[2])}${m[3] ? `: ${m[3]}` : ""}` };
-  if (/^\[imessage\] \S+ line=\S* (dm|group) /.test(line)) return { kind: "inbound", detail: "" };
+  // Any text that reached us proves the stream hears: a DM (with or without the pre-86e0e93 "dm"/"group" word) or
+  // a group text the server logs and ignores.
+  if (/^\[imessage\] (\S+ line=\S* (?:dm |group )?\S+: |ignored group message )/.test(line)) return { kind: "inbound", detail: "" };
   if (/EADDRINUSE/.test(line)) return { kind: "double-server", detail: line.trim().slice(0, 120) };
   if ((m = /^\[core\] ERROR (\S+) (?:reply|proactive text) failed.*Gemini \S+ (?:→ (\d{3})|returned no text)/.exec(line)))
     return { kind: "gemini", detail: `${m[1]}: ${m[2] ?? "no text"}` };

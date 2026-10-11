@@ -71,6 +71,10 @@ test("server log lines: connection drops, handler errors, stuck sign-ups, inboun
   });
   assert.equal(classifyLine("[signup] Sam +19195550123 (invited)"), undefined);
   assert.equal(classifyLine("[imessage] financial line=+16465550177 dm +19195550123: hey (space s1, msg m1)")?.kind, "inbound");
+  // 86e0e93 dropped Inbound.kind (DMs only): the line has no "dm" any more, and group texts are logged as ignored.
+  assert.equal(classifyLine("[imessage] financial line=+16465550177 +19195550123: hey (space s1, msg m1)")?.kind, "inbound");
+  assert.equal(classifyLine("[imessage] ignored group message m9 from +19195550123")?.kind, "inbound"); // still proves we hear
+  assert.equal(classifyLine("[imessage] lines: academic=? financial=? social=?"), undefined);
   assert.equal(classifyLine("Error: listen EADDRINUSE: address already in use :::3000")?.kind, "double-server");
   assert.deepEqual(classifyLine("[core] ERROR financial reply failed: Gemini gemini-3.6-flash → 429: quota exceeded"), { kind: "gemini", detail: "financial: 429" });
   assert.equal(classifyLine("[http] listening on :3000"), undefined);

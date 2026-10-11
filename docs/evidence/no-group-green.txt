@@ -1,0 +1,44 @@
+# no group chat: green 2026-10-11 00:51
+✔ no group chat: a text in an iMessage group is ignored (never answered into a chat with strangers); DMs still come through (2.565417ms)
+ℹ pass 9
+ℹ fail 0
+ℹ tests 213
+ℹ pass 213
+ℹ fail 0
+typecheck clean
+
+# dead-code sweep (expect: only test-local keywordScores helpers)
+personas/social/TODO.md:10:- [x] ~~`router-prompt.md`~~ removed with the group chat (00:50); `routerLine` now only picks who answers on a shared number.
+
+# live: npm run chat (no args) opens on Sunny; recruit hand-off with real Gemini, MOCK=1
+Suitemates chat · LLM=gemini:gemini-3.6-flash · MOCK=1 · state=data/chat-state.json
+
+  <text>                   send as the current user
+
+(not onboarded yet: say "hi", or /skip)
++19195550001 → Sunny> /skip
+  onboarded: budget $600/month, saving for spring break, $400
++19195550001 → Sunny> hey i'm kerry
+[core] social: tool remember({"note":"User's name is Kerry."})
+  [Sunny] hey kerry! 🌞 so good to meet you! what fun plans are we cooking up today? 🎉
++19195550001 → Sunny> I'm going on the beach trip Saturday
+[core] social: tool join_activity({"activity":"beach trip","my_name":"Kerry"})
+[core] social: tool bring_in({"agent":"financial","ask":"price beach trip against their budget"})
+[core] social: tool bring_in({"ask":"check what's due around Saturday","agent":"academic"})
+  [Sunny] you're in for wrightsville beach saturday 9 am! ismail, omar, and priya are going too 🏖️🥳 want penny + dean to check the cost and your deadlines? 👀
++19195550001 → Sunny> yes
+[core] financial: tool estimate_plan_cost({"plan":"beach trip Saturday"})
+[core] academic: tool check_plan_conflicts({"day":"saturday"})
+[core] academic: tool grade_impact({"course":"STOR 435","assignment":"Midterm 2"})
+[core] financial: tool remember({"note":"Going on beach trip Saturday."})
+[core] academic: tool remember({"note":"Beach trip planned for Saturday."})
+  [Sunny] on it! Penny and Dean are jumping in right here
+  [Penny] (DM) hiii i'm penny 💸 i watch your spending so your bank account stops crying (and yes i will call out the 3 am doordash 💀)
+  [Penny] (DM) 📇 contact card: Penny Suitemates (docs/avatars/penny.png)
+  [Penny] (DM) you've got $476.85 left this month (that’s $22.71 a day 👀) and spring break is counting on us 💸
+  [Penny] (DM) that beach trip is around $45, which is only 9% of your remaining $476.85 budget this month 😮‍💨 totally doable!
+  [Dean] (DM) i'm dean. i keep track of your canvas so you don't slip up on deadlines or tank your gpa. text me "what's due" anytime 📚
+  [Dean] (DM) 📇 contact card: Dean Suitemates (docs/avatars/dean.png)
+  [Dean] (DM) stor 435 ps6 is due today at 5. get it done early so you aren't scrambling at 4:55 😤
+  [Dean] (DM) stor 435 midterm 2 is saturday at 9:30 am 💀 option 1: take it at 9:30 then hit the beach (grade stays ~85%). option 2: skip it, drops to ~61%. your call.
++19195550001 → Sunny> /quit

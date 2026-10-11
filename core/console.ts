@@ -1,5 +1,4 @@
-// Terminal transport: talk to any persona, or to the group chat, with no phone.
-// Group mode fakes what iMessage does: every persona line receives its own copy of each message.
+// Terminal transport: talk to any agent with no phone.
 import { createInterface } from "node:readline";
 import { PERSONA_IDS, type Inbound, type Outbound, type PersonaId } from "./types.ts";
 import type { App } from "./app.ts";
@@ -7,12 +6,12 @@ import type { Transport } from "./transport.ts";
 import { listNotes } from "./memory.ts";
 
 export const DEMO_USER = "+19195550001";
-type Mode = PersonaId | "group";
+type Mode = PersonaId;
 
 const HELP = `commands:
   <text>                   send as the current user
   as +1919...: <text>      send once as someone else
-  /to academic|financial|social|group   switch chat
+  /to academic|financial|social   switch agent
   /as +1919...             switch user
   /skip                    skip onboarding (budget 600, goal "spring break, $400")
   /reset                   forget this user (re-onboard)
@@ -34,7 +33,7 @@ export class ConsoleTransport implements Transport {
 
   async start(onInbound: (ev: Inbound) => Promise<void>): Promise<void> {
     const rl = createInterface({ input: process.stdin, output: process.stdout, terminal: process.stdin.isTTY });
-    const prompt = () => `${this.sender} → ${this.mode === "group" ? "group chat" : this.app.config.names[this.mode]}> `;
+    const prompt = () => `${this.sender} → ${this.app.config.names[this.mode]}> `;
     console.log(HELP);
     if (this.app.store.user(this.sender).onboardingStep !== "done") console.log('\n(not onboarded yet: say "hi", or /skip)');
     const tty = Boolean(process.stdin.isTTY);
@@ -53,7 +52,7 @@ export class ConsoleTransport implements Transport {
   }
 
   async send(o: Outbound): Promise<void> {
-    const where = o.handle.startsWith("dm:") ? " (DM)" : o.handle.startsWith("group") ? " (group)" : "";
+    const where = o.handle.startsWith("dm:") ? " (DM)" : "";
     if (o.text) console.log(`  [${this.app.config.names[o.persona]}]${where} ${o.text}`);
     if (o.card) console.log(`  [${this.app.config.names[o.persona]}]${where} 📇 contact card: ${o.card.name}${o.card.phone ? ` ${o.card.phone}` : ""} (${o.card.photo})`);
   }
@@ -67,7 +66,7 @@ export class ConsoleTransport implements Transport {
       case "/quit":
         return process.exit(0);
       case "/to":
-        if (rest[0] !== "group" && !PERSONA_IDS.includes(rest[0] as PersonaId)) return console.log("  /to academic|financial|social|group");
+        if (!PERSONA_IDS.includes(rest[0] as PersonaId)) return console.log("  /to academic|financial|social");
         this.mode = rest[0] as Mode;
         return;
       case "/as":
@@ -100,14 +99,6 @@ export class ConsoleTransport implements Transport {
     const as = /^as\s+(\S+?):\s*(.*)$/is.exec(line);
     if (as) [sender, text] = [as[1], as[2]];
     const id = `m${++this.seq}`;
-    if (this.mode === "group") {
-      await Promise.all(
-        PERSONA_IDS.map((p) =>
-          onInbound({ persona: p, kind: "group", sender, text, handle: `group-${sender}@${p}`, messageId: `${id}-${p}` }),
-        ),
-      );
-    } else {
-      await onInbound({ persona: this.mode, kind: "dm", sender, text, handle: `dm-${sender}@${this.mode}`, messageId: id });
-    }
+    await onInbound({ persona: this.mode, sender, text, handle: `dm-${sender}@${this.mode}`, messageId: id });
   }
 }

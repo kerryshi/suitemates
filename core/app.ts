@@ -1,6 +1,6 @@
 // Wires config → personas → store → LLM → engine. Used by core/main.ts, scripts/chat.ts and scripts/trigger.ts.
 import { loadConfig, type Config } from "./config.ts";
-import { loadPersonas, loadRouterPrompt } from "./personas.ts";
+import { loadPersonas } from "./personas.ts";
 import { Store } from "./store.ts";
 import { Engine } from "./engine.ts";
 import { FakeLlm } from "./llm/fake.ts";
@@ -14,7 +14,7 @@ export function createApp(opts: { config?: Config; storeFile?: string | null } =
   const store = new Store(opts.storeFile === undefined ? config.DATA_FILE : opts.storeFile);
   const llm: LlmClient = config.fakeLlm ? new FakeLlm() : new GeminiClient(config.GEMINI_API_KEY!, config.GEMINI_MODEL);
   // addUser: an agent brought in by another (core/recruit.ts) is added to its own Photon project first.
-  const engine = new Engine({ personas, store, llm, config, routerPrompt: loadRouterPrompt(), addUser: photonCliAddUser });
+  const engine = new Engine({ personas, store, llm, config, addUser: photonCliAddUser });
   return { config, personas, store, llm, engine };
 }
 

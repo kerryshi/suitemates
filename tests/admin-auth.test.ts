@@ -18,8 +18,7 @@ async function server(token?: string) {
     personas: loadPersonas(),
     store: new Store(null),
     llm: new FakeLlm(),
-    config: { names: { academic: "Dean", financial: "Penny", social: "Sunny" }, PRODUCT_NAME: "Suitemates", mock: true, fakeRoute: undefined, GROUP_SETTLE_MS: 10 },
-    routerPrompt: "",
+    config: { names: { academic: "Dean", financial: "Penny", social: "Sunny" }, PRODUCT_NAME: "Suitemates", mock: true },
     log: () => {},
   });
   const transport = { start: async () => {}, send: async (_o: Outbound) => {} };

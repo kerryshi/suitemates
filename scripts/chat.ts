@@ -1,5 +1,5 @@
-// Talk to any persona, or the group chat, in the terminal. No phone, no keys needed.
-//   npm run chat -- academic | financial | social | group
+// Talk to any agent in the terminal. No phone, no keys needed. Starts on Sunny (the front door).
+//   npm run chat -- academic | financial | social
 // Keyless = fake LLM (deterministic). Set GEMINI_API_KEY in .env for real replies.
 import { loadDotEnv } from "../core/env.ts";
 import { createApp } from "../core/app.ts";
@@ -7,9 +7,9 @@ import { ConsoleTransport } from "../core/console.ts";
 import { PERSONA_IDS, type PersonaId } from "../core/types.ts";
 
 loadDotEnv();
-const mode = (process.argv[2] ?? "group") as PersonaId | "group";
-if (mode !== "group" && !PERSONA_IDS.includes(mode)) {
-  console.error(`usage: npm run chat -- ${PERSONA_IDS.join(" | ")} | group`);
+const mode = (process.argv[2] ?? "social") as PersonaId;
+if (!PERSONA_IDS.includes(mode)) {
+  console.error(`usage: npm run chat -- ${PERSONA_IDS.join(" | ")}`);
   process.exit(1);
 }
 

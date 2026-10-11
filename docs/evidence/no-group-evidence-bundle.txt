@@ -1,0 +1,84 @@
+date: 2026-10-11 time: 00:51:41 HEAD: 85b900c59f5e990382be69b816f5f5cd8d0f3863
+
+### 1
+$ git status --short; git log --oneline -2; git diff --stat e8bdad8..HEAD | tail -3
+?? docs/evidence/no-group-evidence-bundle.txt
+85b900c [core] no group chat: one inbound path (DM → recruit); group texts are ignored
+e8bdad8 [core] merge kerry/recruit: agents recruit each other, own numbers, one shared brain (#24)
+ tests/signup.test.ts                  |  7 ++--
+ tests/transport.test.ts               |  9 +++++
+ 40 files changed, 212 insertions(+), 344 deletions(-)
+
+### 2
+$ npm test 2>&1 | tail -12
+✔ a persona with its own line or project never borrows another line's conversation (0.753833ms)
+[imessage] ignored group message m1 from +19195550001
+✔ no group chat: a text in an iMessage group is ignored (never answered into a chat with strangers); DMs still come through (2.19ms)
+✔ a cue with a real phone but no SERVER_URL says on stderr that it only printed (315.677875ms)
+ℹ tests 213
+ℹ suites 0
+ℹ pass 213
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 3473.896291
+npm_test_exit=0
+
+### 3
+$ npx tsc --noEmit -p . ; echo tsc_exit=$?
+tsc_exit=0
+
+### 4
+$ grep -rn -i -E ... core scripts tests personas web
+personas/social/TODO.md:10:- [x] ~~`router-prompt.md`~~ removed with the group chat (00:50); `routerLine` now only picks who answers on a shared number.
+grep_exit=0
+
+### 5
+$ npx tsx --test tests/transport.test.ts tests/recruit.test.ts tests/recruit-review.test.ts | grep
+✔ S1: 'yes' after the background add settled reuses it (no second Photon CLI run, no wait) (68.034709ms)
+✔ S2: two texts in flight before the first hello is out → one hello and card, not two (1.664792ms)
+✔ S3: bring_in takes a display name ('Penny'), and never recruits whoever else the text mentions (0.571333ms)
+✔ S4: asked=true only counts as consent when the student actually named that agent (0.131416ms)
+✔ S5: one failed send doesn't drop the rest of the batch (0.145375ms)
+✔ S6: someone who texted in (no web sign-up) keeps their first agent's proactive texts after a recruit (2.460625ms)
+✔ consent: 'no' wins over a polite yes-word, and a question isn't a yes (0.075667ms)
+✔ S8: with a deliver hook, 'yes' answers with the ack at once; each agent's texts go out as soon as that agent is ready (704.176917ms)
+✔ the offer: Sunny asks once, Penny and Dean are added to their projects in the background, nothing waits on the CLI (16.406459ms)
+✔ 'yes' on Sunny's thread: Sunny acks, then Penny and Dean each text first from their own number with hello, card, answer (5.347125ms)
+✔ 'no' drops the offer; anything that isn't yes or no also drops it (one-shot) and gets a normal reply (2.126708ms)
+✔ naming an agent is consent: no question, Penny texts first in the same turn (3.794625ms)
+✔ an agent they already have answers from its own thread right away: no question, no second hello (1.287208ms)
+✔ a 'yes' texted to a different agent's number doesn't accept Sunny's offer (3.924584ms)
+✔ if Penny can't be added (full project, dead token), she still answers: through Sunny's thread, name-tagged by transport (3.591083ms)
+✔ bring_in refuses to recruit yourself and needs a known agent (keyless: the name in their text) (0.214041ms)
+✔ keyless model: an ordinary message with the word 'in' doesn't call bring_in (0.201541ms)
+✔ the 'on it' line only promises own numbers for agents that have one (single shared project: they jump in here) (1.524375ms)
+✔ a handoff answer that comes back empty is retried once; if it fails again the new agent sends no glitch text (6.869375ms)
+✔ one shared number with no *_LINE set routes inbound to DEFAULT_PERSONA, not whichever persona is first (2.211667ms)
+✔ a dedicated line still routes to its persona; an unknown or missing line falls back to DEFAULT_PERSONA (0.316958ms)
+✔ on one shared number a proactive DM says which persona sent it (0.608ms)
+✔ no tag when that persona has its own line or project, and never twice (0.381458ms)
+✔ replies in the user's own DM or the group are left as they are (proactive only) (0.076875ms)
+✔ a dropped Photon connection reconnects instead of going deaf (2041.667ms)
+✔ on one shared number, a reply from another persona goes out in the conversation the user texted (1.62625ms)
+✔ a persona with its own line or project never borrows another line's conversation (0.701958ms)
+✔ no group chat: a text in an iMessage group is ignored (never answered into a chat with strangers); DMs still come through (1.808333ms)
+ℹ pass 28
+ℹ fail 0
+
+### 6 fail-first at e8bdad8
+✔ one shared number with no *_LINE set routes inbound to DEFAULT_PERSONA, not whichever persona is first (2.16ms)
+✔ a dedicated line still routes to its persona; an unknown or missing line falls back to DEFAULT_PERSONA (0.303875ms)
+✔ on one shared number a proactive DM says which persona sent it (0.585292ms)
+✔ no tag when that persona has its own line or project, and never twice (0.387333ms)
+✔ replies in the user's own DM or the group are left as they are (proactive only) (0.088625ms)
+✔ a dropped Photon connection reconnects instead of going deaf (2038.6575ms)
+✔ on one shared number, a reply from another persona goes out in the conversation the user texted (0.660125ms)
+✔ a persona with its own line or project never borrows another line's conversation (0.416917ms)
+✖ no group chat: a text in an iMessage group is ignored (never answered into a chat with strangers); DMs still come through (1.218959ms)
+ℹ pass 8
+ℹ fail 1
+✖ failing tests:
+✖ no group chat: a text in an iMessage group is ignored (never answered into a chat with strangers); DMs still come through (1.218959ms)
+remove_exit=0

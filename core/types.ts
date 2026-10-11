@@ -67,7 +67,7 @@ export interface WatchEvent {
 export interface Persona {
   id: PersonaId;
   prompt: string; // contents of prompt.md: voice + rules
-  routerLine: string; // one sentence: when should this persona speak in the group chat?
+  routerLine: string; // one sentence: what this agent handles (picks who answers a DM on a shared number)
   tools: Tool[];
   // Polled every WATCH_MS for each onboarded user. Optional.
   watch?(ctx: Ctx): Promise<WatchEvent[]>;
@@ -99,7 +99,6 @@ export interface CalendarItem {
 
 export interface Inbound {
   persona: PersonaId; // whose number received it
-  kind: "dm" | "group";
   sender: string; // user phone/handle
   text?: string;
   image?: { bytes: Uint8Array; mimeType: string };

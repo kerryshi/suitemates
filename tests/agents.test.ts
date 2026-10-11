@@ -23,8 +23,7 @@ async function setup() {
     personas: loadPersonas(),
     store,
     llm,
-    config: { names: { academic: "Dean", financial: "Penny", social: "Sunny" }, PRODUCT_NAME: "Suitemates", mock: true, fakeRoute: undefined, GROUP_SETTLE_MS: 10 },
-    routerPrompt: "",
+    config: { names: { academic: "Dean", financial: "Penny", social: "Sunny" }, PRODUCT_NAME: "Suitemates", mock: true },
     log: () => {},
   });
   const transport = { start: async () => {}, send: async (_o: Outbound) => {} };
@@ -35,7 +34,7 @@ async function setup() {
     (await fetch(base + "/signup", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ name: "Sam", phone: PHONE, ...body }) })).json() as Promise<Record<string, unknown>>;
   let n = 0;
   const dm = (text: string, extra: Partial<Inbound> = {}) =>
-    engine.handle({ persona: "financial", kind: "dm", sender: PHONE, text, handle: "space-1", messageId: `m${++n}`, ...extra });
+    engine.handle({ persona: "financial", sender: PHONE, text, handle: "space-1", messageId: `m${++n}`, ...extra });
   return { store, engine, base, signup, dm, close: () => http.close() };
 }
 

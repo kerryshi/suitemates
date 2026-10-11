@@ -62,8 +62,7 @@ async function server(o: { addUser?: AddUser; failSend?: boolean; addCap?: numbe
     personas: loadPersonas(),
     store,
     llm: new FakeLlm(),
-    config: { names: NAMES, PRODUCT_NAME: "Suitemates", mock: true, fakeRoute: undefined, GROUP_SETTLE_MS: 10 },
-    routerPrompt: "",
+    config: { names: NAMES, PRODUCT_NAME: "Suitemates", mock: true },
     log: () => {},
   });
   const transport = {
@@ -94,7 +93,7 @@ test("sign up with Sunny: added to Sunny's project, Sunny texts first from her o
     const u = s.store.user(PHONE);
     assert.deepEqual([u.greeted, u.poolLines], [["social"], { [PROJECT.social]: LINES.social }]);
     // Their "hey" afterwards is a normal message to Sunny, not a second hello.
-    const hey = await s.engine.handle({ persona: "social", lineKnown: true, kind: "dm", sender: PHONE, text: "hey", handle: "sunny-space", messageId: "m1" });
+    const hey = await s.engine.handle({ persona: "social", lineKnown: true, sender: PHONE, text: "hey", handle: "sunny-space", messageId: "m1" });
     assert.equal(hey.length, 1);
     assert.ok(!hey[0].card);
   } finally {
@@ -108,7 +107,7 @@ test("if the first text can't go out yet, the sign-up stays 'added' and their ow
     const out = await s.signup({ agent: "social" });
     assert.equal(out.status, "added");
     assert.deepEqual(s.store.user(PHONE).greeted ?? [], []);
-    const hey = await s.engine.handle({ persona: "social", lineKnown: true, kind: "dm", sender: PHONE, text: "hey", handle: "sunny-space", messageId: "m1" });
+    const hey = await s.engine.handle({ persona: "social", lineKnown: true, sender: PHONE, text: "hey", handle: "sunny-space", messageId: "m1" });
     assert.ok(hey.some((o) => o.card));
     assert.deepEqual(s.store.user(PHONE).greeted, ["social"]);
   } finally {
@@ -132,7 +131,7 @@ test("own numbers: texting one agent's number greets only that agent, in that th
   const s = await server();
   try {
     s.store.saveUser({ phone: PHONE, name: "Sam", canvasLinked: false, onboardingStep: "done", signupStatus: "added", agents: ["academic", "financial", "social"], greeted: [] });
-    const out = await s.engine.handle({ persona: "financial", lineKnown: true, kind: "dm", sender: PHONE, text: "hey", handle: "penny-space", messageId: "m1" });
+    const out = await s.engine.handle({ persona: "financial", lineKnown: true, sender: PHONE, text: "hey", handle: "penny-space", messageId: "m1" });
     assert.ok(out.length >= 2);
     assert.ok(out.every((o) => o.persona === "financial" && o.handle === "penny-space"));
     assert.deepEqual(s.store.user(PHONE).greeted, ["financial"]);
@@ -146,9 +145,9 @@ test("an agent's own intro failing (live Canvas down) still sends a hello, and t
   const dean = personas.get("academic")!;
   personas.set("academic", { ...dean, triggers: { ...dean.triggers, intro: async () => { throw new Error("canvas 503"); } } } as Persona);
   const store = new Store(null);
-  const engine = new Engine({ personas, store, llm: new FakeLlm(), config: { names: NAMES, PRODUCT_NAME: "Suitemates", mock: true, fakeRoute: undefined, GROUP_SETTLE_MS: 10 }, routerPrompt: "", log: () => {} });
+  const engine = new Engine({ personas, store, llm: new FakeLlm(), config: { names: NAMES, PRODUCT_NAME: "Suitemates", mock: true }, log: () => {} });
   store.saveUser({ phone: PHONE, name: "Sam", canvasLinked: true, onboardingStep: "done", signupStatus: "added", agents: ["academic"], greeted: [] });
-  const out = await engine.handle({ persona: "academic", kind: "dm", sender: PHONE, text: "hey", handle: "space-1", messageId: "m1" });
+  const out = await engine.handle({ persona: "academic", sender: PHONE, text: "hey", handle: "space-1", messageId: "m1" });
   assert.match(out[0].text, /i'm Dean/);
   assert.ok(out.some((o) => o.card));
   assert.deepEqual(store.user(PHONE).greeted, ["academic"]);

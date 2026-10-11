@@ -101,20 +101,14 @@ export class SpectrumTransport implements Transport {
       const persona = personaOf(im.phone);
       this.spaces.set(`${persona}|${space.id}`, space);
       const sender = message.sender?.id;
-      // In the group chat our own personas' texts arrive as inbound on the other lines: never answer them.
+      // Our own agents' texts can arrive as inbound on another of our lines: never answer them.
       if (!sender || this.isOurLine(sender)) continue;
       const c = message.content;
-      let ev: Inbound | null = null;
+      if (c.type === "text" && c.text && this.isEcho(c.text)) continue;
       const lineKnown = this.apps.get(persona) === app || this.isOurLine(im.phone);
-      const base = { persona, lineKnown, kind: im.type === "group" ? ("group" as const) : ("dm" as const), sender, handle: space.id, messageId: message.id };
-      if (c.type === "text" && c.text) {
-        if (this.isEcho(c.text)) continue;
-        ev = { ...base, text: c.text };
-      } else if (c.type === "attachment" && /^image\/|\.(heic|heif|jpe?g|png)$/i.test(`${c.mimeType ?? ""} ${c.name ?? ""}`)) {
-        ev = { ...base, image: { bytes: new Uint8Array(await c.read()), mimeType: c.mimeType ?? "image/jpeg" } };
-      }
+      const ev = await toInbound({ persona, lineKnown, chatType: im.type, sender, handle: space.id, messageId: message.id, content: c });
       if (!ev) continue;
-      console.log(`[imessage] ${persona} line=${im.phone} ${ev.kind} ${sender}: ${ev.text ?? "<image>"} (space ${space.id}, msg ${message.id})`);
+      console.log(`[imessage] ${persona} line=${im.phone} ${sender}: ${ev.text ?? "<image>"} (space ${space.id}, msg ${message.id})`);
       onInbound(ev).catch((err) => console.error("[imessage] handler error", err));
     }
   }
@@ -154,7 +148,7 @@ export class SpectrumTransport implements Transport {
   }
 
   // One shared number: every persona texts from it, so a proactive DM ("dm:<phone>"; only engine.trigger makes
-  // those) says who it's from, like the group path in engine.ts. Off for a persona with its own *_LINE or
+  // those) says who it's from. Off for a persona with its own *_LINE or
   // *_PROJECT_ID. Replies to the user's own DM are left alone: they texted that persona.
   // On the shared pool every persona speaks from the number the user texted, but loop() caches that conversation
   // under the line's persona (DEFAULT_PERSONA). A persona without its own line or project borrows it; dedicated
@@ -188,6 +182,32 @@ export class SpectrumTransport implements Transport {
     this.spaces.set(key, space);
     return space;
   }
+}
+
+// One iMessage → an Inbound for the engine, or null when there's nothing to answer (not text or a photo).
+export async function toInbound(m: {
+  persona: PersonaId;
+  lineKnown: boolean;
+  chatType: string; // "dm" | "group" (spectrum-ts imessage(space).type)
+  sender: string;
+  handle: string;
+  messageId: string;
+  content: { type: string; text?: unknown; mimeType?: unknown; name?: unknown; read?: () => Promise<ArrayBuffer | Uint8Array> };
+}): Promise<Inbound | null> {
+  const str = (v: unknown) => (typeof v === "string" ? v : undefined);
+  const c = { ...m.content, text: str(m.content.text), mimeType: str(m.content.mimeType), name: str(m.content.name) };
+  // No group chat: a text in an iMessage group (someone added an agent to one) is never answered: the reply would
+  // land in a chat with people who never signed up. The shared pool doesn't deliver group events anyway.
+  if (m.chatType === "group") {
+    console.log(`[imessage] ignored group message ${m.messageId} from ${m.sender}`);
+    return null;
+  }
+  const base = { persona: m.persona, lineKnown: m.lineKnown, sender: m.sender, handle: m.handle, messageId: m.messageId };
+  if (c.type === "text" && c.text) return { ...base, text: c.text };
+  if (c.type === "attachment" && c.read && /^image\/|\.(heic|heif|jpe?g|png)$/i.test(`${c.mimeType ?? ""} ${c.name ?? ""}`)) {
+    return { ...base, image: { bytes: new Uint8Array(await c.read()), mimeType: c.mimeType ?? "image/jpeg" } };
+  }
+  return null;
 }
 
 // Send a turn's texts in order. One that fails (a just-added number Photon doesn't route yet) is logged and skipped,

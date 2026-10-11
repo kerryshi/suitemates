@@ -5,30 +5,19 @@ import type { Store } from "./store.ts";
 import type { Config } from "./config.ts";
 import { respond, type Setting } from "./agent.ts";
 import { introTexts } from "./signup.ts";
-import { keywordScores, route } from "./router.ts";
+import { keywordScores } from "./router.ts";
 import { onboard } from "./onboarding.ts";
 import { withMemory } from "./memory.ts";
 import { ackText, consentFromText, getPending, OFFER_TTL_MS, recruitTool, runRecruit, setPending } from "./recruit.ts";
 import { photonProjectFor, type AddResult, type AddUser } from "./photon-users.ts";
 
-// Every persona line in the group chat receives its own copy of each message. Copies with the same
-// sender + text inside this window are one message: the router runs once.
-export const DEDUPE_TTL_MS = 15_000;
 const SHARED_TIMEOUT_MS = 3_000; // Persona.context budget per reply
-
-interface Batch {
-  at: number;
-  handles: Map<PersonaId, string>;
-  messageIds: string[];
-  release: () => void;
-}
 
 export interface EngineDeps {
   personas: Map<PersonaId, Persona>;
   store: Store;
   llm: LlmClient;
-  config: Pick<Config, "names" | "PRODUCT_NAME" | "mock" | "fakeRoute" | "GROUP_SETTLE_MS"> & { watchList?: PersonaId[] };
-  routerPrompt: string;
+  config: Pick<Config, "names" | "PRODUCT_NAME" | "mock"> & { watchList?: PersonaId[] };
   now?: () => number;
   log?: (msg: string) => void;
   addUser?: AddUser; // Photon allowlist add (core/photon-users.ts); unset = no per-agent projects to add anyone to
@@ -38,7 +27,6 @@ export interface EngineDeps {
 
 export class Engine {
   readonly d: EngineDeps;
-  private readonly batches = new Map<string, Batch>();
   private readonly adds = new Map<string, Promise<AddResult>>(); // "<phone>|<agent>" → Photon add in flight
   private readonly now: () => number;
   readonly log: (msg: string) => void;
@@ -49,8 +37,9 @@ export class Engine {
     this.log = deps.log ?? ((m) => console.log(`[core] ${m}`));
   }
 
+  // Every message is a DM to one agent (there's no group chat: agents bring each other in, core/recruit.ts).
   async handle(ev: Inbound): Promise<Outbound[]> {
-    return ev.kind === "group" ? this.group(ev) : this.dm(ev);
+    return this.dm(ev);
   }
 
   private async dm(ev: Inbound): Promise<Outbound[]> {
@@ -156,57 +145,6 @@ export class Engine {
       .filter((h) => h.at >= 0)
       .sort((a, b) => a.at - b.at);
     return hits[0]?.id;
-  }
-
-  private async group(ev: Inbound): Promise<Outbound[]> {
-    const now = this.now();
-    for (const [k, b] of this.batches) if (now - b.at >= DEDUPE_TTL_MS) this.batches.delete(k);
-    const key = `${ev.sender}|${(ev.text ?? `image:${ev.image?.bytes.length}`).trim().toLowerCase()}`;
-
-    const existing = this.batches.get(key);
-    if (existing) {
-      existing.handles.set(ev.persona, ev.handle);
-      existing.messageIds.push(`${ev.persona}:${ev.messageId}`);
-      if (existing.handles.size >= this.d.personas.size) existing.release();
-      return [];
-    }
-    let release!: () => void;
-    const ready = new Promise<void>((r) => (release = r));
-    const batch: Batch = { at: now, handles: new Map([[ev.persona, ev.handle]]), messageIds: [`${ev.persona}:${ev.messageId}`], release };
-    this.batches.set(key, batch);
-    if (batch.handles.size < this.d.personas.size) {
-      await Promise.race([ready, new Promise((r) => setTimeout(r, this.d.config.GROUP_SETTLE_MS))]);
-    }
-    this.log(`group copies: ${batch.messageIds.join(", ")}`);
-
-    const user = this.d.store.user(ev.sender);
-    const chosen = await route({
-      text: ev.text ?? "(sent a photo)",
-      personas: this.d.personas,
-      names: this.d.config.names,
-      llm: this.d.llm,
-      routerPrompt: this.d.routerPrompt,
-      fakeRoute: this.d.config.fakeRoute,
-      log: this.log,
-    });
-    this.log(`router → [${chosen.join(", ")}]`);
-
-    // In router order, one at a time: each persona sees what the earlier ones just said, so Dean can answer
-    // Sunny's plan with the deadline it collides with instead of talking past it.
-    const texts: string[] = [];
-    for (const id of chosen) {
-      const earlier = texts.map((t, i) => `${this.d.config.names[chosen[i]]}: "${t}"`).join(" ");
-      const text = (ev.text ?? "") + (earlier ? `\n\n(Already said in this chat just now: ${earlier})` : "");
-      texts.push(await this.reply(id, user, text, ev.image, "group"));
-    }
-    return chosen.map((id, i): Outbound => {
-      const handle = batch.handles.get(id);
-      if (handle) return { persona: id, handle, text: texts[i] };
-      // That persona's line never got a copy: speak through a line that did, with a name tag.
-      const [via, h] = [...batch.handles][0];
-      this.log(`WARN ${id} has no handle in this group; sending via ${via}`);
-      return { persona: via, handle: h, text: `${this.d.config.names[id]}: ${texts[i]}` };
-    });
   }
 
   // Run each watcher once as soon as a user is onboarded, so its first poll (the baseline that
@@ -336,7 +274,7 @@ export class Engine {
       product: this.d.config.PRODUCT_NAME,
       names: this.d.config.names,
     });
-    const said = setting === "proactive" || setting === "recruit" ? [] : [{ role: "user" as const, text: setting === "group" ? `(group chat) ${text}` : text }];
+    const said = setting === "proactive" || setting === "recruit" ? [] : [{ role: "user" as const, text }];
     this.d.store.pushHistory(id, user.phone, ...said, { role: "model", text: out });
     return out;
   }

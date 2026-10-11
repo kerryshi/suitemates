@@ -20,7 +20,7 @@ npm run chat -- financial      # talk to a persona in the terminal. No keys, no 
 ```
 In the chat, say `hi` to onboard (or `/skip`), then try `show my recent purchases`. Type `/help` for commands.
 
-**No keys needed.** Without `GEMINI_API_KEY` a deterministic fake LLM still calls the real tools and echoes their results, so the whole flow runs offline. To get real replies, `cp .env.example .env`, add `GEMINI_API_KEY`, and run `npm run check-gemini`.
+**No keys needed.** Without `GEMINI_API_KEY` a deterministic fake LLM still calls the real tools and echoes their results, so everything runs without a key (only Sunny's Heel Life lookups touch the network, and they fail politely). To get real replies, `cp .env.example .env`, add `GEMINI_API_KEY`, and run `npm run check-gemini`.
 
 ## Talk to things
 ```bash
@@ -76,7 +76,7 @@ scheduler ─────────┘      └ recruit: bring_in → consent 
 **Numbers and plan tiers.** Each agent is its own Photon project (`<AGENT>_PROJECT_ID/SECRET`, plus `<AGENT>_PHOTON_API_TOKEN`
 for adding people), so each one reaches a student from its own pool number. A Pro project allows 100 people, a Free one 10 (set `<AGENT>_PHOTON_CAP=10` for a Free project; the code assumes 100).
 Sunny is the front door. `npm run check-photon` checks all three before a demo. Adding people uses the Photon CLI (`npm i -g @photon-ai/cli`, `photon login`)
-and needs `PHOTON_AUTO_ADD=1`; with it off, a brought-in agent answers name-tagged in the thread the student is already in. With only one shared project configured,
+and needs `PHOTON_AUTO_ADD=1`. With only one shared project configured,
 everything still works: the agents share that number and say who's talking. Dedicated lines (Business) are configuration
 (`*_LINE`), not code, and haven't been run.
 

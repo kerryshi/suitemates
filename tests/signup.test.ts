@@ -344,3 +344,26 @@ test("review: a changed project id means not added there yet, so the next sign-u
     s.close();
   }
 });
+
+test("signing up again with the same agent changes nothing and just returns your number for it", async () => {
+  let adds = 0;
+  const s = await server(undefined, async () => (adds++, { ok: true, line: "+16465550177" }));
+  try {
+    const first = (await (await s.post("/signup", { agent: "social", name: "Sam", phone: "9195550123", interests: ["food"] })).json()) as Record<string, unknown>;
+    assert.equal(first.textTo, "+16465550177");
+    const again = (await (await s.post("/signup", { agent: "social", name: "Imposter", phone: "(919) 555-0123", interests: ["gaming"] })).json()) as Record<string, unknown>;
+    assert.equal(again.already, true);
+    assert.equal(again.textTo, "+16465550177");
+    assert.equal(again.name, "Sam");
+    const u = s.store.user("+19195550123");
+    assert.equal(u.name, "Sam"); // not overwritten
+    assert.deepEqual(u.interests, ["food"]);
+    assert.equal(adds, 1); // no second Photon add
+    // A different agent is a real sign-up.
+    const dean = (await (await s.post("/signup", { agent: "academic", name: "Sam", phone: "9195550123" })).json()) as Record<string, unknown>;
+    assert.equal(dean.already, undefined);
+    assert.deepEqual(s.store.user("+19195550123").agents, ["social", "academic"]);
+  } finally {
+    s.close();
+  }
+});

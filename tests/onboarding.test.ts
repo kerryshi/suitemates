@@ -27,6 +27,24 @@ test("hi → budget → goal finishes onboarding with Canvas linked", () => {
   assert.equal(u.onboardingStep, "done");
 });
 
+test("texting a persona first: its opener is followed by its contact card (avatar), once per persona", async () => {
+  for (const me of ["financial", "academic", "social"] as const) {
+    const engine = new Engine({
+      personas: loadPersonas(),
+      store: new Store(null),
+      llm: { name: "spy", chat: async () => ({ text: "llm" }), json: async () => "{}" },
+      config: { names: { academic: "Oak", financial: "Clover", social: "Breeze" }, PRODUCT_NAME: "Canopy", mock: true },
+      log: () => {},
+    });
+    const first = await engine.handle({ persona: me, sender: "+19195550111", text: "hi", handle: "h", messageId: "1" });
+    assert.equal(first.length, 2, `${me}: hello + card`);
+    assert.match(first[0].text, /quick thing/);
+    assert.match(first[1].card?.photo ?? "", /^docs\/avatars\/.+\.png$/, `${me}: card has the avatar`);
+    const second = await engine.handle({ persona: me, sender: "+19195550111", text: "600", handle: "h", messageId: "2" });
+    assert.ok(second.every((o) => !o.card), `${me}: no second card`);
+  }
+});
+
 test("every persona says what it does before its first setup question", () => {
   for (const [me, does] of [
     ["financial", /keep an eye on your spending.*afford/],

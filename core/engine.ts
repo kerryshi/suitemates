@@ -4,7 +4,7 @@ import type { LlmClient } from "./llm/client.ts";
 import type { Store } from "./store.ts";
 import type { Config } from "./config.ts";
 import { respond, type Setting } from "./agent.ts";
-import { introTexts } from "./signup.ts";
+import { cardFor, introTexts } from "./signup.ts";
 import { keywordScores } from "./router.ts";
 import { onboard } from "./onboarding.ts";
 import { withMemory } from "./memory.ts";
@@ -53,9 +53,14 @@ export class Engine {
     if (user.onboardingStep !== "done") {
       const n = this.d.config.names;
       const r = onboard(user, ev.text ?? "", { me: ev.persona, product: this.d.config.PRODUCT_NAME, ...n });
+      // The opener ("hey, i'm Penny…") comes with that persona's contact card (name + avatar), so the phone offers
+      // to save it as a contact, once per persona.
+      const card = !(user.greeted ?? []).includes(ev.persona);
+      if (card) r.user.greeted = [...(user.greeted ?? []), ev.persona];
       this.d.store.saveUser(r.user);
       const extra = r.user.onboardingStep === "done" ? await this.onboarded(r.user.phone) : [];
-      return [{ persona: ev.persona, handle: ev.handle, text: r.reply }, ...extra];
+      const hello: Outbound = { persona: ev.persona, handle: ev.handle, text: r.reply };
+      return [hello, ...(card ? [{ ...cardFor(this, ev.persona, user.phone), handle: ev.handle }] : []), ...extra];
     }
     const persona = this.pickPersona(user, ev);
     // Calling an agent they don't have yet by name signs them up with it (it greets them below).

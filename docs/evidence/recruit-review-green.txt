@@ -1,0 +1,14 @@
+# green after the review fixes, 2026-10-11 00:38
+✔ S1: 'yes' after the background add settled reuses it (no second Photon CLI run, no wait) (68.327334ms)
+✔ S2: two texts in flight before the first hello is out → one hello and card, not two (1.876875ms)
+✔ S3: bring_in takes a display name ('Penny'), and never recruits whoever else the text mentions (0.591958ms)
+✔ S4: asked=true only counts as consent when the student actually named that agent (0.142125ms)
+✔ S5: one failed send doesn't drop the rest of the batch (0.151625ms)
+✔ S6: someone who texted in (no web sign-up) keeps their first agent's proactive texts after a recruit (2.540375ms)
+✔ consent: 'no' wins over a polite yes-word, and a question isn't a yes (0.072333ms)
+ℹ pass 7
+ℹ fail 0
+ℹ tests 216
+ℹ pass 216
+ℹ fail 0
+typecheck clean

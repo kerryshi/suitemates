@@ -73,10 +73,10 @@ export class Engine {
     const toGreet = ev.lineKnown ? ungreeted.filter((id) => id === persona) : ungreeted;
     if (user.signupStatus && toGreet.length) {
       const order = [persona, ...toGreet.filter((id) => id !== persona)].filter((id) => toGreet.includes(id));
+      // Marked greeted before the (slow) hellos are written, so a second text arriving meanwhile doesn't greet them
+      // twice. introTexts never throws for a failing intro (it falls back to the plain hello).
+      this.d.store.saveUser({ ...user, signupStatus: "invited", greeted: [...new Set([...(user.greeted ?? []), ...order])], lastAgent: order[0] });
       const intros = await introTexts(this, user.phone, order);
-      // Marked greeted only once the hellos exist, so a failure leaves them to be greeted next time.
-      const now = this.d.store.user(user.phone);
-      this.d.store.saveUser({ ...now, signupStatus: "invited", greeted: [...new Set([...(now.greeted ?? []), ...order])], lastAgent: order[0] });
       return intros.map((o) => ({ ...o, handle: ev.handle }));
     }
     // An offer to bring another agent in (core/recruit.ts), answered in the conversation it was made in.
@@ -102,10 +102,10 @@ export class Engine {
     const reply: Outbound = { persona, handle: ev.handle, text: tag + text };
     // bring_in this turn for an agent they named or already have: no question, it texts now.
     const made = getPending(this.d.store, user.phone);
-    const now = made && made.from === persona && made.offeredAt >= turnStart ? made.agents.filter((a) => a.consent !== "pending") : [];
-    if (!made || !now.length) return [reply];
+    const ready = made && made.from === persona && made.offeredAt >= turnStart ? made.agents.filter((a) => a.consent !== "pending") : [];
+    if (!made || !ready.length) return [reply];
     setPending(this.d.store, user.phone, { ...made, agents: made.agents.filter((a) => a.consent === "pending") });
-    return [reply, ...(await runRecruit(this, user.phone, { ...made, agents: now })).out];
+    return [reply, ...(await runRecruit(this, user.phone, { ...made, agents: ready })).out];
   }
 
   // Does bringing this agent in mean adding them to its own Photon project first?
@@ -122,8 +122,11 @@ export class Engine {
       p = this.d.addUser!(user.phone, user.name ?? "", id).catch((err): AddResult => ({ ok: false, error: err instanceof Error ? err.message : String(err) }));
       this.adds.set(key, p);
     }
-    // A failed add can be retried by the next offer; a done one is remembered on the profile (poolLines).
-    void p.then(() => this.adds.delete(key));
+    // A successful add stays here, so the "yes" that follows the offer reuses it instead of running the CLI again;
+    // a failed one is dropped so the next offer can retry.
+    void p.then((r) => {
+      if (!r.ok) this.adds.delete(key);
+    });
     return p;
   }
 

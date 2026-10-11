@@ -169,9 +169,10 @@ test("if Penny can't be added (full project, dead token), she still answers: thr
   await s.dm(BEACH);
   const out = await s.dm("yes");
   const penny = from(out, "financial");
-  assert.ok(penny.length >= 2);
+  assert.ok(penny.length >= 2, "hello + answer");
   assert.ok(penny.every((o) => o.via === "social" && o.handle === `dm:${PHONE}`));
-  assert.equal(penny.find((o) => o.card)?.card?.phone, LINES.social, "her card points at the number they actually text");
+  // No contact card through a borrowed thread: it would put Penny's name on Sunny's number (review S7).
+  assert.ok(!penny.some((o) => o.card));
   assert.ok(from(out, "academic").every((o) => !o.via), "Dean was added fine and uses his own number");
   assert.equal(s.user().via?.financial, "social");
   assert.equal(s.user().poolLines?.[PROJECT.financial], undefined);

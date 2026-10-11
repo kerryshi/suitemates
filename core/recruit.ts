@@ -10,7 +10,7 @@ import type { Store } from "./store.ts";
 import type { Outbound, PersonaId, Tool, UserProfile } from "./types.ts";
 import { PERSONA_IDS } from "./types.ts";
 import { photonProjectFor, type AddResult } from "./photon-users.ts";
-import { cardFor, introTexts } from "./signup.ts";
+import { introTexts } from "./signup.ts";
 
 export const OFFER_TTL_MS = 10 * 60_000;
 
@@ -31,9 +31,12 @@ export const setPending = (store: Store, phone: string, p: Pending | undefined) 
   store.kv("shared", phone).set("recruit", p?.agents.length ? p : undefined);
 
 const YES = /^\s*(y|ya|yes|yea|yeah|yep|yup|sure|ok|okay|k|please|pls|do it|go ahead|sounds good|bet|let'?s go|absolutely|of course)\b/i;
-const NO = /^\s*(n|no|nah|nope|not now|no thanks|nvm|never ?mind)\b/i;
+const NO = /\b(n|no|nah|nope|not now|no thanks|nvm|never ?mind|don'?t)\b/i;
+// A short answer to the offer. "no" anywhere wins ("please no"); a question or a long message isn't an answer.
 export function consentFromText(text: string): "yes" | "no" | undefined {
-  return YES.test(text) ? "yes" : NO.test(text) ? "no" : undefined;
+  if (NO.test(text) && text.trim().split(/\s+/).length <= 5) return "no";
+  if (text.includes("?") || text.trim().split(/\s+/).length > 4) return undefined;
+  return YES.test(text) ? "yes" : undefined;
 }
 
 const has = (u: UserProfile, id: PersonaId) => Boolean(u.agents?.includes(id) && u.greeted?.includes(id));
@@ -68,15 +71,16 @@ export function recruitTool(d: RecruitDeps): Tool {
       required: ["agent", "ask"],
     },
     async run(args, ctx) {
-      if (args.agent === d.from) return `error: that's you; bring in one of: ${list}`;
-      let agent = others.find((id) => id === args.agent);
-      let asked = args.asked === true;
-      if (!agent) {
-        // Keyless stand-in model (no args): the agent they named.
-        agent = others.find((id) => new RegExp(`\\b${d.names[id]}\\b`, "i").test(said(d.text)));
-        asked = Boolean(agent);
-      }
+      // The id or the display name ("financial" or "Penny"): models use both.
+      const given = typeof args.agent === "string" ? args.agent.trim().toLowerCase() : "";
+      const pick = (id: PersonaId) => id === given || d.names[id].toLowerCase() === given;
+      if (given && (d.from === given || d.names[d.from].toLowerCase() === given)) return `error: that's you; bring in one of: ${list}`;
+      const named = (id: PersonaId) => new RegExp(`\\b${d.names[id]}\\b`, "i").test(said(d.text));
+      // No agent at all (the keyless stand-in model): the agent they named. Never a guess from the text otherwise.
+      const agent = given ? others.find(pick) : others.find(named);
       if (!agent) return `error: say which agent: ${list}`;
+      // Consent is the student naming that agent, not the model saying so.
+      const asked = named(agent) && (args.asked === true || !given);
       const ask = typeof args.ask === "string" && args.ask.trim() ? args.ask.trim().slice(0, 200) : said(d.text).slice(0, 200);
       const user = ctx.user;
       const consent = has(user, agent) ? "none" : asked ? "given" : "pending";
@@ -86,7 +90,8 @@ export function recruitTool(d: RecruitDeps): Tool {
       setPending(d.store, user.phone, { ...base, agents: [...base.agents.filter((a) => a.id !== agent), { id: agent, ask, consent }] });
       if (consent !== "none" && d.needsAdd(agent, user)) d.startAdd(agent, user);
       const n = d.names[agent];
-      if (consent === "none") return `${n} is already in their phone and will answer this in ${n}'s own thread right now. Say so in a few words; don't answer for ${n}.`;
+      if (consent === "none")
+        return `${n} is already in their phone and will answer this ${user.via?.[agent] ? "right here" : `in ${n}'s own thread`} now. Say so in a few words; don't answer for ${n}.`;
       if (consent === "given") return `${n} is texting them now from ${n}'s own number. Say so in a few words; don't answer for ${n}.`;
       return `Not sent yet. Ask ONE short question: should ${n} jump in on "${ask}"? (yes/no). Don't answer for ${n}.`;
     },
@@ -119,7 +124,9 @@ export async function runRecruit(engine: Engine, phone: string, p: Pending): Pro
       viaFrom.push(a.id);
     }
   });
-  const ids = p.agents.map((a) => a.id);
+  // Someone who texted in (no web sign-up) has no agents list yet: it starts with the agent they were texting, so
+  // that agent's proactive texts keep coming (engine.trigger only sends to agents on the list).
+  const ids = [...(u.agents ? [] : [p.from]), ...p.agents.map((a) => a.id)];
   store.saveUser({
     ...u,
     agents: [...new Set([...(u.agents ?? []), ...ids])],
@@ -128,7 +135,6 @@ export async function runRecruit(engine: Engine, phone: string, p: Pending): Pro
     via,
   });
   const user = store.user(phone);
-  const fromCard = cardFor(engine, p.from, phone).card?.phone;
   const texts = await Promise.all(
     p.agents.map(async (a) => {
       const hello = fresh.has(a.id) ? await introTexts(engine, phone, [a.id]) : [];
@@ -149,11 +155,9 @@ export async function runRecruit(engine: Engine, phone: string, p: Pending): Pro
       }
       const route = user.via?.[a.id];
       const said: Outbound[] = answer ? [{ persona: a.id, handle: `dm:${phone}`, text: answer }] : [];
-      return [...hello, ...said].map((o): Outbound =>
-        route
-          ? { ...o, via: route, ...(o.card ? { card: { ...o.card, phone: fromCard, note: `${o.card.note ?? ""} Texts you through ${config.names[route]}.`.trim() } } : {}) }
-          : o,
-      );
+      // Through another agent's thread: no contact card (it would carry that agent's number under this one's name,
+      // and iOS would label the borrowed thread with either).
+      return [...hello, ...said].filter((o) => !(route && o.card)).map((o): Outbound => (route ? { ...o, via: route } : o));
     }),
   );
   return { out: texts.flat(), viaFrom };

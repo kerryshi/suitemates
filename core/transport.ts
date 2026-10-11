@@ -189,3 +189,15 @@ export class SpectrumTransport implements Transport {
     return space;
   }
 }
+
+// Send a turn's texts in order. One that fails (a just-added number Photon doesn't route yet) is logged and skipped,
+// so the rest of the batch (another agent's hello, its answer) still goes out.
+export async function sendAll(t: Transport, outs: Outbound[], log: (msg: string) => void = console.error): Promise<void> {
+  for (const o of outs) {
+    try {
+      await t.send(o);
+    } catch (err) {
+      log(`[send] ${o.persona}${o.via ? ` via ${o.via}` : ""} ${o.handle} failed: ${err instanceof Error ? err.message : err}`);
+    }
+  }
+}

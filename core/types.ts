@@ -12,6 +12,10 @@ export interface UserProfile {
   canvasLinked: boolean;
   onboardingStep: 0 | 1 | 2 | "done";
   onboardingRetries?: number;
+  // Web sign-up (core/signup.ts): pending until we add them in Photon and send the intro texts.
+  interests?: string[];
+  signupStatus?: "pending" | "invited";
+  signedUpAt?: string; // ISO
 }
 
 // What every tool, watch() and trigger receives.

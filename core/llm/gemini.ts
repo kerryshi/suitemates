@@ -24,7 +24,8 @@ export class GeminiClient implements LlmClient {
     this.name = `gemini:${model}`;
   }
 
-  async chat(req: { system: string; messages: LlmMessage[]; tools: Tool[] }): Promise<LlmStep> {
+  async chat(req: { system: string; messages: LlmMessage[]; tools: Tool[]; noTools?: boolean }): Promise<LlmStep> {
+    if (req.noTools) return this.answerNow(req.system, req.messages);
     const parts = await this.generate({
       systemInstruction: { parts: [{ text: req.system }] },
       contents: req.messages.map(toContent),
@@ -36,6 +37,29 @@ export class GeminiClient implements LlmClient {
     }
     const text = parts.filter((p) => !p.thought).map((p) => p.text ?? "").join("").trim();
     if (!text) throw new Error(`Gemini ${this.model} returned no text`);
+    return { text };
+  }
+
+  // Out of tool rounds: a text answer from what the tools returned. Gemini ignores functionCallingConfig NONE (live,
+  // 02:25: it answered with invented tools, which core used to send as "(no reply)"), so the tool calls and results
+  // are flattened to plain text, no tools are declared, the instruction is explicit, and any stray call is ignored.
+  private async answerNow(system: string, messages: LlmMessage[]): Promise<LlmStep> {
+    const contents: { role: string; parts: { text: string }[] }[] = [];
+    const add = (role: string, text: string) => {
+      const prev = contents.at(-1);
+      if (prev?.role === role) prev.parts[0].text += `\n\n${text}`;
+      else contents.push({ role, parts: [{ text }] });
+    };
+    for (const m of messages) {
+      if (m.role === "user") add("user", m.text || "(sent a photo)");
+      else if (m.role === "tool") add("user", `Tool results:\n${m.results.map((r) => `- ${r.name} → ${r.result}`).join("\n")}`);
+      else if ("toolCalls" in m) add("model", `(looked up: ${m.toolCalls.map((c) => c.name).join(", ")})`);
+      else add("model", m.text);
+    }
+    add("user", "Now answer the student from these results in plain text. Do not call any tools.");
+    const parts = await this.generate({ systemInstruction: { parts: [{ text: system }] }, contents });
+    const text = parts.filter((p) => !p.thought && !p.functionCall).map((p) => p.text ?? "").join("").trim();
+    if (!text) throw new Error(`Gemini ${this.model} returned no text (answer-now step)`);
     return { text };
   }
 

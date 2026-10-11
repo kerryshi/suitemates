@@ -11,7 +11,7 @@ const NAME_ONLY = new Set(["bring_in"]);
 export class FakeLlm implements LlmClient {
   readonly name = "fake";
 
-  async chat(req: { system: string; messages: LlmMessage[]; tools: Tool[] }): Promise<LlmStep> {
+  async chat(req: { system: string; messages: LlmMessage[]; tools: Tool[]; noTools?: boolean }): Promise<LlmStep> {
     const last = req.messages.at(-1);
     if (last?.role === "tool") {
       return { text: `(fake LLM) ${last.results.map((r) => `${r.name} → ${r.result}`).join(" | ").slice(0, 600)}` };
@@ -19,7 +19,7 @@ export class FakeLlm implements LlmClient {
     const text = last?.role === "user" ? last.text : "";
     // Echo just the facts: drop the "[proactive] kind:" prefix and core/agent.ts's "(This line is from …)" note.
     if (text.startsWith("[proactive]")) return { text: `(fake LLM) ${text.replace(/^\[proactive\][^:]*:\s*/, "").replace(/\n\n\(This line is from [\s\S]*$/, "")}` };
-    const tool = pickTool(text, req.tools);
+    const tool = req.noTools ? undefined : pickTool(text, req.tools);
     if (tool) return { toolCalls: [{ name: tool.name, args: {} }] };
     return { text: `(fake LLM) heard "${text.slice(0, 120)}" — no tool matched. Set GEMINI_API_KEY for real replies.` };
   }

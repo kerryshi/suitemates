@@ -223,3 +223,22 @@ test("review #4: the party window is ~3 minutes: a yes to Penny at 2.5 min still
   const yes = await to("financial", "yes");
   assert.ok(yes.some((o) => o.persona === "academic" && o.text === "Dean answer"));
 });
+
+test("an agent that just answered a hand-off isn't run again for the same plan a minute later (no duplicate texts)", async () => {
+  // Live 02:04: they had all three; Sunny brought Penny+Dean (both answered at once), still asked "want penny + dean…?",
+  // they said "Yes", and Sunny called bring_in for both again: every agent answered the NYC trip twice.
+  const s = setup(0, { agents: ["social", "financial", "academic"], greeted: ["social", "financial", "academic"] });
+  const both = [{ name: "bring_in", args: { agent: "financial", ask: "price nyc" } }, { name: "bring_in", args: { agent: "academic", ask: "check fall break" } }];
+  (s.engine.d as { llm: LlmClient }).llm = {
+    ...spy,
+    chat: async (req) => {
+      const last = req.messages.at(-1) as LlmMessage;
+      if (/You are Sunny,/.test(req.system) && last.role === "user" && /nyc|yes/i.test(last.text)) return { toolCalls: both };
+      return spy.chat(req);
+    },
+  };
+  const first = await s.dm("I want to go to nyc for fall break");
+  assert.equal(first.filter((o) => o.text === "Penny answer" || o.text === "Dean answer").length, 2);
+  const again = await s.dm("Yes");
+  assert.deepEqual(again.filter((o) => o.persona !== "social").map((o) => o.text), [], "no second round of answers");
+});

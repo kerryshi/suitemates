@@ -1,0 +1,39 @@
+# '(no reply)' on real phones (Penny x2, Dean x1, 01:58-02:05) — fix evidence 2026-10-11 02:13
+## cause: after 3 tool rounds the final no-tools call came back with a function call; core sent the literal '(no reply)'
+## live probe 1 (real Gemini): functionCallingConfig NONE is IGNORED by gemini-3.6-flash
+noTools call → toolCalls (BAD): canvas__get_todo_items ,canvas__list_courses ,google_calendar__list_events
+## live probe 2: flattened history, no tools, explicit instruction → 3/3 plain text, 0 calls
+## red before (tests/no-reply.test.ts, duplicate hand-off test)
+✖ the last step after the tool rounds forbids tools (so the model answers in text) and never yields '(no reply)' (15.47725ms)
+✖ if the model still has nothing to say, respond throws (callers fall back) instead of returning '(no reply)' (1.862209ms)
+✖ Gemini: noTools sends functionCallingConfig NONE with the declarations kept (9.084208ms)
+ℹ pass 0
+ℹ fail 3
+✖ failing tests:
+✖ the last step after the tool rounds forbids tools (so the model answers in text) and never yields '(no reply)' (15.47725ms)
+✖ if the model still has nothing to say, respond throws (callers fall back) instead of returning '(no reply)' (1.862209ms)
+✖ Gemini: noTools sends functionCallingConfig NONE with the declarations kept (9.084208ms)
+✔ the last step after the tool rounds forbids tools (so the model answers in text) and never yields '(no reply)' (15.186042ms)
+✔ if the model still has nothing to say, respond throws (callers fall back) instead of returning '(no reply)' (2.111125ms)
+✖ Gemini noTools: no tool declarations, the tool calls and results flattened to text, and stray calls ignored (10.1085ms)
+ℹ pass 2
+ℹ fail 1
+✖ failing tests:
+✖ Gemini noTools: no tool declarations, the tool calls and results flattened to text, and stray calls ignored (10.1085ms)
+✖ an agent that just answered a hand-off isn't run again for the same plan a minute later (no duplicate texts) (2.921417ms)
+ℹ pass 14
+ℹ fail 1
+✖ an agent that just answered a hand-off isn't run again for the same plan a minute later (no duplicate texts) (2.921417ms)
+## green
+✔ the last step after the tool rounds forbids tools (so the model answers in text) and never yields '(no reply)' (16.486875ms)
+✔ if the model still has nothing to say, respond throws (callers fall back) instead of returning '(no reply)' (1.978417ms)
+✔ Gemini noTools: no tool declarations, the tool calls and results flattened to text, and stray calls ignored (13.24575ms)
+✔ an agent that just answered a hand-off isn't run again for the same plan a minute later (no duplicate texts) (2.621167ms)
+ℹ pass 18
+ℹ fail 0
+ℹ tests 246
+ℹ pass 246
+ℹ fail 0
+typecheck clean
+## live probe 3 (real Gemini, real tool loop, fixed code): Dean used 3 tool rounds (5 tools), answer-now step returned text
+LLM calls: 4; reply: 140 chars: you've got comp 421 project 1 due tonight at 11:59 and a stor midterm saturday 💀 clear project 1 today before you even think about packing.

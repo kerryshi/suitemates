@@ -16,6 +16,10 @@ export const OFFER_TTL_MS = 10 * 60_000;
 // A yes texted to another agent of the same hand-off (Penny answered first, so they replied in her thread) counts
 // for a shorter while: later on, a "yes" there is more likely about that agent's own question.
 export const PARTY_TTL_MS = 3 * 60_000;
+// An agent that just answered a hand-off isn't run again for this person this soon (the offerer asked anyway and they
+// said yes, or the model called bring_in twice): one answer per agent, not two.
+export const HANDOFF_COOLDOWN_MS = 3 * 60_000;
+const handoffs = (store: Store, phone: string) => store.kv("shared", phone).get<Partial<Record<PersonaId, number>>>("handoffs") ?? {};
 
 export interface RecruitAsk {
   id: PersonaId;
@@ -100,6 +104,10 @@ export function recruitTool(d: RecruitDeps): Tool {
       const ask = typeof args.ask === "string" && args.ask.trim() ? args.ask.trim().slice(0, 200) : said(d.text).slice(0, 200);
       const user = ctx.user;
       const consent = has(user, agent) ? "none" : asked ? "given" : "pending";
+      const n0 = d.names[agent];
+      const lastRun = handoffs(d.store, user.phone)[agent];
+      if (consent === "none" && lastRun !== undefined && d.now() - lastRun < HANDOFF_COOLDOWN_MS)
+        return `${n0} already answered this a moment ago in ${n0}'s own thread. Don't ask about ${n0} again; just point them there.`;
       const p = getPending(d.store, user.phone);
       const sameTurn = p && p.from === d.from && p.text === said(d.text) && d.now() - p.offeredAt < OFFER_TTL_MS;
       const base: Pending = sameTurn ? p : { from: d.from, text: said(d.text), offeredAt: d.now(), agents: [] };
@@ -147,6 +155,8 @@ export async function runRecruit(engine: Engine, phone: string, p: Pending): Pro
   // Someone who texted in (no web sign-up) has no agents list yet: it starts with the agent they were texting, so
   // that agent's proactive texts keep coming (engine.trigger only sends to agents on the list).
   const ids = [...(u.agents ? [] : [p.from]), ...p.agents.map((a) => a.id)];
+  const ran = engine.time();
+  store.kv("shared", phone).set("handoffs", { ...handoffs(store, phone), ...Object.fromEntries(p.agents.map((a) => [a.id, ran])) });
   store.saveUser({
     ...u,
     agents: [...new Set([...(u.agents ?? []), ...ids])],

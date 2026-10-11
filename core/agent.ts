@@ -49,8 +49,11 @@ export async function respond(a: RespondArgs): Promise<string> {
     for (const call of step.toolCalls) results.push({ name: call.name, result: await runTool(a.persona, call, a.ctx) });
     messages.push({ role: "tool", results });
   }
-  const last = await a.llm.chat({ system, messages, tools: [] });
-  return "text" in last ? last.text : "(no reply)";
+  // Out of tool rounds: answer from what the tools returned. Still nothing → throw, so the caller's fallback runs
+  // (plain facts, a retry) instead of the student getting the literal "(no reply)".
+  const last = await a.llm.chat({ system, messages, tools: a.persona.tools, noTools: true });
+  if ("text" in last && last.text.trim()) return last.text;
+  throw new Error(`${a.persona.id}: model returned no text after ${MAX_TOOL_ROUNDS} tool rounds`);
 }
 
 async function runTool(persona: Persona, call: { name: string; args: Record<string, unknown> }, ctx: Ctx): Promise<string> {

@@ -37,6 +37,11 @@ export class Engine {
     this.log = deps.log ?? ((m) => console.log(`[core] ${m}`));
   }
 
+  // The engine's clock (tests move it).
+  time(): number {
+    return this.now();
+  }
+
   // Every message is a DM to one agent (there's no group chat: agents bring each other in, core/recruit.ts).
   async handle(ev: Inbound): Promise<Outbound[]> {
     return this.dm(ev);

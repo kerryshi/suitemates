@@ -48,13 +48,22 @@ export async function watch(ctx: Ctx): Promise<WatchEvent[]> {
 
 export const triggers = {
   // First text after sign-up: Dean introduces himself and what's due soonest. Fired by /demo/trigger (later: POST /signup).
+  // Two texts: who Dean is (core sends his contact card right after it), then the first thing worth knowing.
   async intro(ctx: Ctx): Promise<WatchEvent[]> {
+    const hello =
+      `Hey${ctx.user.name ? ` ${ctx.user.name}` : ""}, I'm Dean. I keep track of your Canvas: deadlines, quizzes, exams and grades, ` +
+      `and I'll give you a heads-up before anything's due. Text me "what's due?" anytime.`;
+    const events: WatchEvent[] = [{ kind: "intro", userPhone: ctx.user.phone, facts: hello, dedupeKey: `academic:intro:${ctx.user.phone}` }];
     const next = (await getAssignments(ctx))[0];
-    const facts =
-      `Hey${ctx.user.name ? ` ${ctx.user.name}` : ""}, I'm Dean. I keep track of your Canvas deadlines so you don't have to. ` +
-      (next ? `Next up: ${next.course} ${next.name}, due ${fmtWhen(next.due, ctx.now)}. ` : "") +
-      `Text me "what's due?" anytime.`;
-    return [{ kind: "intro", userPhone: ctx.user.phone, facts, dedupeKey: `academic:intro:${ctx.user.phone}` }];
+    if (next) {
+      events.push({
+        kind: "intro_next_up",
+        userPhone: ctx.user.phone,
+        facts: `First thing on your list: ${next.course} ${next.name}, due ${fmtWhen(next.due, ctx.now)}.`,
+        dedupeKey: `academic:intro-next:${ctx.user.phone}`,
+      });
+    }
+    return events;
   },
 
   // Every day at MORNING_AT (and on cue: npm run trigger -- academic morning_due): today's homework, plus tomorrow's.

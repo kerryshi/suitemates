@@ -82,11 +82,13 @@ export function startHttp(opts: { engine: Engine; transport: Transport; port: nu
         if ("error" in own) return reply(400, own);
         Object.assign(r.user, own.profile);
         // Put them on the Photon allowlist so their first text gets through, and find the number they text.
+        // Also for anyone whose number we don't know yet (read-only for people already on the list).
         const fresh = r.user.signupStatus === "pending";
-        const added = fresh ? await addUser(phone, r.user.name ?? "") : { ok: true };
-        const user = { ...r.user, ...(fresh && added.ok ? { signupStatus: "added" as const } : {}) };
+        const added = fresh || !r.user.poolLine ? await addUser(phone, r.user.name ?? "") : { ok: true };
+        const line = "line" in added ? added.line : undefined;
+        const user = { ...r.user, ...(fresh && added.ok ? { signupStatus: "added" as const } : {}), ...(line ? { poolLine: line } : {}) };
         store.saveUser(user);
-        const textTo = ("line" in added ? added.line : undefined) || process.env.POOL_NUMBER || undefined;
+        const textTo = user.poolLine || process.env.POOL_NUMBER || undefined;
         const why = "error" in added && added.error ? `; photon: ${added.error}` : "";
         console.log(`[signup] ${user.name} ${phone} (${user.signupStatus}${why})`);
         return reply(200, { ok: true, name: user.name, status: user.signupStatus, textTo, calendar: calUrl(phone), agents: user.agents, ...(own.note ? { note: own.note } : {}) });

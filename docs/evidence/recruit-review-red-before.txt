@@ -9,3 +9,7 @@
 ℹ pass 0
 ℹ fail 7
 ✖ failing tests:
+✖ S8: with a deliver hook, 'yes' answers with the ack at once; each agent's texts go out as soon as that agent is ready (306.409ms)
+ℹ pass 7
+ℹ fail 1
+✖ S8: with a deliver hook, 'yes' answers with the ack at once; each agent's texts go out as soon as that agent is ready (306.409ms)

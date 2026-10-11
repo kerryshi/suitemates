@@ -12,3 +12,8 @@
 ℹ pass 216
 ℹ fail 0
 typecheck clean
+
+# S8 green 00:38
+✔ S8: with a deliver hook, 'yes' answers with the ack at once; each agent's texts go out as soon as that agent is ready (703.960625ms)
+ℹ pass 8
+ℹ fail 0

@@ -106,3 +106,25 @@ test("consent: 'no' wins over a polite yes-word, and a question isn't a yes", ()
   assert.equal(consentFromText("yeah do it"), "yes");
   assert.equal(consentFromText("nah im good"), "no");
 });
+
+test("S8: with a deliver hook, 'yes' answers with the ack at once; each agent's texts go out as soon as that agent is ready", async () => {
+  const s = setup(0);
+  const slow: LlmClient = {
+    ...spy,
+    chat: async (req) => {
+      const last = req.messages.at(-1) as LlmMessage;
+      if (last.role === "user" && last.text.startsWith("[handoff")) await sleep(300);
+      return spy.chat(req);
+    },
+  };
+  const delivered: Outbound[][] = [];
+  Object.assign(s.engine.d, { llm: slow, deliver: async (outs: Outbound[]) => void delivered.push(outs) });
+  await s.dm("I'm going on the beach trip Saturday");
+  const t0 = Date.now();
+  const out = await s.dm("yes");
+  assert.deepEqual(out.map((o) => o.persona), ["social"], "only the ack comes back with the turn");
+  assert.ok(Date.now() - t0 < 250, `ack took ${Date.now() - t0} ms`);
+  await sleep(700);
+  const penny = delivered.flat().filter((o) => o.persona === "financial");
+  assert.ok(penny.some((o) => o.card) && penny.some((o) => o.text === "Penny answer"), JSON.stringify(delivered));
+});

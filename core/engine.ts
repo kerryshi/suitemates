@@ -32,6 +32,8 @@ export interface EngineDeps {
   now?: () => number;
   log?: (msg: string) => void;
   addUser?: AddUser; // Photon allowlist add (core/photon-users.ts); unset = no per-agent projects to add anyone to
+  // Send texts outside the turn (a recruited agent's texts, as soon as each is ready). Set by core/main.ts.
+  deliver?: (outs: Outbound[]) => Promise<void>;
 }
 
 export class Engine {

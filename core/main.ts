@@ -15,4 +15,5 @@ console.log(`personas: ${[...app.personas.keys()].map((id) => `${id}=${config.na
 const transport: Transport = config.TRANSPORT === "imessage" ? new SpectrumTransport(config) : new ConsoleTransport(app, "group");
 startHttp({ engine, transport, port: config.PORT, token: config.DEMO_TOKEN });
 startScheduler(app, transport);
+engine.d.deliver = (outs) => sendAll(transport, outs);
 await transport.start(async (ev) => sendAll(transport, await engine.handle(ev)));

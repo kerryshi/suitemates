@@ -135,32 +135,41 @@ export async function runRecruit(engine: Engine, phone: string, p: Pending): Pro
     via,
   });
   const user = store.user(phone);
-  const texts = await Promise.all(
-    p.agents.map(async (a) => {
-      const hello = fresh.has(a.id) ? await introTexts(engine, phone, [a.id]) : [];
-      const n = config.names[p.from];
-      const brief =
-        `[handoff from ${n}] The student told ${n}: "${p.text}". ${n} brought you in to: ${a.ask}. ` +
-        (fresh.has(a.id) ? "They said yes, and your hello and contact card were just sent: don't introduce yourself again. " : "") +
-        "Answer it with your tools, in one or two short texts' worth.";
-      // A new agent's first real text: retried once (Gemini sometimes returns nothing after a tool call), and never
-      // replaced by the "my brain glitched" line; the hello and card already went out.
-      let answer: string | undefined;
-      for (let attempt = 1; attempt <= 2 && answer === undefined; attempt++) {
-        try {
-          answer = await engine.replyOrThrow(a.id, user, brief, undefined, "recruit");
-        } catch (err) {
-          engine.log(`WARN ${a.id} handoff answer failed (try ${attempt}): ${err instanceof Error ? err.message : err}`);
-        }
+  const textsFor = async (a: RecruitAsk): Promise<Outbound[]> => {
+    const hello = fresh.has(a.id) ? await introTexts(engine, phone, [a.id]) : [];
+    const n = config.names[p.from];
+    const brief =
+      `[handoff from ${n}] The student told ${n}: "${p.text}". ${n} brought you in to: ${a.ask}. ` +
+      (fresh.has(a.id) ? "They said yes, and your hello and contact card were just sent: don't introduce yourself again. " : "") +
+      "Answer it with your tools, in one or two short texts' worth.";
+    // A new agent's first real text: retried once (Gemini sometimes returns nothing after a tool call), and never
+    // replaced by the "my brain glitched" line; the hello and card already went out.
+    let answer: string | undefined;
+    for (let attempt = 1; attempt <= 2 && answer === undefined; attempt++) {
+      try {
+        answer = await engine.replyOrThrow(a.id, user, brief, undefined, "recruit");
+      } catch (err) {
+        engine.log(`WARN ${a.id} handoff answer failed (try ${attempt}): ${err instanceof Error ? err.message : err}`);
       }
-      const route = user.via?.[a.id];
-      const said: Outbound[] = answer ? [{ persona: a.id, handle: `dm:${phone}`, text: answer }] : [];
-      // Through another agent's thread: no contact card (it would carry that agent's number under this one's name,
-      // and iOS would label the borrowed thread with either).
-      return [...hello, ...said].filter((o) => !(route && o.card)).map((o): Outbound => (route ? { ...o, via: route } : o));
-    }),
-  );
-  return { out: texts.flat(), viaFrom };
+    }
+    const route = user.via?.[a.id];
+    const said: Outbound[] = answer ? [{ persona: a.id, handle: `dm:${phone}`, text: answer }] : [];
+    // Through another agent's thread: no contact card (it would carry that agent's number under this one's name,
+    // and iOS would label the borrowed thread with either).
+    return [...hello, ...said].filter((o) => !(route && o.card)).map((o): Outbound => (route ? { ...o, via: route } : o));
+  };
+  // With a live transport (engine.d.deliver), each agent's texts go out the moment that agent is ready, so the ack
+  // isn't held back by the slowest agent's Gemini calls. Without one (tests, terminal), they come back with the turn.
+  const deliver = engine.d.deliver;
+  if (deliver) {
+    for (const a of p.agents) {
+      void textsFor(a)
+        .then((outs) => deliver(outs))
+        .catch((err) => engine.log(`ERROR ${a.id} handoff texts failed: ${err instanceof Error ? err.message : err}`));
+    }
+    return { out: [], viaFrom };
+  }
+  return { out: (await Promise.all(p.agents.map(textsFor))).flat(), viaFrom };
 }
 
 // The offering agent's "on it", sent before the others' texts land. Only an agent on its own Photon project texts

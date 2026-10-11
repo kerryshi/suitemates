@@ -18,6 +18,9 @@ export interface UserProfile {
   focus?: "school" | "money" | "social" | "balance"; // "this semester I'm mostly trying to…"
   win?: string; // "what would make this semester a win?" (free text)
   signupStatus?: "pending" | "added" | "invited"; // pending → on the Photon allowlist → greeted
+  agents?: PersonaId[]; // who they signed up with on the web (each agent has its own QR); unset = texted in directly
+  greeted?: PersonaId[]; // agents that already sent their intro + contact card
+  lastAgent?: PersonaId; // who answered their last DM (shared pool: replies go back to them by default)
   signedUpAt?: string; // ISO
 }
 
@@ -77,6 +80,9 @@ export interface Inbound {
   image?: { bytes: Uint8Array; mimeType: string };
   handle: string; // conversation id on that persona's line
   messageId: string;
+  // true when the number they texted belongs to `persona` alone (its own *_LINE or project). On the shared pool
+  // it's unset, `persona` is just DEFAULT_PERSONA, and the engine picks among the user's own agents.
+  lineKnown?: boolean;
 }
 
 export interface Outbound {

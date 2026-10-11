@@ -39,7 +39,9 @@ export function startHttp(opts: { engine: Engine; transport: Transport; port: nu
       const path = url.pathname;
       if (path === "/health") return reply(200, { ok: true });
       if (req.method === "GET" && path === "/") return file(res, join(ROOT, "web", "index.html"), "text/html; charset=utf-8");
-      if (req.method === "GET" && path === "/qr") return file(res, join(ROOT, "web", "qr.html"), "text/html; charset=utf-8");
+      // One sign-up page per agent (its own QR): /join/academic, /join/financial, /join/social. /qr was the old poster.
+      if (req.method === "GET" && /^\/join\/(academic|financial|social)\/?$/.test(path)) return file(res, join(ROOT, "web", "join.html"), "text/html; charset=utf-8");
+      if (req.method === "GET" && path === "/qr") return file(res, join(ROOT, "web", "index.html"), "text/html; charset=utf-8");
       if (req.method === "GET" && path === "/admin") return file(res, join(ROOT, "web", "admin.html"), "text/html; charset=utf-8");
       const avatar = /^\/avatars\/([a-z-]+)\.png$/.exec(path);
       if (req.method === "GET" && avatar && AVATARS.has(avatar[1])) return file(res, join(ROOT, "docs", "avatars", `${avatar[1]}.png`), "image/png");
@@ -87,9 +89,11 @@ export function startHttp(opts: { engine: Engine; transport: Transport; port: nu
         if (!authed) return reply(403, { error: "bad token" });
         const phone = normalizePhone(params.phone);
         if (!phone || !store.user(phone).signedUpAt) return reply(404, { error: "no sign-up for that phone" });
-        const outs = await introTexts(engine, phone);
+        const agents = store.user(phone).agents ?? (["academic", "financial", "social"] as PersonaId[]);
+        const outs = await introTexts(engine, phone, agents);
         for (const o of outs) await transport.send(o);
-        store.saveUser({ ...store.user(phone), signupStatus: "invited" });
+        const u = store.user(phone);
+        store.saveUser({ ...u, signupStatus: "invited", greeted: [...new Set([...(u.greeted ?? []), ...agents])] });
         return reply(200, { sent: outs.length });
       }
 

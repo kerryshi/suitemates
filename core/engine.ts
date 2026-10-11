@@ -5,7 +5,7 @@ import type { Store } from "./store.ts";
 import type { Config } from "./config.ts";
 import { respond, type Setting } from "./agent.ts";
 import { introTexts } from "./signup.ts";
-import { route } from "./router.ts";
+import { keywordScores, route } from "./router.ts";
 import { onboard } from "./onboarding.ts";
 
 // Every persona line in the group chat receives its own copy of each message. Copies with the same
@@ -55,15 +55,36 @@ export class Engine {
       const extra = r.user.onboardingStep === "done" ? await this.onboarded(r.user.phone) : [];
       return [{ persona: ev.persona, handle: ev.handle, text: r.reply }, ...extra];
     }
-    // Signed up on the web and just sent their first text (the "hey" the QR page pre-fills): every persona
-    // introduces itself with its contact card, in this same conversation.
-    if (user.signupStatus && user.signupStatus !== "invited") {
-      this.d.store.saveUser({ ...user, signupStatus: "invited" });
-      const intros = await introTexts(this, user.phone);
+    const persona = this.pickPersona(user, ev);
+    // Signed up on the web and just texted in (the "hey Dean" the QR page pre-fills): each agent they signed up
+    // with that hasn't said hi yet introduces itself with its contact card, in this same conversation.
+    const toGreet = (user.agents ?? []).filter((id) => !(user.greeted ?? []).includes(id));
+    if (user.signupStatus && toGreet.length) {
+      const order = [persona, ...toGreet.filter((id) => id !== persona)].filter((id) => toGreet.includes(id));
+      this.d.store.saveUser({ ...user, signupStatus: "invited", greeted: [...(user.greeted ?? []), ...order], lastAgent: order[0] });
+      const intros = await introTexts(this, user.phone, order);
       return intros.map((o) => ({ ...o, handle: ev.handle }));
     }
-    const text = await this.reply(ev.persona, user, ev.text ?? "", ev.image, "dm");
-    return [{ persona: ev.persona, handle: ev.handle, text }];
+    const text = await this.reply(persona, user, ev.text ?? "", ev.image, "dm");
+    if (user.agents?.length && user.lastAgent !== persona) this.d.store.saveUser({ ...this.d.store.user(user.phone), lastAgent: persona });
+    // One shared number and several agents: say who's talking.
+    const tag = !ev.lineKnown && (user.agents?.length ?? 0) > 1 ? `${this.d.config.names[persona]}: ` : "";
+    return [{ persona, handle: ev.handle, text: tag + text }];
+  }
+
+  // Who answers a DM. A dedicated line (or a user who never signed up on the web) → that line's persona. On the
+  // shared pool, among the agents this user signed up with: one they named ("dean, …") → their only agent → the
+  // one whose area the text is about → whoever they talked to last.
+  pickPersona(user: UserProfile, ev: Inbound): PersonaId {
+    const mine = (user.agents ?? []).filter((id) => this.d.personas.has(id));
+    if (ev.lineKnown || mine.length === 0) return ev.persona;
+    const text = ev.text ?? "";
+    const named = mine.find((id) => new RegExp(`\\b${this.d.config.names[id]}\\b`, "i").test(text));
+    if (named) return named;
+    if (mine.length === 1) return mine[0];
+    const scores = [...keywordScores(text, new Map(mine.map((id) => [id, this.d.personas.get(id)!])))].sort((x, y) => y[1] - x[1]);
+    if (scores[0]?.[1] > 0 && scores[0][1] > (scores[1]?.[1] ?? 0)) return scores[0][0];
+    return user.lastAgent && mine.includes(user.lastAgent) ? user.lastAgent : mine[0];
   }
 
   private async group(ev: Inbound): Promise<Outbound[]> {

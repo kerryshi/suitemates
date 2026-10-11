@@ -122,10 +122,19 @@ No "text this number to start". Drafted Sat Oct 10 evening by Ismail with Claude
 
 ## QR → add your number → say hey (built Sat night)
 
-1. `GET /qr` shows a QR of the sign-up page (open it through the public tunnel URL so the QR points there).
+1. `GET /` lists the three agents; `GET /join/<agent>` shows that agent's QR (laptop/poster) and its own short form (phone).
 2. The form posts `/signup`; `core/photon-users.ts` runs `photon spectrum users add --phone … --first-name …` to put them on the
    Photon Users allowlist, then `users list --json` to find the pool number they text (fallback `POOL_NUMBER`).
 3. The page opens Messages with "hey" typed to that number (`sms:<n>&body=hey`).
 4. Their first text → `core/engine.ts` sends every persona's intro + contact card in that conversation (status `invited`).
 - Needs: `npm i -g @photon-ai/cli`, `photon login` (or `PHOTON_API_TOKEN`), `PHOTON_AUTO_ADD=1`, and a public URL.
   Without the CLI the sign-up stays `pending` and `/admin` → "Send intro" still works after a manual dashboard add.
+
+## Separate agents, shared backend (plan change, Sat night)
+
+- No group chat: each agent has its own QR sign-up (`/join/academic|financial|social`). One profile per phone
+  (`UserProfile.agents`, `greeted`, `lastAgent`); each agent greets once, with its contact card.
+- Shared Photon number: `Engine.pickPersona` picks among *your* agents: the one you name ("dean, …") → your only one →
+  the one with the most keyword hits (`keywordScores`) → the last one you talked to. Replies are name-tagged when you
+  have more than one. A dedicated line (`Inbound.lineKnown`) always answers as itself.
+- Sharing data: `Persona.context` (prompts) today; next, a shared calendar (see below).

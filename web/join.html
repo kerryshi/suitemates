@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Join Suitemates</title>
+<style>
+  :root { --ink: #0d3550; --soft: #3d6680; --glass: rgba(255,255,255,.66); --edge: rgba(255,255,255,.92);
+    --aqua: #1aa6e0; --aqua-dark: #0b78b3; --green: #3fae2a; --error: #c0392b; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; min-height: 100vh; color: var(--ink);
+    font: 16px/1.45 "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+    background: radial-gradient(ellipse 120% 40% at 50% 105%, #7ccf4a 0 38%, transparent 39%), linear-gradient(180deg, #5ec8f2, #e9fbff 70%);
+    background-attachment: fixed;
+  }
+  main { max-width: 980px; margin: 0 auto; padding: 24px 16px 48px; }
+  .back { color: var(--ink); text-decoration: none; font-weight: 600; }
+  .head { display: flex; align-items: center; gap: 16px; margin: 14px 0 20px; }
+  .head img { width: 92px; height: 92px; border-radius: 50%; border: 4px solid #fff; box-shadow: 0 6px 16px rgba(13,53,80,.25); object-fit: cover; }
+  .head h1 { margin: 0; font-size: 2rem; text-shadow: 0 2px 0 rgba(255,255,255,.7); }
+  .head p { margin: 2px 0 0; color: var(--soft); }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: start; }
+  @media (max-width: 760px) { .grid { grid-template-columns: 1fr; } .qrcard { order: 2; } }
+  .card { background: var(--glass); border: 1px solid var(--edge); border-radius: 22px; padding: 20px; backdrop-filter: blur(10px);
+    box-shadow: 0 10px 30px rgba(13,53,80,.18), inset 0 1px 0 rgba(255,255,255,.9); }
+  .qrcard { text-align: center; }
+  .qrcard h2, .card h2 { margin: 0 0 12px; font-size: 1.15rem; }
+  #qr { width: min(70vw, 300px); height: min(70vw, 300px); margin: 0 auto; background: #fff; padding: 10px; border-radius: 16px; }
+  #qr img, #qr canvas { width: 100% !important; height: 100% !important; }
+  .url { font-size: .8rem; color: var(--soft); margin-top: 10px; word-break: break-all; }
+  label { display: block; font-weight: 600; margin: 14px 0 6px; }
+  .hint { font-weight: 400; color: var(--soft); font-size: .9rem; }
+  input[type=text], input[type=tel], input[type=number] { width: 100%; padding: 12px 14px; font: inherit; color: var(--ink);
+    border-radius: 12px; border: 1px solid rgba(13,53,80,.2); background: rgba(255,255,255,.92); outline: none; }
+  input:focus { border-color: var(--aqua); box-shadow: 0 0 0 3px rgba(26,166,224,.25); }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chips input { position: absolute; opacity: 0; pointer-events: none; }
+  .chips label { margin: 0; font-weight: 500; padding: 7px 12px; border-radius: 999px; cursor: pointer; background: rgba(255,255,255,.88); border: 1px solid rgba(13,53,80,.18); }
+  .chips input:checked + label { background: linear-gradient(180deg, #8fe06a, var(--green)); color: #fff; border-color: transparent; }
+  .chips input:focus-visible + label { box-shadow: 0 0 0 3px rgba(26,166,224,.35); }
+  .row { display: flex; align-items: center; gap: 10px; margin-top: 16px; }
+  .row input { width: 20px; height: 20px; }
+  .row label { margin: 0; font-weight: 500; }
+  button, a.button { display: block; width: 100%; margin-top: 20px; padding: 14px; font-family: inherit; font-size: 1.1rem; font-weight: 700;
+    color: #fff; text-align: center; text-decoration: none; cursor: pointer; border-radius: 14px; text-shadow: 0 1px 1px rgba(0,0,0,.25); }
+  button { border: 1px solid var(--aqua-dark); background: linear-gradient(180deg, #7fdcff 0%, var(--aqua) 50%, var(--aqua-dark) 51%, #1593cf 100%);
+    box-shadow: 0 6px 14px rgba(11,120,179,.35), inset 0 1px 0 rgba(255,255,255,.7); }
+  a.button { border: 1px solid #2b8a1c; background: linear-gradient(180deg, #a6ec7f 0%, var(--green) 50%, #2f9420 51%, #3fae2a 100%); box-shadow: 0 6px 14px rgba(47,148,32,.35); }
+  button:disabled { opacity: .6; cursor: wait; }
+  .error { color: var(--error); margin: 12px 0 0; min-height: 1.2em; }
+  .fine { color: var(--soft); font-size: .85rem; }
+  [hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<main>
+  <a class="back" href="/">← All agents</a>
+  <div class="head">
+    <img id="avatar" src="" alt="">
+    <div><h1 id="title">Join</h1><p id="pitch"></p></div>
+  </div>
+
+  <div class="grid">
+    <div class="card qrcard">
+      <h2>Scan with your phone</h2>
+      <div id="qr" role="img" aria-label="QR code for this sign-up page"></div>
+      <div class="url" id="url"></div>
+    </div>
+
+    <div>
+      <form class="card" id="form" novalidate>
+        <h2 id="formTitle">Or sign up here</h2>
+        <label for="name">First name</label>
+        <input id="name" name="name" type="text" autocomplete="given-name" maxlength="60" required>
+        <label for="phone">iPhone number</label>
+        <input id="phone" name="phone" type="tel" autocomplete="tel" inputmode="tel" placeholder="919-555-0123" required>
+        <div id="fields"></div>
+        <button type="submit" id="go">Sign me up</button>
+        <p class="error" id="error" role="alert"></p>
+      </form>
+
+      <div class="card" id="done" hidden>
+        <h2 id="doneTitle">You're in!</h2>
+        <div id="sayHey" hidden>
+          <p>Last step: say hey in iMessage and <span class="who"></span> will introduce themself.</p>
+          <a class="button" id="heyLink" href="#">Say hey to <span class="who"></span></a>
+          <p class="fine" id="heyNumber"></p>
+        </div>
+        <p id="waitText" hidden><span class="who"></span> will text you as soon as we've added your number.</p>
+      </div>
+    </div>
+  </div>
+</main>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script>
+  const INTERESTS = ["pickup sports", "gym", "food", "study groups", "concerts", "parties", "outdoors", "gaming", "art", "volunteering"];
+  const AGENTS = {
+    academic: {
+      name: "Dean", avatar: "dean", pitch: "School: Canvas deadlines, quizzes, exams and grades.",
+      fields: `
+        <label for="win">What would make this semester a win? <span class="hint">(optional)</span></label>
+        <input id="win" name="win" type="text" maxlength="160" placeholder="3.5 GPA, no all-nighters">
+        <div class="row"><input id="canvas" name="canvas" type="checkbox" checked><label for="canvas">Let Dean read my Canvas</label></div>`,
+      body: (f) => ({ canvas: f.canvas.checked, win: f.win.value.trim() }),
+    },
+    financial: {
+      name: "Penny", avatar: "penny", pitch: "Money: spending, your budget, and whether you can afford it.",
+      fields: `
+        <label for="budget">Monthly spending budget</label>
+        <input id="budget" name="budget" type="number" inputmode="numeric" min="0" step="1" placeholder="600">
+        <label for="goal">Saving for something? <span class="hint">(optional)</span></label>
+        <input id="goal" name="goal" type="text" maxlength="120" placeholder="spring break, $400">`,
+      body: (f) => ({ budget: f.budget.value, goal: f.goal.value.trim() }),
+    },
+    social: {
+      name: "Sunny", avatar: "sunny", pitch: "Plans: finds people who want to do what you want to do.",
+      fields: `<label>What are you into?</label><div class="chips" id="chips">${INTERESTS.map((t, i) =>
+        `<input type="checkbox" id="i${i}" value="${t}"><label for="i${i}">${t}</label>`).join("")}</div>`,
+      body: () => ({ interests: [...document.querySelectorAll("#chips input:checked")].map((c) => c.value) }),
+    },
+  };
+
+  const id = location.pathname.split("/").filter(Boolean)[1];
+  const a = AGENTS[id];
+  if (!a) location.replace("/");
+  document.title = `Get ${a.name} · Suitemates`;
+  document.getElementById("title").textContent = `Get ${a.name}`;
+  document.getElementById("pitch").textContent = a.pitch;
+  document.getElementById("avatar").src = `/avatars/${a.avatar}.png`;
+  document.getElementById("avatar").alt = a.name;
+  document.getElementById("fields").innerHTML = a.fields;
+  document.querySelectorAll(".who").forEach((e) => (e.textContent = a.name));
+
+  // The QR is this page's own address: on a laptop or poster you scan it; on a phone you just fill the form.
+  const here = `${location.origin}${location.pathname}`;
+  document.getElementById("url").textContent = here;
+  if (window.QRCode) new QRCode(document.getElementById("qr"), { text: here, width: 300, height: 300, colorDark: "#0d3550", colorLight: "#ffffff", correctLevel: QRCode.CorrectLevel.M });
+  if (matchMedia("(max-width: 760px)").matches) document.getElementById("formTitle").textContent = `Sign up with ${a.name}`;
+
+  const form = document.getElementById("form");
+  const error = document.getElementById("error");
+  const go = document.getElementById("go");
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    error.textContent = "";
+    const body = { agent: id, name: form.name.value.trim(), phone: form.phone.value.trim(), ...a.body(form) };
+    if (!body.name) return (error.textContent = "Tell us your first name.");
+    if (body.phone.replace(/\D/g, "").length < 10) return (error.textContent = "Enter a 10-digit US phone number.");
+    go.disabled = true;
+    try {
+      const res = await fetch("/signup", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
+      const out = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(out.error || "Something went wrong. Try again.");
+      document.getElementById("doneTitle").textContent = `You're in, ${out.name}!`;
+      form.hidden = true;
+      document.getElementById("done").hidden = false;
+      if (out.textTo && out.status !== "pending") {
+        // Open Messages with "hey <agent>" typed (iOS/macOS: sms:<n>&body=, others: ?body=).
+        const ios = /iPhone|iPad|iPod|Macintosh/.test(navigator.userAgent);
+        const href = `sms:${out.textTo}${ios ? "&" : "?"}body=${encodeURIComponent(`hey ${a.name}`)}`;
+        document.getElementById("heyLink").href = href;
+        document.getElementById("heyNumber").textContent = `Texting ${out.textTo}.`;
+        document.getElementById("sayHey").hidden = false;
+        if (/Mobi|iPhone|Android/.test(navigator.userAgent)) setTimeout(() => (location.href = href), 600);
+      } else {
+        document.getElementById("waitText").hidden = false;
+      }
+    } catch (err) {
+      error.textContent = err.message;
+    } finally {
+      go.disabled = false;
+    }
+  });
+</script>
+</body>
+</html>

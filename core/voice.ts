@@ -2,12 +2,16 @@
 // keeps at most its first emoji. Prompts ask for few emoji; this is the guarantee.
 // An emoji is a whole grapheme cluster: a ZWJ sequence (😮‍💨), a skin-toned hand (👍🏽), a flag (🇺🇸) or a keycap
 // (1️⃣) is one. Never \p{Emoji} alone: it matches digits and # and would eat "$496.00".
+// A pictograph counts with or without a variation selector: iMessage on iOS draws a bare ❤ ☀ ✈ (no VS16) as colour
+// emoji, and the cap is a hard one. Only ©, ® and ™ stay text; ★ and → are not emoji characters at all.
 
 const graphemes = new Intl.Segmenter("en", { granularity: "grapheme" });
 const CLOSERS = new Set([".", ",", "!", "?", ";", ":", ")"]);
+const TEXT_SYMBOL = /^[©®™]︎?$/u;
 
 const isEmoji = (g: string): boolean =>
-  /\p{Emoji_Presentation}/u.test(g) || (/\p{Extended_Pictographic}/u.test(g) && g.includes("️")) || /^[0-9#*]️?⃣$/.test(g);
+  ((/\p{Emoji_Presentation}/u.test(g) || /(?=\p{Extended_Pictographic})\p{Emoji}/u.test(g)) && !TEXT_SYMBOL.test(g)) ||
+  /^[0-9#*]️?⃣$/.test(g);
 const isSpace = (g: string | undefined) => g === " " || g === "\t";
 const isBreak = (g: string | undefined) => g !== undefined && /^[\r\n]+$/.test(g);
 

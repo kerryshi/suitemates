@@ -15,7 +15,7 @@ import type { Engine } from "./engine.ts";
 import type { Transport } from "./transport.ts";
 import type { PersonaId } from "./types.ts";
 import { cardFor, introTexts, normalizePhone, parseSignup } from "./signup.ts";
-import { photonCliAddUser, type AddUser } from "./photon-users.ts";
+import { photonCliAddUser, photonProjectFor, type AddUser } from "./photon-users.ts";
 import { calToken, calUrl, calendarItems, toIcs } from "./calendar.ts";
 import { publicUrl } from "./kit.ts";
 
@@ -81,14 +81,23 @@ export function startHttp(opts: { engine: Engine; transport: Transport; port: nu
         const own = persona?.signup ? await persona.signup(params, engine.ctx(persona.id, r.user)) : { profile: {} };
         if ("error" in own) return reply(400, own);
         Object.assign(r.user, own.profile);
-        // Put them on the Photon allowlist so their first text gets through, and find the number they text.
-        // Also for anyone whose number we don't know yet (read-only for people already on the list).
+        // Put them on the Photon allowlist so their first text gets through, and find the number they text. With one
+        // Photon project per agent, that's the chosen agent's project: each agent's QR adds them where that agent
+        // listens, and each project gives them its own number. Also for anyone whose number for this agent we
+        // don't know yet (read-only for people already on the list).
+        const agent = persona?.id;
+        const perAgent = photonProjectFor(agent).own;
+        const known = perAgent ? r.user.poolLines?.[agent!] : r.user.poolLine;
         const fresh = r.user.signupStatus === "pending";
-        const added = fresh || !r.user.poolLine ? await addUser(phone, r.user.name ?? "") : { ok: true };
+        const added = fresh || !known ? await addUser(phone, r.user.name ?? "", agent) : { ok: true };
         const line = "line" in added ? added.line : undefined;
-        const user = { ...r.user, ...(fresh && added.ok ? { signupStatus: "added" as const } : {}), ...(line ? { poolLine: line } : {}) };
+        const user = {
+          ...r.user,
+          ...(fresh && added.ok ? { signupStatus: "added" as const } : {}),
+          ...(line ? (perAgent ? { poolLines: { ...r.user.poolLines, [agent!]: line } } : { poolLine: line }) : {}),
+        };
         store.saveUser(user);
-        const textTo = user.poolLine || process.env.POOL_NUMBER || undefined;
+        const textTo = (perAgent ? user.poolLines?.[agent!] : user.poolLine) || process.env.POOL_NUMBER || undefined;
         const why = "error" in added && added.error ? `; photon: ${added.error}` : "";
         console.log(`[signup] ${user.name} ${phone} (${user.signupStatus}${why})`);
         return reply(200, { ok: true, name: user.name, status: user.signupStatus, textTo, calendar: calUrl(phone), agents: user.agents, ...(own.note ? { note: own.note } : {}) });

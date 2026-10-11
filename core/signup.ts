@@ -100,7 +100,11 @@ export function cardFor(engine: Engine, id: PersonaId, phone: string): Outbound 
       photo: `docs/avatars/${AVATAR[id]}.png`,
       // The number THIS person texts: Photon's shared pool gives each person their own (looked up at sign-up),
       // so one fixed number from .env showed the wrong one to everyone but its owner. Dedicated line only on Business.
-      phone: engine.d.store.user(phone).poolLine || process.env[`${id.toUpperCase()}_PROJECT_ID`] && process.env[`${id.toUpperCase()}_LINE`] || undefined,
+      // With one Photon project per agent, each agent's own number for this person (poolLines).
+      phone: (() => {
+        const u = engine.d.store.user(phone);
+        return u.poolLines?.[id] || u.poolLine || process.env[`${id.toUpperCase()}_PROJECT_ID`] && process.env[`${id.toUpperCase()}_LINE`] || undefined;
+      })(),
       note: `${names[id]} handles ${ROLE[id]} in ${PRODUCT_NAME}.`,
     },
   };

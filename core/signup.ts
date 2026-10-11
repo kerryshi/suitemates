@@ -46,13 +46,39 @@ export function parseSignup(
   };
 }
 
-// Every persona's `intro` trigger, in this order (a persona without one is skipped). The caller sends them, then
-// marks the user invited (a Photon refusal must leave them pending).
+const AVATAR: Record<PersonaId, string> = { academic: "dean", financial: "penny", social: "sunny" };
+const ROLE: Record<PersonaId, string> = { academic: "school", financial: "money", social: "plans" };
+// Until a persona writes its own `intro` trigger: a plain hello (no LLM call, so it can't glitch).
+const DEFAULT_INTRO: Record<PersonaId, (name: string) => string> = {
+  academic: (n) => `hey, I'm ${n}. I keep your Canvas deadlines, quizzes and exams in check. Text me "what's due?" anytime.`,
+  financial: (n) => `hey, I'm ${n}. I keep an eye on your spending so you hit your budget. Ask me "can I afford it?" anytime.`,
+  social: (n) => `hey, I'm ${n}. I find people who want to do the same things you do. Ask me "what's happening this weekend?"`,
+};
+
+// Each persona's hello, then its contact card (name, avatar, its own number if it has a dedicated line), in this
+// order. A persona's own `intro` trigger wins over the default. The caller sends them, then marks the user
+// invited (a Photon refusal must leave them pending).
 export async function introTexts(engine: Engine, phone: string, order: PersonaId[] = ["academic", "financial", "social"]): Promise<Outbound[]> {
   const out: Outbound[] = [];
+  const { names, PRODUCT_NAME } = engine.d.config;
   for (const id of order) {
-    if (!engine.d.personas.get(id)?.triggers?.intro) continue;
-    out.push(...(await engine.trigger(id, "intro", { phone, force: true })));
+    if (!engine.d.personas.has(id)) continue;
+    const own = engine.d.personas.get(id)!.triggers?.intro;
+    const said = own
+      ? await engine.trigger(id, "intro", { phone, force: true })
+      : [{ persona: id, handle: `dm:${phone}`, text: DEFAULT_INTRO[id](names[id]) }];
+    out.push(...said);
+    out.push({
+      persona: id,
+      handle: `dm:${phone}`,
+      text: "",
+      card: {
+        name: `${names[id]} ${PRODUCT_NAME}`,
+        photo: `docs/avatars/${AVATAR[id]}.png`,
+        phone: process.env[`${id.toUpperCase()}_LINE`] || undefined,
+        note: `${names[id]} handles ${ROLE[id]} in ${PRODUCT_NAME}.`,
+      },
+    });
   }
   return out;
 }

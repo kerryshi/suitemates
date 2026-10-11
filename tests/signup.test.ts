@@ -68,10 +68,18 @@ test("sign up → pending → admin sends Dean's intro first → invited", async
     assert.deepEqual(list.users.map((u) => [u.phone, u.signupStatus]), [["+19195550123", "pending"]]);
 
     const intro = await s.post("/admin/intro", { phone: "+19195550123" });
-    assert.deepEqual(await intro.json(), { sent: 1 });
-    assert.equal(s.sent[0].persona, "academic");
-    assert.equal(s.sent[0].handle, "dm:+19195550123");
-    assert.match(s.sent[0].text, /Hey Sam, I'm Dean\./);
+    assert.deepEqual(await intro.json(), { sent: 6 });
+    // Each persona says hi, then sends its contact card. Dean first.
+    assert.deepEqual(s.sent.map((o) => [o.persona, o.card ? "card" : "text"]), [
+      ["academic", "text"], ["academic", "card"], ["financial", "text"], ["financial", "card"], ["social", "text"], ["social", "card"],
+    ]);
+    assert.ok(s.sent.every((o) => o.handle === "dm:+19195550123"));
+    assert.match(s.sent[0].text, /Hey Sam, I'm Dean\./); // Dean's own intro trigger
+    assert.match(s.sent[2].text, /^hey, I'm Penny\./); // default until Penny writes one
+    assert.deepEqual(s.sent[1].card, {
+      name: "Dean Suitemates", photo: "docs/avatars/dean.png", phone: undefined, note: "Dean handles school in Suitemates.",
+    });
+    assert.equal(s.sent[5].card?.photo, "docs/avatars/sunny.png");
     assert.equal(s.store.user("+19195550123").signupStatus, "invited");
     assert.equal(s.store.user("+19195550123").onboardingStep, "done"); // their first reply goes straight to the persona
   } finally {

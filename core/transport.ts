@@ -1,7 +1,10 @@
 // Photon Spectrum (iMessage) transport: persona lines in, persona lines out. No business logic here.
 // Two config shapes (see .env.example): one project with a dedicated line per persona (route by the
 // line's number), or one project per persona. Ported from hacknc-tab/src/transport/spectrum.ts.
-import { Spectrum } from "spectrum-ts";
+import { readFile } from "node:fs/promises";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
+import { Spectrum, contact } from "spectrum-ts";
 import { imessage } from "spectrum-ts/providers/imessage";
 import type { Config } from "./config.ts";
 import type { Inbound, Outbound, PersonaId } from "./types.ts";
@@ -17,8 +20,10 @@ const ECHO_WINDOW_MS = 60_000;
 type SpectrumApp = Awaited<ReturnType<typeof Spectrum>>;
 interface SendableSpace {
   id: string;
-  send: (text: string) => Promise<unknown>;
+  send: (content: string | ReturnType<typeof contact>) => Promise<unknown>;
 }
+
+const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 
 const digits = (s?: string) => (s ?? "").replace(/\D/g, "").slice(-10);
 
@@ -104,9 +109,23 @@ export class SpectrumTransport implements Transport {
     const wait = (this.lastSend.get(o.persona) ?? 0) + SEND_GAP_MS - Date.now();
     if (wait > 0) await new Promise((r) => setTimeout(r, wait));
     this.lastSend.set(o.persona, Date.now());
-    const text = this.tagged(o);
-    this.recentlySent.push({ text, at: Date.now() });
-    await space.send(text);
+    if (o.text) {
+      const text = this.tagged(o);
+      this.recentlySent.push({ text, at: Date.now() });
+      await space.send(text);
+    }
+    if (o.card) {
+      const { name, phone, note, photo } = o.card;
+      const [first, ...rest] = name.split(" ");
+      await space.send(
+        contact({
+          name: { formatted: name, first, last: rest.join(" ") || undefined },
+          phones: phone ? [{ value: phone, type: "mobile" }] : undefined,
+          note,
+          photo: { mimeType: "image/png", read: () => readFile(join(ROOT, photo)) },
+        }),
+      );
+    }
   }
 
   // One shared number: every persona texts from it, so a proactive DM ("dm:<phone>"; only engine.trigger makes

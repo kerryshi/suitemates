@@ -82,8 +82,8 @@ export async function introTexts(engine: Engine, phone: string, order: PersonaId
     const said = own
       ? await engine.trigger(id, "intro", { phone, force: true })
       : [{ persona: id, handle: `dm:${phone}`, text: DEFAULT_INTRO[id](names[id]) }];
-    out.push(...said);
-    out.push(cardFor(engine, id, phone));
+    // hello → contact card → anything else the intro says (Dean's "next up: …").
+    out.push(...said.slice(0, 1), cardFor(engine, id, phone), ...said.slice(1));
   }
   return out;
 }
@@ -98,7 +98,9 @@ export function cardFor(engine: Engine, id: PersonaId, phone: string): Outbound 
     card: {
       name: `${names[id]} ${PRODUCT_NAME}`,
       photo: `docs/avatars/${AVATAR[id]}.png`,
-      phone: process.env[`${id.toUpperCase()}_LINE`] || undefined,
+      // The number THIS person texts: Photon's shared pool gives each person their own (looked up at sign-up),
+      // so one fixed number from .env showed the wrong one to everyone but its owner. Dedicated line only on Business.
+      phone: engine.d.store.user(phone).poolLine || process.env[`${id.toUpperCase()}_PROJECT_ID`] && process.env[`${id.toUpperCase()}_LINE`] || undefined,
       note: `${names[id]} handles ${ROLE[id]} in ${PRODUCT_NAME}.`,
     },
   };

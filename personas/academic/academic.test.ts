@@ -180,9 +180,12 @@ test("proactive facts read as a text to the student (core sends them raw if Gemi
   assert.equal(ev.facts, "Heads up: STOR 435 Problem Set 6 is due today 5:00 PM.");
 });
 
-test("intro introduces Dean once per phone and names the next deadline", async () => {
-  const [ev] = await triggers.intro(ctx());
-  assert.equal(ev.kind, "intro");
-  assert.match(ev.facts, /^Hey, I'm Dean\..*Next up: STOR 435 Problem Set 6, due today 5:00 PM\. Text me "what's due\?" anytime\.$/);
-  assert.equal(ev.dedupeKey, "academic:intro:+19195550001");
+test("intro: first who Dean is (no assignments), then the next deadline as its own text", async () => {
+  const [hello, next] = await triggers.intro(ctx());
+  assert.equal(hello.kind, "intro");
+  assert.match(hello.facts, /^Hey, I'm Dean\. I keep track of your Canvas.*Text me "what's due\?" anytime\.$/);
+  assert.doesNotMatch(hello.facts, /STOR|due today/);
+  assert.equal(hello.dedupeKey, "academic:intro:+19195550001");
+  assert.equal(next.kind, "intro_next_up");
+  assert.equal(next.facts, "First thing on your list: STOR 435 Problem Set 6, due today 5:00 PM.");
 });

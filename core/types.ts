@@ -22,6 +22,7 @@ export interface UserProfile {
   greeted?: PersonaId[]; // agents that already sent their intro + contact card
   lastAgent?: PersonaId; // who answered their last DM (shared pool: replies go back to them by default)
   signedUpAt?: string; // ISO
+  poolLine?: string; // the Photon number they text (shared pool: differs per person), from the sign-up lookup
   canvasToken?: string; // their own Canvas access token (Dean's sign-up). Server-side only: never logged or listed.
 }
 

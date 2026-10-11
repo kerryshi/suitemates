@@ -36,7 +36,7 @@ async function setup() {
   let n = 0;
   const dm = (text: string, extra: Partial<Inbound> = {}) =>
     engine.handle({ persona: "financial", kind: "dm", sender: PHONE, text, handle: "space-1", messageId: `m${++n}`, ...extra });
-  return { store, base, signup, dm, close: () => http.close() };
+  return { store, engine, base, signup, dm, close: () => http.close() };
 }
 
 test("landing and per-agent sign-up pages are served", async () => {
@@ -59,7 +59,8 @@ test("sign up with Dean, later with Sunny: one shared profile, each greets once,
     assert.deepEqual(s.store.user(PHONE).agents, ["academic"]);
 
     const hey = await s.dm("hey Dean");
-    assert.deepEqual(hey.map((o) => [o.persona, o.card ? "card" : "text"]), [["academic", "text"], ["academic", "card"]]);
+    // hello → contact card → only then an assignment
+    assert.deepEqual(hey.map((o) => [o.persona, o.card ? "card" : "text"]), [["academic", "text"], ["academic", "card"], ["academic", "text"]]);
 
     await s.signup({ agent: "social", interests: ["food"] });
     const u = s.store.user(PHONE);
@@ -139,6 +140,38 @@ test("Dean's sign-up checks a Canvas token with Canvas before saving it; it's ne
     }
   } finally {
     globalThis.fetch = realFetch;
+    s.close();
+  }
+});
+
+
+test("no alerts before the hello, and none from agents they didn't pick", async () => {
+  const s = await setup();
+  try {
+    await s.signup({ agent: "academic" });
+    // Scheduler path (watch polls every onboarded user): nothing yet, Dean hasn't said hi.
+    assert.deepEqual(await s.engine.trigger("academic", "watch"), []);
+    assert.deepEqual(await s.engine.trigger("academic", "morning_due"), []);
+    await s.dm("hey Dean"); // hello + card + first deadline
+    assert.ok((await s.engine.trigger("academic", "morning_due")).length > 0); // now Dean may talk about work
+    assert.deepEqual(await s.engine.trigger("financial", "watch"), []); // Penny never, they only picked Dean
+  } finally {
+    s.close();
+  }
+});
+
+test("the contact card carries the number THIS person texts (their pool line), not a fixed one", async () => {
+  const s = await setup(); // fake Photon lookup returns +16465550177 for this sign-up
+  const line = process.env.ACADEMIC_LINE;
+  process.env.ACADEMIC_LINE = "+19995550000"; // a stale shared-pool setting must not leak onto cards
+  try {
+    await s.signup({ agent: "academic" });
+    assert.equal(s.store.user(PHONE).poolLine, "+16465550177");
+    const hey = await s.dm("hey Dean");
+    assert.equal(hey.find((o) => o.card)?.card?.phone, "+16465550177");
+  } finally {
+    if (line === undefined) delete process.env.ACADEMIC_LINE;
+    else process.env.ACADEMIC_LINE = line;
     s.close();
   }
 });

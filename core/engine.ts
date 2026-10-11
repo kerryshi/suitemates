@@ -169,6 +169,9 @@ export class Engine {
     const users = opts.phone ? [this.d.store.user(opts.phone)] : this.d.store.onboardedUsers();
     const out: Outbound[] = [];
     for (const user of users) {
+      // Web sign-ups hear from an agent only if they picked it, and only after its hello + contact card: no
+      // "PS6 due in 3 hours" before "hey, I'm Dean", and no Penny roasts for someone who only wanted Dean.
+      if (name !== "intro" && user.agents && !(user.agents.includes(personaId) && (user.greeted ?? []).includes(personaId))) continue;
       const events = await fn.call(persona, this.ctx(personaId, user));
       for (const ev of events) {
         if (!this.d.store.claim(ev.dedupeKey) && !opts.force) continue;

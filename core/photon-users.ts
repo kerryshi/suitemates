@@ -77,10 +77,10 @@ export const photonCliAddUser: AddUser = async (phone, firstName) => {
   // a real name and email with our placeholders once), so never call it for someone who's already there.
   const list = await run(["spectrum", "users", "list", "-p", project, "--json", ...auth]);
   if (list.code !== 0) return { ok: false, error: (list.err || list.out || `photon exited ${list.code}`).trim().slice(0, 300) };
-  if (onList(list.out, phone)) return { ok: true, line: lineFor(list.out, phone) ?? (process.env.POOL_NUMBER || undefined) };
+  if (onList(list.out, phone)) return { ok: true, line: lineFor(list.out, phone) };
   // Non-interactive add needs a last name and an email; we collect neither. Placeholders, and no --invite (no email).
   const placeholder = ["--last-name", "Suitemates", "--email", `sms-${phone.slice(1)}@example.com`];
   const add = await run(["spectrum", "users", "add", "--phone", phone, "--first-name", safeName(firstName), ...placeholder, "-p", project, "--json", ...auth]);
   if (add.code !== 0) return { ok: false, error: (add.err || add.out || `photon exited ${add.code}`).trim().slice(0, 300) };
-  return { ok: true, line: lineFor(add.out, phone) ?? (process.env.POOL_NUMBER || undefined) };
+  return { ok: true, line: lineFor(add.out, phone) ?? lineFor((await run(["spectrum", "users", "list", "-p", project, "--json", ...auth])).out, phone) };
 };

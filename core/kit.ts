@@ -50,6 +50,17 @@ export function calToken(phone: string): string {
 }
 
 export function calUrl(phone: string): string {
-  const base = (process.env.PUBLIC_URL || `http://localhost:${process.env.PORT || 3000}`).replace(/\/$/, "");
-  return `${base}/cal/${calToken(phone)}.ics`;
+  return `${publicUrl() ?? `http://localhost:${process.env.PORT || 3000}`}/cal/${calToken(phone)}.ics`;
+}
+
+// This server's public https address: the live tunnel (`npm run tunnel` keeps data/public-url.txt current, so a
+// new quick-tunnel address needs no restart), else PUBLIC_URL, else none.
+export function publicUrl(): string | undefined {
+  try {
+    const live = readFileSync(join(ROOT, "data", "public-url.txt"), "utf8").trim();
+    if (/^https:\/\/\S+$/.test(live)) return live.replace(/\/$/, "");
+  } catch {
+    // no tunnel file
+  }
+  return process.env.PUBLIC_URL ? process.env.PUBLIC_URL.replace(/\/$/, "") : undefined;
 }

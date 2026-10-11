@@ -49,3 +49,29 @@ test("no tag when that persona has its own line or project, and never twice", as
 test("replies in the user's own DM or the group are left as they are (proactive only)", async () => {
   assert.deepEqual(await sendVia(SHARED, { persona: "financial", handle: "space-abc", text: "hey" }), ["hey"]);
 });
+
+test("a dropped Photon connection reconnects instead of going deaf", async () => {
+  const t = new SpectrumTransport(loadConfig({ DEFAULT_PERSONA: "academic" })) as unknown as {
+    apps: Map<string, unknown>;
+    keepAlive(key: string, make: () => Promise<unknown>, personaOf: () => string, onInbound: () => Promise<void>): Promise<void>;
+  };
+  let made = 0;
+  const forever = { messages: { [Symbol.asyncIterator]: () => ({ next: () => new Promise<never>(() => {}) }) } };
+  const drops = { messages: { [Symbol.asyncIterator]: () => ({ next: () => Promise.reject(new Error("getaddrinfo ENOTFOUND spectrum.photon.codes")) }) } };
+  const make = async () => {
+    made++;
+    if (made === 1) throw new Error("fetch failed"); // can't connect at all
+    return made === 2 ? drops : forever; // connects, then the stream drops; then a healthy one
+  };
+  const warn = console.warn;
+  console.warn = () => {};
+  try {
+    void t.keepAlive("shared", make, () => "academic", async () => {});
+    const until = Date.now() + 8000;
+    while (made < 3 && Date.now() < until) await new Promise((r) => setTimeout(r, 50));
+  } finally {
+    console.warn = warn;
+  }
+  assert.equal(made, 3);
+  assert.equal(t.apps.get("shared"), forever);
+});

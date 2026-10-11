@@ -42,23 +42,17 @@ export class SpectrumTransport implements Transport {
     const c = this.config;
     const loops: Promise<void>[] = [];
     for (const [persona, creds] of Object.entries(c.projects) as [PersonaId, { projectId: string; projectSecret: string }][]) {
-      const app = await Spectrum({ ...creds, providers: [imessage.config()], options: { logLevel: "warn" } });
-      this.apps.set(persona, app);
-      loops.push(this.loop(app, () => persona, onInbound));
+      const make = () => Spectrum({ ...creds, providers: [imessage.config()], options: { logLevel: "warn" } });
+      loops.push(this.keepAlive(persona, make, () => persona, onInbound));
     }
     const shared = (["academic", "financial", "social"] as PersonaId[]).some((p) => !c.projects[p]);
     if (shared) {
       if (!c.SPECTRUM_PROJECT_ID || !c.SPECTRUM_PROJECT_SECRET) {
         throw new Error("TRANSPORT=imessage needs SPECTRUM_PROJECT_ID/SECRET (or <PERSONA>_PROJECT_ID/SECRET for every persona)");
       }
-      const app = await Spectrum({
-        projectId: c.SPECTRUM_PROJECT_ID,
-        projectSecret: c.SPECTRUM_PROJECT_SECRET,
-        providers: [imessage.config()],
-        options: { logLevel: "warn" },
-      });
-      this.apps.set("shared", app);
-      loops.push(this.loop(app, (line) => this.personaForLine(line), onInbound));
+      const creds = { projectId: c.SPECTRUM_PROJECT_ID, projectSecret: c.SPECTRUM_PROJECT_SECRET };
+      const make = () => Spectrum({ ...creds, providers: [imessage.config()], options: { logLevel: "warn" } });
+      loops.push(this.keepAlive("shared", make, (line) => this.personaForLine(line), onInbound));
     }
     console.log(`[imessage] lines: ${(["academic", "financial", "social"] as PersonaId[]).map((p) => `${p}=${c.lines[p] ?? "?"}`).join(" ")}`);
     await Promise.all(loops);
@@ -71,6 +65,33 @@ export class SpectrumTransport implements Transport {
 
   private isOurLine(id?: string): boolean {
     return Object.values(this.config.lines).some((l) => l && digits(l) === digits(id));
+  }
+
+  // One Photon connection, kept up: if it can't connect or the message stream drops (Wi-Fi blip, DNS outage),
+  // wait 1 s, 2 s, 4 s … up to 30 s, open a fresh connection and carry on. Without this a single network hiccup
+  // left the server running but deaf to every text.
+  private async keepAlive(
+    key: PersonaId | "shared",
+    make: () => Promise<SpectrumApp>,
+    personaOf: (line?: string) => PersonaId,
+    onInbound: (ev: Inbound) => Promise<void>,
+  ): Promise<void> {
+    for (let failures = 0; ; ) {
+      try {
+        const app = await make();
+        this.apps.set(key, app);
+        if (failures > 0) console.log(`[imessage] ${key}: reconnected`);
+        failures = 0;
+        await this.loop(app, personaOf, onInbound);
+        console.warn(`[imessage] ${key}: message stream ended; reconnecting`);
+        await new Promise((r) => setTimeout(r, 1000));
+      } catch (err) {
+        failures++;
+        const wait = Math.min(30_000, 1000 * 2 ** (failures - 1));
+        console.warn(`[imessage] ${key}: connection lost (${err instanceof Error ? err.message : err}); retrying in ${wait / 1000} s`);
+        await new Promise((r) => setTimeout(r, wait));
+      }
+    }
   }
 
   private async loop(app: SpectrumApp, personaOf: (line?: string) => PersonaId, onInbound: (ev: Inbound) => Promise<void>) {

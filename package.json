@@ -15,7 +15,8 @@
     "test": "tsx --test tests/*.test.ts personas/*/*.test.ts",
     "typecheck": "tsc --noEmit -p .",
     "buy": "tsx personas/financial/post-purchase.ts",
-    "setup-nessie": "tsx personas/financial/setup-nessie.ts"
+    "setup-nessie": "tsx personas/financial/setup-nessie.ts",
+    "tunnel": "tsx scripts/tunnel.ts"
   },
   "dependencies": {
     "spectrum-ts": "^12.10.1",

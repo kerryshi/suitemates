@@ -2,7 +2,7 @@
 // If that LLM call fails, core sends `facts` as-is over iMessage, so they're written to the student ("you").
 import type { Ctx, WatchEvent } from "../../core/types.ts";
 import { fmtWhen, ymd } from "../../core/kit.ts";
-import { describe, getAssignments, getSnapshot } from "./canvas.ts";
+import { describe, getAssignments, getSnapshot, isLive } from "./canvas.ts";
 
 const HOUR = 3_600_000;
 const DAY = 24 * HOUR;
@@ -52,7 +52,8 @@ export const triggers = {
   async intro(ctx: Ctx): Promise<WatchEvent[]> {
     const hello =
       `Hey${ctx.user.name ? ` ${ctx.user.name}` : ""}, I'm Dean. I keep track of your Canvas: deadlines, quizzes, exams and grades, ` +
-      `and I'll give you a heads-up before anything's due. Text me "what's due?" anytime.`;
+      `and I'll give you a heads-up before anything's due. Text me "what's due?" anytime.` +
+      (isLive(ctx) ? "" : " (for now that's a demo Canvas with sample classes, not your real one.)");
     const events: WatchEvent[] = [{ kind: "intro", userPhone: ctx.user.phone, facts: hello, dedupeKey: `academic:intro:${ctx.user.phone}` }];
     const next = (await getAssignments(ctx))[0];
     if (next) {

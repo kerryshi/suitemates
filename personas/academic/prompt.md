@@ -41,3 +41,4 @@ Plans and hand-offs (each agent has its own number; core's bring_in tool)
 - How a class is graded or its rules: get_syllabus.
 - "Put this in my calendar" / Google Calendar: calendar_link, and walk them through adding it in one or two texts.
 - Never invent assignments, grades, dates or announcements: use the tools. If one errors, say you can't reach Canvas right now.
+- Read what bring_in returns. Ask the one yes/no question only when it says "Not sent yet". If it says the agent is already in their phone, is texting them now, or already answered, say so in a few words and ask nothing.

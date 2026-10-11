@@ -15,6 +15,7 @@ import type { Transport } from "./transport.ts";
 import type { PersonaId } from "./types.ts";
 import { cardFor, introTexts, normalizePhone, parseSignup } from "./signup.ts";
 import { photonCliAddUser, type AddUser } from "./photon-users.ts";
+import { calToken, calendarItems, toIcs } from "./calendar.ts";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const AVATARS = new Set(["dean", "penny", "sunny", "dean-icon", "penny-icon", "sunny-icon"]);
@@ -39,6 +40,15 @@ export function startHttp(opts: { engine: Engine; transport: Transport; port: nu
       const path = url.pathname;
       if (path === "/health") return reply(200, { ok: true });
       if (req.method === "GET" && path === "/") return file(res, join(ROOT, "web", "index.html"), "text/html; charset=utf-8");
+      // The student's shared calendar feed (core/calendar.ts): private link, Google Calendar subscribes to it.
+      const cal = /^\/cal\/([\w-]{24})\.ics$/.exec(path);
+      if (req.method === "GET" && cal) {
+        const user = store.allUsers().find((u) => calToken(u.phone) === cal[1]);
+        if (!user) return reply(404, { error: "not found" });
+        const ics = toIcs(await calendarItems(engine, user.phone), `${engine.d.config.PRODUCT_NAME}${user.name ? ` · ${user.name}` : ""}`);
+        res.writeHead(200, { "content-type": "text/calendar; charset=utf-8", "cache-control": "no-cache" });
+        return res.end(ics);
+      }
       // One sign-up page per agent (its own QR): /join/academic, /join/financial, /join/social. /qr was the old poster.
       if (req.method === "GET" && /^\/join\/(academic|financial|social)\/?$/.test(path)) return file(res, join(ROOT, "web", "join.html"), "text/html; charset=utf-8");
       if (req.method === "GET" && path === "/qr") return file(res, join(ROOT, "web", "index.html"), "text/html; charset=utf-8");

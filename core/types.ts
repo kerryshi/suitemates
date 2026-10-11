@@ -68,6 +68,17 @@ export interface Persona {
   // One or two lines the OTHER personas may know about this user (e.g. Dean: "midterm Wednesday"), so they can plan
   // together. Shown in their prompts. Optional; keep it short and leave out anything private (exact grades, balances).
   context?(ctx: Ctx): Promise<string>;
+  // What this persona puts on the student's shared calendar (core/calendar.ts serves it as an .ics feed Google
+  // Calendar subscribes to): Dean's deadlines and exams, Sunny's plans they joined. Optional.
+  calendar?(ctx: Ctx): Promise<CalendarItem[]>;
+}
+
+export interface CalendarItem {
+  id: string; // stable per item (the feed's UID), e.g. "academic:a3"
+  title: string; // "COMP 421 Project 1 due"
+  start: Date;
+  end?: Date; // default: start + 30 min
+  note?: string;
 }
 
 // ---- core-internal (transport-agnostic message shapes) ----

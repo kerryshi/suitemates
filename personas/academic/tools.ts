@@ -4,6 +4,7 @@ import type { Tool } from "../../core/types.ts";
 import { fmtWhen } from "../../core/kit.ts";
 import { getAssignments, getGrades, getSnapshot, gradeImpact, describe, TAG, type Course } from "./canvas.ts";
 import { checkPlanConflicts } from "./conflicts.ts";
+import { calendarLink } from "./calendar.ts";
 
 const getDueAssignments: Tool = {
   name: "get_due_assignments",
@@ -145,4 +146,4 @@ const gradeImpactTool: Tool = {
   },
 };
 
-export const tools: Tool[] = [getDueAssignments, getGradesTool, getAnnouncements, getSyllabus, gradeImpactTool, checkPlanConflicts];
+export const tools: Tool[] = [getDueAssignments, getGradesTool, getAnnouncements, getSyllabus, gradeImpactTool, checkPlanConflicts, calendarLink];

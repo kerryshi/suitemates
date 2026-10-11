@@ -5,51 +5,59 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Join Suitemates</title>
 <style>
-  :root { --ink: #0d3550; --soft: #3d6680; --glass: rgba(255,255,255,.66); --edge: rgba(255,255,255,.92);
-    --aqua: #1aa6e0; --aqua-dark: #0b78b3; --green: #3fae2a; --error: #c0392b; }
-  * { box-sizing: border-box; }
-  body {
-    margin: 0; min-height: 100vh; color: var(--ink);
-    font: 16px/1.45 "Segoe UI", "Helvetica Neue", Arial, sans-serif;
-    background: radial-gradient(ellipse 120% 40% at 50% 105%, #7ccf4a 0 38%, transparent 39%), linear-gradient(180deg, #5ec8f2, #e9fbff 70%);
-    background-attachment: fixed;
+  :root {
+    --bg: #2a2b2f; --bg-2: #232427; --card: #313237; --line: #3c3d43; --field: #26272b;
+    --text: #f2f3f5; --muted: #a3a6ae; --error: #ff7a7a;
+    --c: 59 130 246; /* the agent's color, set by script: Dean blue, Penny pink, Sunny orange */
   }
-  main { max-width: 980px; margin: 0 auto; padding: 24px 16px 48px; }
-  .back { color: var(--ink); text-decoration: none; font-weight: 600; }
-  .head { display: flex; align-items: center; gap: 16px; margin: 14px 0 20px; }
-  .head img { width: 92px; height: 92px; border-radius: 50%; border: 4px solid #fff; box-shadow: 0 6px 16px rgba(13,53,80,.25); object-fit: cover; }
-  .head h1 { margin: 0; font-size: 2rem; text-shadow: 0 2px 0 rgba(255,255,255,.7); }
-  .head p { margin: 2px 0 0; color: var(--soft); }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    min-height: 100vh; color: var(--text); background: var(--bg);
+    background-image: radial-gradient(900px 500px at 50% -10%, rgb(var(--c) / .14) 0%, transparent 60%), linear-gradient(180deg, var(--bg), var(--bg-2));
+    font: 16px/1.5 "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+  }
+  main { max-width: 980px; margin: 0 auto; padding: 24px 16px 56px; }
+  .back { color: var(--muted); text-decoration: none; font-weight: 600; }
+  .back:hover { color: var(--text); }
+  .head { display: flex; align-items: center; gap: 18px; margin: 20px 0 24px; }
+  .halo { position: relative; width: 96px; height: 96px; flex: none; }
+  .halo::before { content: ""; position: absolute; inset: -14px; border-radius: 50%; filter: blur(6px);
+    background: radial-gradient(circle, rgb(var(--c) / .6) 0%, rgb(var(--c) / .2) 45%, transparent 70%); }
+  .halo img { position: relative; width: 100%; height: 100%; border-radius: 50%; object-fit: cover;
+    border: 3px solid rgb(var(--c)); box-shadow: 0 0 0 5px rgb(var(--c) / .15); }
+  .head h1 { margin: 0; font-size: 2rem; letter-spacing: -.01em; }
+  .head p { margin: 2px 0 0; color: var(--muted); }
   .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; align-items: start; }
   @media (max-width: 760px) { .grid { grid-template-columns: 1fr; } .qrcard { order: 2; } }
-  .card { background: var(--glass); border: 1px solid var(--edge); border-radius: 22px; padding: 20px; backdrop-filter: blur(10px);
-    box-shadow: 0 10px 30px rgba(13,53,80,.18), inset 0 1px 0 rgba(255,255,255,.9); }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 22px; padding: 22px; }
   .qrcard { text-align: center; }
-  .qrcard h2, .card h2 { margin: 0 0 12px; font-size: 1.15rem; }
-  #qr { width: min(70vw, 300px); height: min(70vw, 300px); margin: 0 auto; background: #fff; padding: 10px; border-radius: 16px; }
+  .card h2 { margin: 0 0 12px; font-size: 1.1rem; }
+  #qr { width: min(70vw, 280px); height: min(70vw, 280px); margin: 0 auto; background: #fff; padding: 12px; border-radius: 18px;
+    box-shadow: 0 0 0 4px rgb(var(--c) / .4), 0 0 40px rgb(var(--c) / .25); }
   #qr img, #qr canvas { width: 100% !important; height: 100% !important; }
-  .url { font-size: .8rem; color: var(--soft); margin-top: 10px; word-break: break-all; }
+  .url { font-size: .78rem; color: var(--muted); margin-top: 12px; word-break: break-all; }
   label { display: block; font-weight: 600; margin: 14px 0 6px; }
-  .hint { font-weight: 400; color: var(--soft); font-size: .9rem; }
-  input[type=text], input[type=tel], input[type=number] { width: 100%; padding: 12px 14px; font: inherit; color: var(--ink);
-    border-radius: 12px; border: 1px solid rgba(13,53,80,.2); background: rgba(255,255,255,.92); outline: none; }
-  input:focus { border-color: var(--aqua); box-shadow: 0 0 0 3px rgba(26,166,224,.25); }
+  .hint { font-weight: 400; color: var(--muted); font-size: .9rem; }
+  input[type=text], input[type=tel], input[type=number] { width: 100%; padding: 12px 14px; font: inherit; color: var(--text);
+    border-radius: 12px; border: 1px solid var(--line); background: var(--field); outline: none; }
+  input::placeholder { color: #6f727a; }
+  input:focus { border-color: rgb(var(--c)); box-shadow: 0 0 0 3px rgb(var(--c) / .25); }
   .chips { display: flex; flex-wrap: wrap; gap: 8px; }
   .chips input { position: absolute; opacity: 0; pointer-events: none; }
-  .chips label { margin: 0; font-weight: 500; padding: 7px 12px; border-radius: 999px; cursor: pointer; background: rgba(255,255,255,.88); border: 1px solid rgba(13,53,80,.18); }
-  .chips input:checked + label { background: linear-gradient(180deg, #8fe06a, var(--green)); color: #fff; border-color: transparent; }
-  .chips input:focus-visible + label { box-shadow: 0 0 0 3px rgba(26,166,224,.35); }
+  .chips label { margin: 0; font-weight: 500; padding: 7px 13px; border-radius: 999px; cursor: pointer; background: var(--field); border: 1px solid var(--line); }
+  .chips input:checked + label { background: rgb(var(--c)); border-color: transparent; color: #fff; }
+  .chips input:focus-visible + label { box-shadow: 0 0 0 3px rgb(var(--c) / .35); }
   .row { display: flex; align-items: center; gap: 10px; margin-top: 16px; }
-  .row input { width: 20px; height: 20px; }
+  .row input { width: 20px; height: 20px; accent-color: rgb(var(--c)); }
   .row label { margin: 0; font-weight: 500; }
-  button, a.button { display: block; width: 100%; margin-top: 20px; padding: 14px; font-family: inherit; font-size: 1.1rem; font-weight: 700;
-    color: #fff; text-align: center; text-decoration: none; cursor: pointer; border-radius: 14px; text-shadow: 0 1px 1px rgba(0,0,0,.25); }
-  button { border: 1px solid var(--aqua-dark); background: linear-gradient(180deg, #7fdcff 0%, var(--aqua) 50%, var(--aqua-dark) 51%, #1593cf 100%);
-    box-shadow: 0 6px 14px rgba(11,120,179,.35), inset 0 1px 0 rgba(255,255,255,.7); }
-  a.button { border: 1px solid #2b8a1c; background: linear-gradient(180deg, #a6ec7f 0%, var(--green) 50%, #2f9420 51%, #3fae2a 100%); box-shadow: 0 6px 14px rgba(47,148,32,.35); }
+  button, a.button { display: block; width: 100%; margin-top: 22px; padding: 14px; font-family: inherit; font-size: 1.05rem; font-weight: 700;
+    color: #fff; text-align: center; text-decoration: none; cursor: pointer; border: 0; border-radius: 14px;
+    background: rgb(var(--c)); box-shadow: 0 8px 22px rgb(var(--c) / .35); transition: transform .15s, box-shadow .15s; }
+  button:hover, a.button:hover { transform: translateY(-1px); box-shadow: 0 10px 28px rgb(var(--c) / .5); }
   button:disabled { opacity: .6; cursor: wait; }
   .error { color: var(--error); margin: 12px 0 0; min-height: 1.2em; }
-  .fine { color: var(--soft); font-size: .85rem; }
+  .fine { color: var(--muted); font-size: .85rem; }
   [hidden] { display: none !important; }
 </style>
 </head>
@@ -57,7 +65,7 @@
 <main>
   <a class="back" href="/">← All agents</a>
   <div class="head">
-    <img id="avatar" src="" alt="">
+    <div class="halo"><img id="avatar" src="" alt=""></div>
     <div><h1 id="title">Join</h1><p id="pitch"></p></div>
   </div>
 
@@ -97,7 +105,7 @@
   const INTERESTS = ["pickup sports", "gym", "food", "study groups", "concerts", "parties", "outdoors", "gaming", "art", "volunteering"];
   const AGENTS = {
     academic: {
-      name: "Dean", avatar: "dean", pitch: "School: Canvas deadlines, quizzes, exams and grades.",
+      name: "Dean", avatar: "dean", color: "59 130 246", pitch: "School: Canvas deadlines, quizzes, exams and grades.",
       fields: `
         <label for="win">What would make this semester a win? <span class="hint">(optional)</span></label>
         <input id="win" name="win" type="text" maxlength="160" placeholder="3.5 GPA, no all-nighters">
@@ -105,7 +113,7 @@
       body: (f) => ({ canvas: f.canvas.checked, win: f.win.value.trim() }),
     },
     financial: {
-      name: "Penny", avatar: "penny", pitch: "Money: spending, your budget, and whether you can afford it.",
+      name: "Penny", avatar: "penny", color: "236 72 153", pitch: "Money: spending, your budget, and whether you can afford it.",
       fields: `
         <label for="budget">Monthly spending budget</label>
         <input id="budget" name="budget" type="number" inputmode="numeric" min="0" step="1" placeholder="600">
@@ -114,7 +122,7 @@
       body: (f) => ({ budget: f.budget.value, goal: f.goal.value.trim() }),
     },
     social: {
-      name: "Sunny", avatar: "sunny", pitch: "Plans: finds people who want to do what you want to do.",
+      name: "Sunny", avatar: "sunny", color: "249 115 22", pitch: "Plans: finds people who want to do what you want to do.",
       fields: `<label>What are you into?</label><div class="chips" id="chips">${INTERESTS.map((t, i) =>
         `<input type="checkbox" id="i${i}" value="${t}"><label for="i${i}">${t}</label>`).join("")}</div>`,
       body: () => ({ interests: [...document.querySelectorAll("#chips input:checked")].map((c) => c.value) }),
@@ -124,6 +132,7 @@
   const id = location.pathname.split("/").filter(Boolean)[1];
   const a = AGENTS[id];
   if (!a) location.replace("/");
+  document.documentElement.style.setProperty("--c", a.color);
   document.title = `Get ${a.name} · Suitemates`;
   document.getElementById("title").textContent = `Get ${a.name}`;
   document.getElementById("pitch").textContent = a.pitch;
@@ -131,12 +140,17 @@
   document.getElementById("avatar").alt = a.name;
   document.getElementById("fields").innerHTML = a.fields;
   document.querySelectorAll(".who").forEach((e) => (e.textContent = a.name));
-
-  // The QR is this page's own address: on a laptop or poster you scan it; on a phone you just fill the form.
-  const here = `${location.origin}${location.pathname}`;
-  document.getElementById("url").textContent = here;
-  if (window.QRCode) new QRCode(document.getElementById("qr"), { text: here, width: 300, height: 300, colorDark: "#0d3550", colorLight: "#ffffff", correctLevel: QRCode.CorrectLevel.M });
   if (matchMedia("(max-width: 760px)").matches) document.getElementById("formTitle").textContent = `Sign up with ${a.name}`;
+
+  // The QR points at this page on the public address (the tunnel), even if it's open on localhost.
+  const drawQr = (base) => {
+    const here = `${base}${location.pathname}`;
+    document.getElementById("url").textContent = here;
+    const qr = document.getElementById("qr");
+    qr.innerHTML = "";
+    if (window.QRCode) new QRCode(qr, { text: here, width: 280, height: 280, colorDark: "#111214", colorLight: "#ffffff", correctLevel: QRCode.CorrectLevel.M });
+  };
+  fetch("/config.json").then((r) => r.json()).then((c) => drawQr(c.publicUrl || location.origin)).catch(() => drawQr(location.origin));
 
   const form = document.getElementById("form");
   const error = document.getElementById("error");

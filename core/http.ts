@@ -39,6 +39,8 @@ export function startHttp(opts: { engine: Engine; transport: Transport; port: nu
     try {
       const path = url.pathname;
       if (path === "/health") return reply(200, { ok: true });
+      // The address QR codes should point at (the tunnel), even when the page is opened on localhost.
+      if (path === "/config.json") return reply(200, { publicUrl: (process.env.PUBLIC_URL || "").replace(/\/$/, "") || null });
       if (req.method === "GET" && path === "/") return file(res, join(ROOT, "web", "index.html"), "text/html; charset=utf-8");
       // The student's shared calendar feed (core/calendar.ts): private link, Google Calendar subscribes to it.
       const cal = /^\/cal\/([\w-]{24})\.ics$/.exec(path);

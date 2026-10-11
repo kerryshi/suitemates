@@ -399,3 +399,72 @@ $ FAKE_LLM=1 MOCK=1 CHAT_STATE=<scratch> npm run trigger -- social intro
 0  [Penny] → dm:+19195550001: (fake LLM) hey, i'm Penny. i watch your spending so your bank a
 0  [Sunny] → dm:+19195550001: (fake LLM) Hey, I'm Sunny. I find people who want to do the sam
 texts=11 emoji_total=0
+
+# ====================================================================================================
+# Review fixes, 2026-10-11 02:59 EDT, HEAD e827ff5 (base c14a554; origin/main is now 72842a3 = kerry/yes-any-thread merged, #32)
+
+$ npm test   (tail; full run 254 tests)
+ℹ tests 254
+ℹ suites 0
+ℹ pass 254
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 3970.563
+exit=0
+
+$ npm run typecheck
+exit=0
+
+# Branch scope vs its merge-base (origin/main moved, so origin/main..HEAD would show main's newer work reversed)
+$ git diff --stat c14a554..HEAD
+ core/agent.ts                              |   9 +-
+ core/console.ts                            |   3 +-
+ core/onboarding.ts                         |  12 +-
+ core/signup.ts                             |   6 +-
+ core/transport.ts                          |   4 +-
+ core/voice.ts                              |  46 ++++
+ docs/evidence/voice-cap-green.txt          |  45 ++++
+ docs/evidence/voice-cap-red-before.txt     |  84 ++++++
+ docs/evidence/voice-green.txt              | 401 +++++++++++++++++++++++++++++
+ docs/evidence/voice-strings-green.txt      | 109 ++++++++
+ docs/evidence/voice-strings-red-before.txt | 267 +++++++++++++++++++
+ personas/academic/academic.test.ts         |  14 +-
+ personas/academic/prompt.md                |  13 +-
+ personas/academic/watch.ts                 |  16 +-
+ personas/financial/demo.ts                 |   4 +-
+ personas/financial/prompt.md               |  14 +-
+ personas/social/prompt.md                  |  21 +-
+ scripts/trigger.ts                         |   3 +-
+ tests/onboarding.test.ts                   |   4 +-
+ tests/penny-try.test.ts                    |   2 +-
+ tests/signup.test.ts                       |   2 +-
+ tests/voice-wiring.test.ts                 |  66 +++++
+ tests/voice.test.ts                        | 108 ++++++++
+ 23 files changed, 1201 insertions(+), 52 deletions(-)
+
+$ git log --diff-filter=A --name-only --format= c14a554..HEAD | sort -u
+core/voice.ts
+docs/evidence/voice-cap-green.txt
+docs/evidence/voice-cap-red-before.txt
+docs/evidence/voice-green.txt
+docs/evidence/voice-strings-green.txt
+docs/evidence/voice-strings-red-before.txt
+tests/voice-wiring.test.ts
+tests/voice.test.ts
+
+# core/engine.ts, core/recruit.ts, tests/recruit*.test.ts, data/, .env*: not in the diff above (untouched)
+$ git diff c14a554..HEAD -- core/agent.ts | grep -c 'last\|throw'   (the sibling's answer-now hunk must not appear)
+0
+
+# Trial merge with origin/main (which now carries kerry/yes-any-thread), no working tree touched
+$ git merge-tree --write-tree HEAD origin/main  → exit 0 (clean), tree 0a0c9c77b470d58567fedd1716b769be44605f95
+suite + tsc on that tree (git archive into scratch, node_modules symlinked):
+ℹ tests 270
+ℹ pass 270
+ℹ fail 0
+exit=0
+tsc exit=0
+
+# Live Gemini probes: docs/evidence/voice-probe.txt rounds 2 (45 calls) and 3 (10 calls), MOCK=1 terminal path, no 429s

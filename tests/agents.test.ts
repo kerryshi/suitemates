@@ -99,7 +99,11 @@ test("a dedicated line always answers as itself; one agent → no name tag", asy
     await s.signup({ agent: "academic" });
     await s.dm("hey");
     assert.deepEqual((await s.dm("anyone down for soccer")).map((o) => [o.persona, o.text]), [["academic", "Dean reply"]]);
-    assert.deepEqual((await s.dm("can I afford it", { lineKnown: true })).map((o) => o.persona), ["financial"]);
+    // Texting Penny's own line when you only have Dean: Penny answers, and first says hi with her card.
+    const penny = await s.dm("can I afford it", { lineKnown: true });
+    assert.ok(penny.every((o) => o.persona === "financial"));
+    assert.deepEqual(penny.map((o) => (o.card ? "card" : "text")).slice(0, 2), ["text", "card"]);
+    assert.deepEqual((await s.dm("can I afford it", { lineKnown: true })).length, 1); // then normal replies
   } finally {
     s.close();
   }
@@ -172,6 +176,21 @@ test("the contact card carries the number THIS person texts (their pool line), n
   } finally {
     if (line === undefined) delete process.env.ACADEMIC_LINE;
     else process.env.ACADEMIC_LINE = line;
+    s.close();
+  }
+});
+
+test("naming an agent you don't have yet opts you in: it greets you; with two names the first wins", async () => {
+  const s = await setup();
+  try {
+    await s.signup({ agent: "academic" });
+    await s.dm("hey Dean");
+    const sunny = await s.dm("hey sunny");
+    assert.deepEqual(sunny.map((o) => [o.persona, o.card ? "card" : "text"]).slice(0, 2), [["social", "text"], ["social", "card"]]);
+    assert.deepEqual(s.store.user(PHONE).agents, ["academic", "social"]);
+    assert.deepEqual((await s.dm("u re not dean ure sunny")).map((o) => o.persona), ["academic"]);
+    assert.deepEqual((await s.dm("sunny not dean")).map((o) => o.persona), ["social"]);
+  } finally {
     s.close();
   }
 });

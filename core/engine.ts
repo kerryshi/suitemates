@@ -57,6 +57,11 @@ export class Engine {
       return [{ persona: ev.persona, handle: ev.handle, text: r.reply }, ...extra];
     }
     const persona = this.pickPersona(user, ev);
+    // Calling an agent they don't have yet by name signs them up with it (it greets them below).
+    if (user.agents?.length && !user.agents.includes(persona)) {
+      user.agents = [...user.agents, persona];
+      this.d.store.saveUser(user);
+    }
     // Signed up on the web and just texted in (the "hey Dean" the QR page pre-fills): each agent they signed up
     // with that hasn't said hi yet introduces itself with its contact card, in this same conversation.
     const toGreet = (user.agents ?? []).filter((id) => !(user.greeted ?? []).includes(id));
@@ -80,12 +85,23 @@ export class Engine {
     const mine = (user.agents ?? []).filter((id) => this.d.personas.has(id));
     if (ev.lineKnown || mine.length === 0) return ev.persona;
     const text = ev.text ?? "";
-    const named = mine.find((id) => new RegExp(`\\b${this.d.config.names[id]}\\b`, "i").test(text));
+    // The agent they call by name, even one they never signed up with ("hey sunny" → Sunny, and dm() adds her).
+    // Two names in one text: the first one ("u re not penny ure dean" → Penny).
+    const named = this.namedIn(text);
     if (named) return named;
     if (mine.length === 1) return mine[0];
     const scores = [...keywordScores(text, new Map(mine.map((id) => [id, this.d.personas.get(id)!])))].sort((x, y) => y[1] - x[1]);
     if (scores[0]?.[1] > 0 && scores[0][1] > (scores[1]?.[1] ?? 0)) return scores[0][0];
     return user.lastAgent && mine.includes(user.lastAgent) ? user.lastAgent : mine[0];
+  }
+
+  // The persona whose name appears first in the text, if any.
+  private namedIn(text: string): PersonaId | undefined {
+    const hits = [...this.d.personas.keys()]
+      .map((id) => ({ id, at: text.search(new RegExp(`\\b${this.d.config.names[id]}\\b`, "i")) }))
+      .filter((h) => h.at >= 0)
+      .sort((a, b) => a.at - b.at);
+    return hits[0]?.id;
   }
 
   private async group(ev: Inbound): Promise<Outbound[]> {

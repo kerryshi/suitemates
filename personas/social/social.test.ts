@@ -9,6 +9,7 @@ import { keywordRoute } from "../../core/router.ts";
 import { loadPersonas } from "../../core/personas.ts";
 import { clean, findActivities, loadBoard, saveBoard, useBoardFile } from "./board.ts";
 import { tools } from "./tools.ts";
+import { campusEvents, CACHE_MS, parseEvents, useEventsFetcher } from "./heellife.ts";
 import { triggers, watch } from "./watch.ts";
 
 const ME = "+19195550001"; // Kerry in mock/students.json; not signed up for anything
@@ -31,6 +32,7 @@ const signups = (id: string) => loadBoard().activities.find((a) => a.id === id)?
 beforeEach(() => {
   useBoardFile(null);
   kvs.clear();
+  useEventsFetcher(async () => ({ value: [] })); // never the real network in tests; Heel Life tests set their own
 });
 
 test("join_activity adds the user and names who they matched with", async () => {
@@ -559,4 +561,201 @@ test("end to end: a Sunny-only student's .ics feed has the plan they joined", as
   assert.match(ics, /UID:social:soccer@suitemates\r\n/);
   assert.match(ics, /SUMMARY:Pickup soccer at Hooker Fields\r\n/);
   assert.match(ics, /DESCRIPTION:With Omar\\, Priya\\, Sam \(from Sunny\)\r\n/);
+});
+
+// ---- Heel Life (real UNC events), always from a fixture shaped like the real feed ----
+const HL_NOW = new Date(2026, 9, 10, 22, 0); // Saturday 10 PM
+const hlAt = (days: number, h: number, m = 0) => {
+  const d = new Date(HL_NOW);
+  d.setDate(d.getDate() + days);
+  d.setHours(h, m, 0, 0);
+  return d.toISOString();
+};
+const hlEvent = (id: number, name: string, days: number, h: number, extra: Record<string, unknown> = {}) => ({
+  id, name, startsOn: hlAt(days, h), endsOn: hlAt(days, h + 2), location: "", organizationName: "", theme: "Social",
+  categoryNames: [], benefitNames: [], visibility: "Public", status: "Approved", rsvpTotal: 0, description: "<p>hi</p>", ...extra,
+});
+const HL_FEED = {
+  "@odata.count": 5,
+  value: [
+    hlEvent(101, "Salsa Sunsets: FREE Outdoor Latin Dance Lesson & Social!", 1, 17, { location: "Campus Y Courtyard", organizationName: "Salsa Club" }),
+    hlEvent(102, "Tour: A Closer Look at the Collection", 1, 13, { location: "Ackland Art Museum", theme: "Arts" }),
+    hlEvent(103, "Wesley Dinner & Worship", 1, 18, { theme: "Spirituality", benefitNames: ["Free Food"], location: "University United Methodist Church" }),
+    hlEvent(104, "Lacrosse Practice!", 2, 17, { theme: "Athletics", location: "Hooker Fields #3" }),
+    hlEvent(105, "Private board meeting", 1, 12, { visibility: "Institution" }),
+  ],
+};
+const hlCtx = (interests?: string[], phone = ME, name?: string): Ctx => ({ ...withInterests(interests, phone, name), now: HL_NOW });
+const tool = (name: string) => tools.find((t) => t.name === name)!;
+
+test("heel life: parses the feed, keeps only public events, flags free food", () => {
+  const evs = parseEvents(HL_FEED);
+  assert.deepEqual(evs.map((e) => e.id), ["101", "102", "103", "104"]);
+  assert.equal(evs[0].url, "https://heellife.unc.edu/event/101");
+  assert.equal(evs[2].freeFood, true);
+  assert.throws(() => parseEvents({ nope: 1 }), /isn't an event list/);
+});
+
+test("heel life: one request per 30 minutes, and a failed refresh falls back to the last list", async () => {
+  let calls = 0;
+  useEventsFetcher(async () => (calls++, HL_FEED));
+  await campusEvents(HL_NOW);
+  await campusEvents(new Date(HL_NOW.getTime() + CACHE_MS - 1));
+  assert.equal(calls, 1);
+  useEventsFetcher(async () => (calls++, HL_FEED));
+  await campusEvents(HL_NOW);
+  // Cache expired and Heel Life is down → the last good list, not an error.
+  let failing = false;
+  useEventsFetcher(async () => {
+    if (failing) throw new Error("down");
+    return HL_FEED;
+  });
+  await campusEvents(HL_NOW);
+  failing = true;
+  assert.equal((await campusEvents(new Date(HL_NOW.getTime() + CACHE_MS + 1))).length, 4);
+});
+
+test("heellife_events: ranks by interests, filters by day / free food / words, never invents when Heel Life is down", async () => {
+  useEventsFetcher(async () => HL_FEED);
+  const art = await tool("heellife_events").run({}, hlCtx(["art"]));
+  assert.match(art, /^4 on Heel Life this week; top 4:\nTour: A Closer Look at the Collection, Sunday 1:00 PM at Ackland Art Museum · fits their interests: art \[heellife:102\] https:\/\/heellife\.unc\.edu\/event\/102/);
+  assert.match(await tool("heellife_events").run({ free_food: true }, hlCtx()), /top 1:\nWesley Dinner & Worship.* · free food \[heellife:103\]/);
+  assert.match(await tool("heellife_events").run({ day: "monday" }, hlCtx()), /top 1:\nLacrosse Practice!/);
+  assert.match(await tool("heellife_events").run({ query: "salsa" }, hlCtx()), /top 1:\nSalsa Sunsets/);
+  assert.match(await tool("heellife_events").run({ query: "pickup sports" }, hlCtx()), /top 1:\nLacrosse Practice!/);
+  assert.match(await tool("heellife_events").run({ query: "skydiving" }, hlCtx()), /^Nothing on Heel Life this week matched those filters/);
+  useEventsFetcher(async () => {
+    throw new Error("down");
+  });
+  assert.match(await tool("heellife_events").run({}, hlCtx()), /^Couldn't reach Heel Life right now.*don't make up events/);
+});
+
+test("joining a campus event by id puts it on Sunny's board: matching, match texts and the exact calendar time all work", async () => {
+  useEventsFetcher(async () => HL_FEED);
+  const { plansCalendar } = await import("./calendar.ts");
+  const joined = await tool("join_activity").run({ activity: "heellife:101", my_name: "Abdullah" }, hlCtx(undefined, ME));
+  assert.match(joined, /^Joined\. Salsa Sunsets: FREE Outdoor Latin Dance Lesson & Social!, Sunday 5:00 PM at Campus Y Courtyard: 1 in \(you\)/);
+  assert.match(joined, /Heel Life page \(official RSVP\): https:\/\/heellife\.unc\.edu\/event\/101/);
+  // A second phone joins the same event: same board plan, and the first joiner gets the match text.
+  const second = await tool("join_activity").run({ activity: "heellife:101", my_name: "Kerry" }, hlCtx(undefined, NEW));
+  assert.match(second, /Matched with: Abdullah\./);
+  assert.equal(loadBoard().activities.filter((a) => a.id === "heellife-101").length, 1);
+  const [m] = await watch(hlCtx(undefined, ME, "Abdullah"));
+  assert.match(m.facts, /^Kerry joined Salsa Sunsets.* after you\./);
+  const [cal] = await plansCalendar(hlCtx(undefined, ME));
+  assert.equal(cal.start.toISOString(), hlAt(1, 17));
+  assert.equal(cal.end!.toISOString(), hlAt(1, 19));
+  assert.match(cal.note!, /Heel Life: https:\/\/heellife\.unc\.edu\/event\/101/);
+  assert.match(await tool("heellife_events").run({ query: "salsa" }, hlCtx()), /· 2 going through Sunny \[heellife:101\]/);
+});
+
+test("a board plan still wins over campus events; an unknown id or name creates nothing", async () => {
+  let calls = 0;
+  useEventsFetcher(async () => (calls++, HL_FEED));
+  assert.match(await run("join_activity", { activity: "soccer" }), /^Joined\. Pickup soccer/);
+  assert.equal(calls, 0); // a clear board match never asks Heel Life
+  assert.match(await run("join_activity", { activity: "skydiving" }), /^No plan matches "skydiving"/);
+  assert.match(await run("join_activity", { activity: "heellife:999" }), /isn't on this week's list/);
+  assert.equal(loadBoard().activities.some((a) => a.id.startsWith("heellife-")), false);
+});
+
+test("review: one word never signs anyone up for a random campus event; it asks", async () => {
+  useEventsFetcher(async () => HL_FEED);
+  const out = await run("join_activity", { activity: "dinner" });
+  assert.match(out, /^"dinner" could be:\n- Wesley Dinner & Worship, Sunday 6:00 PM.*\[heellife:103\].*\nAsk which one/);
+  assert.equal(loadBoard().activities.some((a) => a.id === "heellife-103"), false);
+});
+
+test("review: a loose board match doesn't hijack a campus name, and repeat showings ask which one", async () => {
+  useEventsFetcher(async () => ({
+    value: [
+      ...HL_FEED.value,
+      hlEvent(201, "KDP Benefit Night", 1, 18),
+      hlEvent(301, "Kenan Theatre Company - A Midsummer Night's Dream", 1, 14),
+      hlEvent(302, "Kenan Theatre Company - A Midsummer Night's Dream", 1, 19),
+    ],
+  }));
+  await tool("join_activity").run({ activity: "heellife:301" }, hlCtx(undefined, NEW)); // Midsummer is on the board now
+  const kdp = await tool("join_activity").run({ activity: "KDP Benefit Night" }, hlCtx());
+  assert.match(kdp, /could be:[\s\S]*KDP Benefit Night.*\[heellife:201\][\s\S]*Ask which one/);
+  assert.equal(loadBoard().activities.find((a) => a.id === "heellife-301")!.signups.includes(ME), false);
+  const showings = await tool("join_activity").run({ activity: "midsummer night's dream" }, hlCtx());
+  assert.match(showings, /\[heellife:301\][\s\S]*\[heellife:302\]/);
+});
+
+test("review: weekend, tonight, 'this saturday', free food as words, any-word search, unknown day ignored", async () => {
+  useEventsFetcher(async () => ({
+    value: [...HL_FEED.value, hlEvent(401, "Pickup basketball run", 0, 23, { theme: "Athletics" }), hlEvent(402, "Thursday book club", 5, 18)],
+  }));
+  const names = async (args: Record<string, unknown>) =>
+    (await tool("heellife_events").run(args, hlCtx())).split("\n").filter((l) => /\[heellife:\d+\]/.test(l)).map((l) => l.split(",")[0]);
+  assert.deepEqual(await names({ day: "weekend" }), ["Pickup basketball run", "Tour: A Closer Look at the Collection", "Salsa Sunsets: FREE Outdoor Latin Dance Lesson & Social!", "Wesley Dinner & Worship"]);
+  assert.deepEqual(await names({ day: "tonight" }), ["Pickup basketball run"]);
+  assert.deepEqual(await names({ day: "this sunday" }), ["Tour: A Closer Look at the Collection", "Salsa Sunsets: FREE Outdoor Latin Dance Lesson & Social!", "Wesley Dinner & Worship"]);
+  assert.deepEqual(await names({ query: "free food" }), ["Wesley Dinner & Worship"]);
+  assert.deepEqual(await names({ query: "basketball game" }), ["Pickup basketball run"]);
+  assert.match(await tool("heellife_events").run({ day: "someday" }, hlCtx()), /couldn't read the day "someday"/);
+});
+
+test("review: stale or weeks-long events and duplicate rows are dropped", async () => {
+  useEventsFetcher(async () => ({
+    value: [
+      ...HL_FEED.value,
+      { ...hlEvent(501, "Happy 10th Birthday, BeAM!", -50, 9), endsOn: hlAt(10, 9), location: "Online" },
+      { ...hlEvent(502, "Microtransit Safety", 2, 9), endsOn: hlAt(140, 9) },
+      hlEvent(503, "Lacrosse Practice!", 2, 17, { theme: "Athletics" }), // same name + start as 104
+    ],
+  }));
+  const evs = await campusEvents(HL_NOW);
+  assert.deepEqual(evs.map((e) => e.id), ["102", "101", "103", "104"]);
+});
+
+test("review: after a failed fetch, Heel Life isn't asked again for 5 minutes", async () => {
+  let calls = 0;
+  useEventsFetcher(async () => {
+    calls++;
+    throw new Error("down");
+  });
+  await assert.rejects(campusEvents(HL_NOW));
+  await assert.rejects(campusEvents(new Date(HL_NOW.getTime() + 60_000)));
+  assert.equal(calls, 1);
+  await assert.rejects(campusEvents(new Date(HL_NOW.getTime() + 6 * 60_000)));
+  assert.equal(calls, 2);
+});
+
+test("review: a campus join waiting on Heel Life doesn't wipe out another student's join", async () => {
+  const dir = mkdtempSync(join(tmpdir(), "social-"));
+  useBoardFile(join(dir, "social.json"));
+  let release!: () => void;
+  const gate = new Promise<void>((r) => (release = r));
+  useEventsFetcher(async () => (await gate, HL_FEED));
+  const campus = tool("join_activity").run({ activity: "heellife:101" }, hlCtx(undefined, ME));
+  await new Promise((r) => setTimeout(r, 10));
+  await run("join_activity", { activity: "beach" }, ctx(NEW)); // lands while the campus join waits
+  release();
+  await campus;
+  const b = loadBoard();
+  assert.ok(b.activities.find((a) => a.id === "beach")!.signups.includes(NEW));
+  assert.ok(b.activities.find((a) => a.id === "heellife-101")!.signups.includes(ME));
+});
+
+test("review: ended campus events leave the lists, pitches and hot-plan texts", async () => {
+  useEventsFetcher(async () => HL_FEED);
+  await tool("join_activity").run({ activity: "heellife:101" }, hlCtx(undefined, NEW));
+  const later = { ...hlCtx(["parties"]), now: new Date(HL_NOW.getTime() + 3 * 86_400_000) };
+  assert.doesNotMatch(await tool("list_signups").run({}, later), /Salsa/);
+  const [intro] = await triggers.intro(later);
+  assert.doesNotMatch(intro.facts, /Salsa/);
+});
+
+test("review: without Gemini, 'anyone on campus down for soccer' still goes to list_signups", async () => {
+  const { FakeLlm } = await import("../../core/llm/fake.ts");
+  const step = await new FakeLlm().chat({ system: "", messages: [{ role: "user", text: "anyone on campus down for soccer" }], tools });
+  assert.deepEqual("toolCalls" in step ? step.toolCalls.map((c) => c.name) : [], ["list_signups"]);
+});
+
+test("music events count as concerts too", async () => {
+  const { categoriesOfEvent } = await import("./interests.ts");
+  assert.deepEqual(categoriesOfEvent({ name: "UNC Symphony Orchestra | MFE 26-27", theme: "Arts", freeFood: false }), ["concerts", "art"]);
+  assert.deepEqual(categoriesOfEvent({ name: "Jazz Band Fall Concert", theme: "Arts", freeFood: true }), ["food", "concerts", "art"]);
 });

@@ -21,6 +21,12 @@ Sign-ups persist in `data/social.json` (shared by chat + dev). Reset between reh
 - [x] Use `user.interests` from sign-up (`interests.ts`): categories map to plans by name; `list_signups` and `find_matches` put fits first and say so; `find_matches` takes a category ("outdoors")
 - [ ] Create the group chat by hand in iMessage; write the steps in STATUS
 
+## Real UNC events (Heel Life)
+- [x] `heellife_events`: this week's real events from heellife.unc.edu's public feed (`heellife.ts`; cached 30 min, live only),
+      ranked by interests (Heel Life theme + name + free food → categories); filters by words, day, free food.
+- [x] Joining one (`join_activity` with `heellife:<id>` or its name) puts it on the board with exact times, so matching,
+      "X joined after you" and the calendar work. If Heel Life is down, Sunny says so instead of inventing events.
+
 ## Shared calendar (added by Ismail, see docs/SIGNUP-PLAN.md)
 - [x] `calendar(ctx)` in `index.ts` (`calendar.ts`): the plans this student joined as `CalendarItem`s (`{ id: "social:<plan id>", title, start, end }`).
       Free-text times ("Sunday 4 PM", "tomorrow at 3pm") go on their next day, 2-hour blocks; a plan with no day stays off. Sunny also has `calendar_link`.

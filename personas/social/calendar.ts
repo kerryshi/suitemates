@@ -87,14 +87,19 @@ export async function plansCalendar(ctx: Ctx): Promise<CalendarItem[]> {
   return b.activities
     .filter((a) => a.signups.includes(me))
     .flatMap((a) => {
-      // Read from the day the plan was made (seeded plans: the day the board was set up), not from now.
-      const w = parseWhen(a.when, new Date(a.createdAt ?? b.seededAt ?? ctx.now.getTime()));
+      // A Heel Life event has exact times; anything else is read from the day the plan was made (seeded plans:
+      // the day the board was set up), not from now.
+      const exact = a.startsAt && !isNaN(Date.parse(a.startsAt)) ? new Date(a.startsAt) : undefined;
+      const w = exact
+        ? { start: exact, end: a.endsAt && !isNaN(Date.parse(a.endsAt)) ? new Date(a.endsAt) : undefined, timed: true }
+        : parseWhen(a.when, new Date(a.createdAt ?? b.seededAt ?? ctx.now.getTime()));
       if (!w) return [];
       const others = a.signups.filter((p) => p !== me).map((p) => nameOf(b, p, ctx));
       const note =
         `With ${others.length ? others.join(", ") : "just you so far"}` +
         (a.costEstimate ? `, about $${a.costEstimate}` : "") +
         (w.timed ? "" : `. Time not set yet ("${a.when}")`) +
+        (a.url ? `. Heel Life: ${a.url}` : "") +
         " (from Sunny)";
       return [{ id: `social:${a.id}`, title: a.name, start: w.start, end: w.end ?? new Date(w.start.getTime() + PLAN_HOURS * HOUR), note }];
     });

@@ -6,7 +6,7 @@
 // Stateless on purpose: who-joined-after-whom lives on the shared board (joinedAt), and core's dedupeKey
 // claim makes each text go out once, while the forced demo trigger can always resend it.
 import type { Ctx, WatchEvent } from "../../core/types.ts";
-import { type Activity, type Board, loadBoard, nameOf } from "./board.ts";
+import { type Activity, type Board, isOver, loadBoard, nameOf } from "./board.ts";
 import { rankByFit } from "./interests.ts";
 
 export const HOT_AT = 3; // a plan the user was never in is worth a text when a live join brings it to this many
@@ -43,7 +43,7 @@ function hotPlan(b: Board, ctx: Ctx): WatchEvent[] {
   const me = ctx.user.phone;
   const crossedAt = (a: Activity) => a.joinedAt?.[a.signups[HOT_AT - 1]] ?? 0; // when the HOT_AT-th person joined
   return b.activities
-    .filter((a) => a.signups.length >= HOT_AT && !a.signups.includes(me) && a.joinedAt?.[me] === undefined && crossedAt(a) > 0)
+    .filter((a) => !isOver(a, ctx.now) && a.signups.length >= HOT_AT && !a.signups.includes(me) && a.joinedAt?.[me] === undefined && crossedAt(a) > 0)
     .sort((x, y) => crossedAt(y) - crossedAt(x))
     .map((hot) => ({
       kind: "hot_plan",
@@ -69,7 +69,7 @@ export function introEvent(ctx: Ctx): WatchEvent {
   const me = ctx.user.phone;
   const first = ctx.user.name?.trim().split(/\s+/)[0];
   const sunny = process.env.SOCIAL_NAME || "Sunny";
-  const open = b.activities.filter((a) => !a.signups.includes(me)).sort((x, y) => y.signups.length - x.signups.length);
+  const open = b.activities.filter((a) => !a.signups.includes(me) && !isOver(a, ctx.now)).sort((x, y) => y.signups.length - x.signups.length);
   const [best] = rankByFit(open.map((a) => ({ a })), ctx.user.interests);
   const who = (a: Activity) => {
     const names = a.signups.filter((p) => p !== me).map((p) => nameOf(b, p, ctx));

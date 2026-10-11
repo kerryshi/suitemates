@@ -16,6 +16,12 @@ export interface Activity {
   signups: string[]; // phones
   joinedAt?: Record<string, number>; // phone → board.seq when they joined live (seeded sign-ups have none; kept after leaving)
   createdAt?: number; // epoch ms, plans made with start_activity: "tomorrow"/"Sunday" are read from this day (calendar.ts)
+  // A real UNC event someone joined through Sunny (heellife.ts): exact times, where, and its Heel Life page.
+  source?: "heellife";
+  startsAt?: string; // ISO
+  endsAt?: string; // ISO
+  location?: string;
+  url?: string;
 }
 
 export interface Board {
@@ -179,9 +185,14 @@ export function findDuplicate(b: Board, name: string): Activity | undefined {
   });
 }
 
+// A Heel Life event that already ended: off the lists and pitches (it stays in the file and on the calendar).
+export const isOver = (a: Activity, now: Date) => a.source === "heellife" && !!a.endsAt && Date.parse(a.endsAt) < now.getTime();
+// The board as people should see it right now (same Activity objects, so changes to them still save).
+export const openBoard = (b: Board, now: Date): Board => ({ ...b, activities: b.activities.filter((a) => !isOver(a, now)) });
+
 export function describe(b: Board, a: Activity, ctx: Ctx): string {
   const who = a.signups.length ? a.signups.map((p) => nameOf(b, p, ctx)).join(", ") : "nobody yet";
-  return `${a.name}, ${a.when}: ${a.signups.length} in (${who})${a.costEstimate ? `, ~$${a.costEstimate}` : ""}`;
+  return `${a.name}, ${a.when}${a.location ? ` at ${a.location}` : ""}: ${a.signups.length} in (${who})${a.costEstimate ? `, ~$${a.costEstimate}` : ""}`;
 }
 
 export function slug(name: string, taken: Activity[]): string {

@@ -12,7 +12,7 @@ const KEYWORDS: Record<string, string[]> = {
   gym: ["gym", "lifting", "workout", "climbing", "bouldering", "yoga", "crossfit", "spin class"],
   food: ["boba", "food", "dinner", "lunch", "brunch", "breakfast", "pizza", "coffee", "taco", "sushi", "ramen", "bbq", "dessert", "ice cream"],
   "study groups": ["study", "studying", "homework", "review session", "midterm", "finals week", "final exam", "library", "tutoring"],
-  concerts: ["concert", "gig", "festival", "music", "band", "dj"],
+  concerts: ["concert", "gig", "festival", "music", "band", "dj", "orchestra", "symphony", "choir", "recital", "jazz", "a cappella"],
   parties: ["party", "parties", "darty", "mixer", "kickback", "tailgate", "formal"],
   outdoors: ["beach", "hike", "hiking", "trail", "park", "camping", "lake", "kayak", "picnic", "outdoor", "outdoors", "biking"],
   gaming: ["gaming", "game night", "video game", "board game", "videogame", "smash", "valorant", "mario kart", "minecraft", "lan party", "chess"],
@@ -80,16 +80,42 @@ function categoriesOfInterest(i: string): string[] {
   return categoriesOf({ id: "", name: i, when: "", signups: [] });
 }
 
-// Which of the user's interests this plan fits (empty when none, or when the user gave none).
-export function fits(a: Activity, interests: string[] | undefined): string[] {
+// Which of the user's interests something with these categories and name words fits (shared by board plans and
+// Heel Life events). A free-text interest also fits by its own words ("salsa" fits "Salsa Sunsets").
+function fitsCategories(cats: Set<string>, words: Set<string>, interests: string[] | undefined): string[] {
   if (!interests?.length) return [];
-  const cats = new Set(categoriesOf(a));
-  const words = new Set(tokens(`${a.id} ${a.name}`));
   return [...new Set(interests.map(norm).filter(Boolean))].filter((i) => {
     const want = tokens(i);
     if (!isCategory(i) && want.length > 0 && want.every((w) => words.has(w))) return true;
     return categoriesOfInterest(i).some((c) => cats.has(c));
   });
+}
+
+// Which of the user's interests this plan fits (empty when none, or when the user gave none).
+export function fits(a: Activity, interests: string[] | undefined): string[] {
+  return fitsCategories(new Set(categoriesOf(a)), new Set(tokens(`${a.id} ${a.name}`)), interests);
+}
+
+// Heel Life themes that line up with a sign-up category (Cultural, Spirituality, Fundraising don't).
+const THEMES: Record<string, string> = {
+  athletics: "pickup sports",
+  arts: "art",
+  social: "parties",
+  communityservice: "volunteering",
+  thoughtfullearning: "study groups",
+};
+
+// A campus event's categories: its theme, its name's keywords, and food when Heel Life lists free food.
+export function categoriesOfEvent(e: { name: string; theme: string; freeFood: boolean }): string[] {
+  const cats = new Set(categoriesOf({ id: "", name: e.name, when: "", signups: [] }));
+  const theme = THEMES[e.theme.toLowerCase()];
+  if (theme) cats.add(theme);
+  if (e.freeFood) cats.add("food");
+  return INTEREST_CATEGORIES.filter((c) => cats.has(c));
+}
+
+export function eventFits(e: { name: string; theme: string; freeFood: boolean }, interests: string[] | undefined): string[] {
+  return fitsCategories(new Set(categoriesOfEvent(e)), new Set(tokens(e.name)), interests);
 }
 
 // Best fit first (more matching interests); ties keep the order the caller passed in.

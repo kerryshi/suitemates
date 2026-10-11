@@ -15,7 +15,7 @@ import type { Transport } from "./transport.ts";
 import type { PersonaId } from "./types.ts";
 import { cardFor, introTexts, normalizePhone, parseSignup } from "./signup.ts";
 import { photonCliAddUser, type AddUser } from "./photon-users.ts";
-import { calToken, calendarItems, toIcs } from "./calendar.ts";
+import { calToken, calUrl, calendarItems, toIcs } from "./calendar.ts";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const AVATARS = new Set(["dean", "penny", "sunny", "dean-icon", "penny-icon", "sunny-icon"]);
@@ -82,7 +82,7 @@ export function startHttp(opts: { engine: Engine; transport: Transport; port: nu
         const textTo = ("line" in added ? added.line : undefined) || process.env.POOL_NUMBER || undefined;
         const why = "error" in added && added.error ? `; photon: ${added.error}` : "";
         console.log(`[signup] ${user.name} ${phone} (${user.signupStatus}${why})`);
-        return reply(200, { ok: true, name: user.name, status: user.signupStatus, textTo });
+        return reply(200, { ok: true, name: user.name, status: user.signupStatus, textTo, calendar: calUrl(phone), agents: user.agents });
       }
 
       const authed = !opts.token || params.token === opts.token;

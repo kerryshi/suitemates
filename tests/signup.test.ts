@@ -64,7 +64,9 @@ test("sign up → pending → admin sends Dean's intro first → invited", async
     assert.equal((await fetch(s.base + "/avatars/..%2F..%2F.env.png")).status, 404);
 
     const res = await s.post("/signup", { name: "Sam", phone: "919-555-0123", budget: "600", interests: ["gym"] });
-    assert.deepEqual(await res.json(), { ok: true, name: "Sam", status: "pending" });
+    const out = (await res.json()) as Record<string, unknown>;
+    assert.deepEqual({ ...out, calendar: undefined }, { ok: true, name: "Sam", status: "pending", agents: ["academic", "financial", "social"], calendar: undefined });
+    assert.match(String(out.calendar), /\/cal\/[\w-]{24}\.ics$/);
     assert.equal(s.sent.length, 0); // nobody is texted until we add them in Photon
     const list = (await (await fetch(s.base + "/admin/signups")).json()) as { users: { phone: string; signupStatus: string }[] };
     assert.deepEqual(list.users.map((u) => [u.phone, u.signupStatus]), [["+19195550123", "pending"]]);
@@ -151,7 +153,8 @@ test("QR flow: sign up → added to Photon → page gets the number → their 'h
   try {
     assert.equal((await fetch(s.base + "/qr")).status, 200); // old poster URL → landing
     const res = await s.post("/signup", { name: "Sam", phone: "(919) 555-0123" });
-    assert.deepEqual(await res.json(), { ok: true, name: "Sam", status: "added", textTo: "+16465550177" });
+    const out = (await res.json()) as Record<string, unknown>;
+    assert.deepEqual([out.status, out.textTo], ["added", "+16465550177"]);
     assert.deepEqual(calls, [["+19195550123", "Sam"]]);
     assert.equal(s.sent.length, 0); // we wait for their "hey"
 

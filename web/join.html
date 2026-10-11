@@ -57,6 +57,13 @@
   button:hover, a.button:hover { transform: translateY(-1px); box-shadow: 0 10px 28px rgb(var(--c) / .5); }
   button:disabled { opacity: .6; cursor: wait; }
   .error { color: var(--error); margin: 12px 0 0; min-height: 1.2em; }
+  #done h3 { margin: 22px 0 4px; font-size: 1rem; }
+  .pair { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; }
+  .pair a { flex: 1 1 160px; }
+  a.ghost { display: block; padding: 11px 12px; border-radius: 12px; text-align: center; text-decoration: none; font-weight: 600;
+    color: var(--text); background: var(--field); border: 1px solid var(--line); }
+  a.ghost:hover { border-color: rgb(var(--c)); }
+  a.ghost.agent-link { border-color: rgb(var(--ac) / .6); box-shadow: inset 0 0 0 1px rgb(var(--ac) / .25); }
   .fine { color: var(--muted); font-size: .85rem; }
   [hidden] { display: none !important; }
 </style>
@@ -96,6 +103,15 @@
           <p class="fine" id="heyNumber"></p>
         </div>
         <p id="waitText" hidden><span class="who"></span> will text you as soon as we've added your number.</p>
+        <div id="calBox" hidden>
+          <h3>Your week in one calendar</h3>
+          <p class="fine">Deadlines, exams and plans from your agents, kept up to date. Private link: don't share it.</p>
+          <div class="pair"><a class="ghost" id="calGoogle" href="#" target="_blank" rel="noopener">Add to Google Calendar</a><a class="ghost" id="calApple" href="#">Apple Calendar</a></div>
+        </div>
+        <div id="moreBox" hidden>
+          <h3>Add another agent</h3>
+          <div class="pair" id="more"></div>
+        </div>
       </div>
     </div>
   </div>
@@ -179,6 +195,18 @@
         if (/Mobi|iPhone|Android/.test(navigator.userAgent)) setTimeout(() => (location.href = href), 600);
       } else {
         document.getElementById("waitText").hidden = false;
+      }
+      if (out.calendar) {
+        const webcal = out.calendar.replace(/^https?:\/\//, "webcal://");
+        document.getElementById("calGoogle").href = `https://calendar.google.com/calendar/render?cid=${encodeURIComponent(webcal)}`;
+        document.getElementById("calApple").href = webcal;
+        document.getElementById("calBox").hidden = false;
+      }
+      const others = Object.entries(AGENTS).filter(([k]) => !(out.agents || [id]).includes(k));
+      if (others.length) {
+        document.getElementById("more").innerHTML = others
+          .map(([k, o]) => `<a class="ghost agent-link" style="--ac:${o.color}" href="/join/${k}">Get ${o.name}</a>`).join("");
+        document.getElementById("moreBox").hidden = false;
       }
     } catch (err) {
       error.textContent = err.message;

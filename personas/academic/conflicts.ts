@@ -1,5 +1,6 @@
 // Plan vs deadline: what's due during a plan's day (or weekend) and the day right after it.
-import type { Tool } from "../../core/types.ts";
+import type { Ctx, Tool } from "../../core/types.ts";
+import { fmtWhen } from "../../core/kit.ts";
 import { getAssignments, describe } from "./canvas.ts";
 
 const DAY_MS = 86_400_000;
@@ -70,3 +71,20 @@ export const checkPlanConflicts: Tool = {
     return `${head}\n${body}${exams}`;
   },
 };
+
+// What Penny and Sunny may know (Persona.context): the next few days' load and the next exam. No grades.
+export async function schoolContext(ctx: Ctx): Promise<string> {
+  const upcoming = await getAssignments(ctx);
+  const soon = upcoming.filter((a) => a.due.getTime() <= ctx.now.getTime() + 4 * DAY_MS);
+  const byDay = new Map<string, string[]>();
+  for (const a of soon) {
+    const day = fmtWhen(a.due, ctx.now).split(" ")[0];
+    byDay.set(day, [...(byDay.get(day) ?? []), `${a.course} ${a.name}`]);
+  }
+  const busiest = [...byDay].sort((x, y) => y[1].length - x[1].length)[0];
+  const exam = upcoming.find((a) => a.type === "exam");
+  return [
+    soon.length ? `${soon.length} things due in the next 4 days${busiest && busiest[1].length > 1 ? ` (busiest: ${busiest[0]}, ${busiest[1].join(" + ")})` : ""}` : "nothing due in the next 4 days",
+    exam ? `next exam: ${describe(exam, ctx.now)}` : "",
+  ].filter(Boolean).join("; ") + ".";
+}

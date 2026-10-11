@@ -59,6 +59,9 @@ export interface Persona {
   watch?(ctx: Ctx): Promise<WatchEvent[]>;
   // Named proactive messages. The scheduler AND /demo/trigger call these by name.
   triggers?: Record<string, (ctx: Ctx) => Promise<WatchEvent[]>>;
+  // One or two lines the OTHER personas may know about this user (e.g. Dean: "midterm Wednesday"), so they can plan
+  // together. Shown in their prompts. Optional; keep it short and leave out anything private (exact grades, balances).
+  context?(ctx: Ctx): Promise<string>;
 }
 
 // ---- core-internal (transport-agnostic message shapes) ----

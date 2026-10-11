@@ -352,10 +352,10 @@ test("intro pitches the open plan that fits their interests, with who's in", asy
   assert.equal(ev.dedupeKey, `social:intro:${ME}`);
   assert.equal(
     ev.facts,
-    `Hey Jordan, I'm Sunny. I find people who want to do the same things you do. You said you're into food: Boba run on Franklin St is Friday 8 PM and Sam is in. Want in? Just say "I'm in".`,
+    `Hey Jordan, I'm Sunny, your plans person (Dean has school, Penny has money). How it works: I find people who want to do the same things you do and text you when there's a plan worth joining. You said you're into food: Boba run on Franklin St is Friday 8 PM and Sam is in. Want in? Just say "I'm in".`,
   );
   const [sports] = await triggers.intro(withInterests(["gym", "pickup sports"]));
-  assert.match(sports.facts, /^Hey, I'm Sunny\..*into pickup sports: Pickup soccer at Hooker Fields is Sunday 4 PM and Omar, Priya, Sam are in\./);
+  assert.match(sports.facts, /^Hey, I'm Sunny, your plans person .*How it works: .*into pickup sports: Pickup soccer at Hooker Fields is Sunday 4 PM and Omar, Priya, Sam are in\./);
 });
 
 test("intro with no interests (or none that fit) offers the most popular plan and asks what they're into", async () => {

@@ -76,13 +76,16 @@ export function introEvent(ctx: Ctx): WatchEvent {
     return names.length ? `${names.join(", ")} ${names.length === 1 ? "is" : "are"} in` : "nobody's in yet";
   };
   ctx.kv.set(PITCHED_KEY, best?.a.id);
-  const hello = `Hey${first ? ` ${first}` : ""}, I'm ${sunny}. I find people who want to do the same things you do.`;
+  const hello =
+    `Hey${first ? ` ${first}` : ""}, I'm ${sunny}, your plans person` +
+    ` (${process.env.ACADEMIC_NAME || "Dean"} has school, ${process.env.FINANCIAL_NAME || "Penny"} has money). ` +
+    `How it works: I find people who want to do the same things you do and text you when there's a plan worth joining.`;
   const pitch = !best
     ? " Tell me what you're into and I'll find your people."
     : best.fit.length
       ? ` You said you're into ${best.fit.join(" and ")}: ${best.a.name} is ${best.a.when} and ${who(best.a)}. Want in? Just say "I'm in".`
       : ` The big one right now: ${best.a.name}, ${best.a.when}, and ${who(best.a)}. Want in? Or tell me what you're into.`;
-  return { kind: "intro", userPhone: me, facts: hello + pitch, dedupeKey: `social:intro:${me}` };
+  return { kind: "intro", userPhone: me, facts: hello + pitch, verbatim: true, dedupeKey: `social:intro:${me}` };
 }
 
 export const triggers = {

@@ -19,9 +19,12 @@ export const DEMO_BUYS: Record<string, { merchant: string; amount: number; categ
 // Two texts: who Penny is (core sends her contact card right after), then where the month stands.
 export async function intro(ctx: Ctx): Promise<WatchEvent[]> {
   const hello =
-    `hey${ctx.user.name ? ` ${ctx.user.name}` : ""}, i'm Penny. i watch your spending so your bank account stops crying. ` +
-    `i'll tell you if you can afford it, and i will absolutely say something about the 3 am DoorDash.`;
-  const events: WatchEvent[] = [{ kind: "intro", userPhone: ctx.user.phone, facts: hello, dedupeKey: `financial:intro:${ctx.user.phone}` }];
+    `hey${ctx.user.name ? ` ${ctx.user.name}` : ""}, i'm Penny, your money person` +
+    ` (${process.env.ACADEMIC_NAME || "Dean"} has school, ${process.env.SOCIAL_NAME || "Sunny"} has plans). ` +
+    `how it works: i keep an eye on your spending against your monthly budget, text you when a purchase looks off, ` +
+    `and before you buy something you can ask me "can i afford it?". ` +
+    `and yes, i will absolutely say something about the 3 am DoorDash.`;
+  const events: WatchEvent[] = [{ kind: "intro", userPhone: ctx.user.phone, facts: hello, verbatim: true, dedupeKey: `financial:intro:${ctx.user.phone}` }];
   const budget = ctx.user.budgetMonthly;
   if (budget) {
     const { left, perDay } = monthStats(await getPurchases(ctx), ctx.now, budget);

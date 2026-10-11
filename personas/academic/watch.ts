@@ -51,10 +51,12 @@ export const triggers = {
   // Two texts: who Dean is (core sends his contact card right after it), then the first thing worth knowing.
   async intro(ctx: Ctx): Promise<WatchEvent[]> {
     const hello =
-      `Hey${ctx.user.name ? ` ${ctx.user.name}` : ""}, I'm Dean. I keep track of your Canvas: deadlines, quizzes, exams and grades, ` +
+      `Hey${ctx.user.name ? ` ${ctx.user.name}` : ""}, I'm Dean, your school person` +
+      ` (${process.env.FINANCIAL_NAME || "Penny"} has money, ${process.env.SOCIAL_NAME || "Sunny"} has plans). ` +
+      `How it works: I keep track of your Canvas: deadlines, quizzes, exams and grades, ` +
       `and I'll give you a heads-up before anything's due. Text me "what's due?" anytime.` +
       (isLive(ctx) ? "" : " (for now that's a demo Canvas with sample classes, not your real one.)");
-    const events: WatchEvent[] = [{ kind: "intro", userPhone: ctx.user.phone, facts: hello, dedupeKey: `academic:intro:${ctx.user.phone}` }];
+    const events: WatchEvent[] = [{ kind: "intro", userPhone: ctx.user.phone, facts: hello, verbatim: true, dedupeKey: `academic:intro:${ctx.user.phone}` }];
     const next = (await getAssignments(ctx))[0];
     if (next) {
       events.push({

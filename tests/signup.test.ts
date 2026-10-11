@@ -81,8 +81,8 @@ test("sign up → pending → admin sends Dean's intro first → invited", async
       ["academic", "text"], ["academic", "card"], ["academic", "text"], ["financial", "text"], ["financial", "card"], ["financial", "text"], ["social", "text"], ["social", "card"],
     ]);
     assert.ok(s.sent.every((o) => o.handle === "dm:+19195550123"));
-    assert.match(s.sent[0].text, /Hey Sam, I'm Dean\./); // Dean's own intro trigger
-    assert.match(s.sent[3].text, /hey Sam, i'm Penny\..*DoorDash\.$/); // Penny's own intro, then her card, then the month
+    assert.match(s.sent[0].text, /Hey Sam, I'm Dean, your school person .*How it works:/); // Dean's own intro trigger
+    assert.match(s.sent[3].text, /hey Sam, i'm Penny, your money person .*how it works: .*DoorDash\.$/); // Penny's own intro, then her card, then the month
     assert.deepEqual(s.sent[1].card, {
       name: "Dean Suitemates", photo: "docs/avatars/dean.png", phone: undefined, note: "Dean handles school in Suitemates.",
     });
@@ -366,4 +366,25 @@ test("signing up again with the same agent changes nothing and just returns your
   } finally {
     s.close();
   }
+});
+
+test("QR sign-up intros go out word for word (no LLM rewrite), each saying how that agent works", async () => {
+  const { introTexts } = await import("../core/signup.ts");
+  const { Engine } = await import("../core/engine.ts");
+  const { Store } = await import("../core/store.ts");
+  const { loadPersonas } = await import("../core/personas.ts");
+  const store = new Store(null);
+  const engine = new Engine({
+    personas: loadPersonas(),
+    store,
+    llm: { name: "rewriter", chat: async () => ({ text: "llm rewrote this" }), json: async () => "{}" },
+    config: { names: { academic: "Dean", financial: "Penny", social: "Sunny" }, PRODUCT_NAME: "Suitemates", mock: true },
+    log: () => {},
+  });
+  const phone = "+19195550777";
+  store.saveUser({ ...store.user(phone), name: "Sam", onboardingStep: "done", budgetMonthly: 600, agents: ["academic", "financial", "social"] });
+  const hellos = (await introTexts(engine, phone)).filter((o) => !o.card && /i'm (Dean|Penny|Sunny)/i.test(o.text));
+  assert.equal(hellos.length, 3);
+  for (const h of hellos) assert.match(h.text, /how it works:/i, `${h.persona}: explains itself`);
+  assert.match(hellos.find((h) => h.persona === "financial")!.text, /keep an eye on your spending.*can i afford it/);
 });

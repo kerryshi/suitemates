@@ -62,6 +62,7 @@ export interface WatchEvent {
   userPhone: string; // who gets the DM (sent from this persona's own number)
   facts: string; // plain facts, e.g. "New purchase: DoorDash $23.40 at 3:12 AM. Budget left: $212."
   dedupeKey: string; // e.g. "purchase:<nessie id>"
+  verbatim?: boolean; // send `facts` as written, no LLM rewrite (intros: the "how it works" must survive word for word)
 }
 
 export interface Persona {

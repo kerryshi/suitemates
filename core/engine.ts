@@ -201,7 +201,8 @@ export class Engine {
         if (!this.d.store.claim(ev.dedupeKey) && !opts.force) continue;
         const target = this.d.store.user(ev.userPhone);
         let text: string;
-        try {
+        if (ev.verbatim) text = ev.facts;
+        else try {
           text = await this.replyOrThrow(personaId, target, `[proactive] ${ev.kind}: ${ev.facts}`, undefined, "proactive");
         } catch (err) {
           // The event is already claimed and won't come back, so never drop it: send the facts plainly.

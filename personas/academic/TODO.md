@@ -29,3 +29,10 @@ Already working (keyless): `MOCK=1 npm run chat -- academic` then type `what's d
 - [x] `get_grades` tool; `get_due_assignments` takes `kind` (assignment | quiz | exam)
 - [x] Dean's first-text setup asks only for Canvas (any answer links the mock) — change in `core/onboarding.ts`, tell Kerry
 - [ ] Side item, NOT now: syllabus parser (paste/upload a syllabus → exam dates, grading weights)
+
+## Live Canvas (see docs/SIGNUP-PLAN.md)
+- [x] Live snapshot: courses + grades + weights + syllabus, all assignments + scores, announcements; owner-only; cached
+- [x] Tools: get_announcements, get_syllabus, grade_impact
+- [x] Proactive: morning_due adds tomorrow, weekly_plan (Sun 19:00), exam week notice, new announcements
+- [ ] `CANVAS_LIVE=1` once the Gemini key is paid (real grades through Gemini)
+- [ ] Shared context for the other personas (`Persona.context`), then the group-chat negotiation (Dean offers options + grade impact)

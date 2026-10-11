@@ -10,6 +10,7 @@ import { loadPersonas } from "../../core/personas.ts";
 import { tools } from "./tools.ts";
 import { watch, triggers } from "./watch.ts";
 import { planWindow } from "./conflicts.ts";
+import { courseCode, htmlToText, isLive, kindOf } from "./canvas.ts";
 
 const NOW = new Date(2026, 9, 8, 10, 0);
 
@@ -105,10 +106,66 @@ test("morning_due lists today's two items with one dedupe key per day", async ()
   assert.equal(ev.dedupeKey, "academic:morning:+19195550001:2026-10-08");
 });
 
-test("watch warns once per assignment due within 24h", async () => {
+test("watch: 24h warnings, a week's notice per exam, and announcements from the last day, each once", async () => {
   const evs = await watch(ctx());
-  assert.deepEqual(evs.map((e) => e.kind), ["due_within_24h", "due_within_24h"]);
-  assert.equal(new Set(evs.map((e) => e.dedupeKey)).size, 2);
+  assert.deepEqual(evs.map((e) => e.kind), ["due_within_24h", "due_within_24h", "exam_week", "announcement", "announcement"]);
+  assert.equal(new Set(evs.map((e) => e.dedupeKey)).size, 5);
+  assert.equal(evs[2].facts, "Exam coming up: STOR 435 Midterm 2 is Wednesday 9:30 AM, 6 days out. Start reviewing now, a little each day.");
+  assert.match(evs[3].facts, /^New announcement in STOR 435: Midterm 2 room change\. Midterm 2 is in Hamilton 100/);
+  assert.match(evs[4].facts, /^New announcement in COMP 421: Project 1 autograder is live/); // 3-day-old HW2 note is not repeated
+});
+
+test("weekly_plan groups the week by day and flags exams after it", async () => {
+  const [ev] = await triggers.weekly_plan(ctx());
+  assert.match(ev.facts, /^Your week: Thu: STOR 435 Problem Set 6, ENGL 105 Discussion post: source analysis · Sat: COMP 421 Quiz 4 \(quiz\)/);
+  assert.match(ev.facts, /Wed: STOR 435 Midterm 2 \(EXAM\)\./);
+  assert.match(ev.facts, /Exams after that: COMP 421: Midterm 2 \(EXAM\)/);
+});
+
+test("morning_due adds tomorrow's work", async () => {
+  const [ev] = await triggers.morning_due(ctx(new Date(2026, 9, 10, 8, 0))); // on a Saturday, Sunday's project is "tomorrow"
+  assert.match(ev.facts, /^Morning! You have 2 things due today: .* Tomorrow: COMP 421 Project 1: Buffer Pool Manager\.$/);
+});
+
+test("grade_impact shows skip / half / ace against the current grade", async () => {
+  const out = await run("grade_impact", { assignment: "midterm 2", course: "STOR" });
+  assert.match(out, /^STOR 435: Midterm 2 \(EXAM\).*Current STOR 435 grade: 84\.7%\./);
+  const [skip, half, ace] = [...out.matchAll(/about ([\d.]+)%/g)].map((m) => Number(m[1]));
+  assert.ok(skip < half && half < ace, out);
+  assert.ok(ace > 84.7 && skip < 84.7);
+  assert.match(await run("grade_impact", { assignment: "Quiz 4", percent: 80 }), /If you get 80%: about [\d.]+%/);
+  assert.equal(await run("grade_impact", { assignment: "nope" }), 'No upcoming assignment matching "nope".');
+});
+
+test("announcements and syllabus tools", async () => {
+  const anns = (await run("get_announcements")).split("\n");
+  assert.equal(anns.length, 4);
+  assert.match(anns[0], /^STOR 435 \(today 8:15 AM\): Midterm 2 room change\./);
+  assert.equal((await run("get_announcements", { course: "comp 577" })).split("\n").length, 1);
+  assert.match(await run("get_syllabus", { course: "stor435" }), /^STOR 435 syllabus: .*Lowest quiz dropped/);
+});
+
+test("live Canvas helpers: course codes, exam vs practice, html", () => {
+  assert.equal(courseCode("COMP311.001.FA26"), "COMP 311");
+  assert.equal(courseCode("UNC Advising - Class of 2028"), "UNC Advising - Class of 2028");
+  assert.equal(kindOf({ name: "Midterm 2 Take-Home Due" }), "exam");
+  assert.equal(kindOf({ name: "Optional Midterm 1 Timed Practice" }), "assignment");
+  assert.equal(kindOf({ name: "Midterm practice quiz" }), "quiz");
+  assert.equal(kindOf({ name: "Reading response", submission_types: ["discussion_topic"] }), "discussion");
+  assert.equal(htmlToText("<p>Room&nbsp;change:</p><p>Hamilton &amp; 100</p>"), "Room change:\nHamilton & 100");
+});
+
+test("live Canvas only for the token's owner, never another phone", () => {
+  const env = { ...process.env };
+  try {
+    Object.assign(process.env, { CANVAS_TOKEN: "x", CANVAS_OWNER_PHONE: "+1 (919) 555-0001", CANVAS_LIVE: "1" });
+    assert.equal(isLive(ctx()), true);
+    assert.equal(isLive({ ...ctx(), user: { ...ctx().user, phone: "+19195550002" } }), false);
+    delete process.env.CANVAS_OWNER_PHONE;
+    assert.equal(isLive(ctx()), false);
+  } finally {
+    process.env = env;
+  }
 });
 
 test("group chat: a plan with a day wakes Academic, small talk doesn't", () => {

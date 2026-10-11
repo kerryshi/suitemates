@@ -90,3 +90,32 @@ No "text this number to start". Drafted Sat Oct 10 evening by Ismail with Claude
   when they first have something real to say.
 - Switch the runtime model from Gemini to Claude? It needs a `core/llm/claude.ts` client (same `LlmClient` interface) and a key
   someone creates at console.anthropic.com. Faster path for tonight: put billing on the Gemini key.
+
+## Live Canvas (built Sat night, Ismail + Claude Code)
+
+- `personas/academic/canvas.ts` reads one **snapshot per student**: courses (current grade, assignment-group weights,
+  syllabus text), every assignment (due date, score, submitted), and the last 14 days of announcements. Live from the Canvas
+  API, cached 10 min, saved to `data/canvas/<phone>.json` (gitignored). That file is the per-student dataset.
+- Live only for `CANVAS_OWNER_PHONE` (the token's owner) and only with `MOCK=0` or `CANVAS_LIVE=1`. Everyone else gets
+  `mock-canvas.json`. Real grades go through Gemini, so `CANVAS_LIVE=1` waits for a paid key (README privacy note).
+- Verified against Ismail's UNC account: 5 classes, 108 assignments, 12 announcements in ~6 s.
+- Dean's tools: `get_due_assignments` (kind: quiz/exam), `get_grades`, `get_announcements`, `get_syllabus`,
+  `grade_impact` (skip / half / ace → estimated class grade), `check_plan_conflicts`.
+- Proactive: `morning_due` daily (today + tomorrow), `weekly_plan` Sundays 19:00 (`WEEKLY_PLAN_AT`), and `watch()`:
+  24h warnings, a week's notice per exam, new announcements. Needs `academic` in `WATCH`.
+- Not now: a "knowledge vector" (embeddings) per student. The snapshot is small and structured, so tools answer exactly;
+  embeddings only pay off for long text (syllabi, announcement history) and would send real data to an embedding API.
+  Side item with the syllabus parser.
+
+## Next: personas that work together (ideas → tasks)
+
+1. **Shared student context (Kerry, core).** One read-only summary every persona's prompt gets: Dean's next 7 days
+   (deadlines, exams), Penny's budget left, Sunny's joined plans. Lets Sunny say "Dean says you have a midterm Monday".
+   Shape: `Persona.context?(ctx) → string`, engine adds the others' to each prompt. Academic: return the week's work.
+2. **Negotiate in the group chat (Abdullah router + Ismail Dean).** Sunny proposes a plan → router also wakes Dean →
+   Dean calls `check_plan_conflicts` + `grade_impact` and offers 2 options with numbers ("go Saturday and finish Project 1
+   Friday night: grade stays ~91%" vs "skip it: ~64%"). The student picks; Dean replies with the plan. Mostly prompt +
+   router work; the tools exist.
+3. **Friends' personas talk to each other (stretch, Kerry).** "Ask Sam's Sunny when he's free this weekend": needs both
+   users signed up, a consent flag per user, and an agent-to-agent call that returns only free/busy blocks (never grades
+   or money). Demo-able with two mock students.

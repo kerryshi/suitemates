@@ -126,7 +126,9 @@ export class SpectrumTransport implements Transport {
   }
 
   async send(o: Outbound): Promise<void> {
-    const space = o.handle.startsWith("dm:") ? await this.dmSpace(o.persona, o.handle.slice(3)) : this.spaces.get(`${o.persona}|${o.handle}`);
+    const space = o.handle.startsWith("dm:")
+      ? await this.dmSpace(o.persona, o.handle.slice(3))
+      : (this.spaces.get(`${o.persona}|${o.handle}`) ?? this.sharedLineSpace(o));
     if (!space) return console.warn(`[imessage] no space for ${o.persona} ${o.handle}; dropping: ${o.text}`);
     const wait = (this.lastSend.get(o.persona) ?? 0) + SEND_GAP_MS - Date.now();
     if (wait > 0) await new Promise((r) => setTimeout(r, wait));
@@ -153,6 +155,19 @@ export class SpectrumTransport implements Transport {
   // One shared number: every persona texts from it, so a proactive DM ("dm:<phone>"; only engine.trigger makes
   // those) says who it's from, like the group path in engine.ts. Off for a persona with its own *_LINE or
   // *_PROJECT_ID. Replies to the user's own DM are left alone: they texted that persona.
+  // On the shared pool every persona speaks from the number the user texted, but loop() caches that conversation
+  // under the line's persona (DEFAULT_PERSONA). A persona without its own line or project borrows it; dedicated
+  // lines and projects never share a conversation.
+  private sharedLineSpace(o: Outbound): SendableSpace | undefined {
+    const own = (p: string) => Boolean(this.config.lines[p as PersonaId] || this.config.projects[p as PersonaId]);
+    if (own(o.persona)) return undefined;
+    for (const [key, space] of this.spaces) {
+      const [persona, handle] = key.split("|");
+      if (handle === o.handle && !own(persona)) return space;
+    }
+    return undefined;
+  }
+
   private tagged(o: Outbound): string {
     const name = this.config.names[o.persona];
     if (!o.handle.startsWith("dm:") || this.config.lines[o.persona] || this.config.projects[o.persona]) return o.text;

@@ -75,3 +75,34 @@ test("a dropped Photon connection reconnects instead of going deaf", async () =>
   assert.equal(made, 3);
   assert.equal(t.apps.get("shared"), forever);
 });
+
+// Live risk found 2026-10-10: on the shared pool loop() caches a DM's conversation only under the line's persona
+// (DEFAULT_PERSONA), so a reply from the persona pickPersona chose (or a signed-up agent's intro) was dropped.
+const viaLine = async (env: Record<string, string>, cachedAs: Outbound["persona"], o: Outbound) => {
+  const t = new SpectrumTransport(loadConfig(env)) as unknown as { spaces: Map<string, { id: string; send(t: string): Promise<unknown> }>; send(o: Outbound): Promise<void> };
+  const sent: string[] = [];
+  t.spaces.set(`${cachedAs}|${o.handle}`, { id: o.handle, send: async (text) => void sent.push(text) });
+  const warn = console.warn;
+  console.warn = () => {};
+  try {
+    await t.send(o);
+  } finally {
+    console.warn = warn;
+  }
+  return sent;
+};
+
+test("on one shared number, a reply from another persona goes out in the conversation the user texted", async () => {
+  const pool = { DEFAULT_PERSONA: "financial" };
+  assert.deepEqual(await viaLine(pool, "financial", { persona: "academic", handle: "space-abc", text: "Dean: due tuesday" }), ["Dean: due tuesday"]);
+  assert.deepEqual(await viaLine(pool, "financial", { persona: "social", handle: "space-abc", text: "hey, i'm Sunny" }), ["hey, i'm Sunny"]);
+});
+
+test("a persona with its own line or project never borrows another line's conversation", async () => {
+  const dedicated = { DEFAULT_PERSONA: "financial", ACADEMIC_LINE: "+1 (919) 555-0142" };
+  assert.deepEqual(await viaLine(dedicated, "financial", { persona: "academic", handle: "space-abc", text: "Dean: hi" }), []);
+  const ownProject = { DEFAULT_PERSONA: "financial", ACADEMIC_PROJECT_ID: "p", ACADEMIC_PROJECT_SECRET: "s" };
+  assert.deepEqual(await viaLine(ownProject, "financial", { persona: "academic", handle: "space-abc", text: "Dean: hi" }), []);
+  // and a shared-pool persona never speaks through a dedicated persona's conversation
+  assert.deepEqual(await viaLine(dedicated, "academic", { persona: "financial", handle: "space-abc", text: "Penny: hi" }), []);
+});

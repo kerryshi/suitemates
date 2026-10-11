@@ -1,0 +1,41 @@
+# fail-first: on the shared pool a reply from a persona other than the line's was dropped ('no space for academic') — Sat Oct 10 23:25:47 EDT 2026
+✔ one shared number with no *_LINE set routes inbound to DEFAULT_PERSONA, not whichever persona is first (2.164209ms)
+✔ a dedicated line still routes to its persona; an unknown or missing line falls back to DEFAULT_PERSONA (0.299208ms)
+✔ on one shared number a proactive DM says which persona sent it (0.584542ms)
+✔ no tag when that persona has its own line or project, and never twice (0.381791ms)
+✔ replies in the user's own DM or the group are left as they are (proactive only) (0.076292ms)
+[imessage] shared: reconnected
+[imessage] shared: reconnected
+✔ a dropped Photon connection reconnects instead of going deaf (2023.44475ms)
+✖ on one shared number, a reply from another persona goes out in the conversation the user texted (4.951292ms)
+✔ a persona with its own line or project never borrows another line's conversation (0.872833ms)
+ℹ tests 8
+ℹ suites 0
+ℹ pass 7
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 2683.555667
+
+✖ failing tests:
+
+test at tests/transport.test.ts:95:1
+✖ on one shared number, a reply from another persona goes out in the conversation the user texted (4.951292ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+  
+  + []
+  - [
+  -   'Dean: due tuesday'
+  - ]
+  
+      at TestContext.<anonymous> (/private/tmp/claude-501/-Users-kerryshi/b0226024-20be-4e7f-a8a9-b4788532bbb9/scratchpad/wt-drop/tests/transport.test.ts:97:10)
+      at async Test.run (node:internal/test_runner/test:1069:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:752:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: [],
+    expected: [ 'Dean: due tuesday' ],
+    operator: 'deepStrictEqual'
+  }

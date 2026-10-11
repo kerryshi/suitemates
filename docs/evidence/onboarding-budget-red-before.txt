@@ -1,0 +1,37 @@
+# fail-first: a question as the second onboarding text was read as the budget (live: '$60 hoodie' → $60/month) — Sat Oct 10 21:26:14 EDT 2026
+✔ hi → budget → goal finishes onboarding with Canvas linked (0.51025ms)
+✔ a non-number budget is re-asked once, then defaults to 500 (0.146666ms)
+✔ Academic asks only for Canvas, and any answer links the demo Canvas (0.106875ms)
+✖ a question during setup isn't read as the budget: only a plain amount counts (0.486166ms)
+✔ budget parsing handles $ signs, commas and k (0.046708ms)
+✔ a DM from a new user gets onboarding, not the LLM (0.313041ms)
+ℹ tests 6
+ℹ suites 0
+ℹ pass 5
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 144.5145
+
+✖ failing tests:
+
+test at tests/onboarding.test.ts:48:1
+✖ a question during setup isn't read as the budget: only a plain amount counts (0.486166ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  2 !== 1
+  
+      at TestContext.<anonymous> (/private/tmp/claude-501/-Users-kerryshi/b0226024-20be-4e7f-a8a9-b4788532bbb9/scratchpad/wt-onb/tests/onboarding.test.ts:50:10)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1062:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:752:18)
+      at Test.postRun (node:internal/test_runner/test:1191:19)
+      at Test.run (node:internal/test_runner/test:1119:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:752:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 2,
+    expected: 1,
+    operator: 'strictEqual'
+  }

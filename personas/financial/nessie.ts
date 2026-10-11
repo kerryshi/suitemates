@@ -7,6 +7,7 @@ import { fileURLToPath } from "node:url";
 import type { Ctx } from "../../core/types.ts";
 import { loadMock, relativeDate, ymd } from "../../core/kit.ts";
 import { parsePurchaseDate } from "./money.ts";
+import { simulatedHistory } from "./history.ts";
 
 export interface Purchase {
   id: string;
@@ -15,6 +16,7 @@ export interface Purchase {
   at: Date;
   category?: string;
   dateOnly?: boolean; // Nessie only stores the day; watch() stamps today's with the time it first saw them
+  simulated?: boolean; // fake history (history.ts): counts for patterns, never roasted as a new purchase
 }
 
 export interface ExtraPurchase {
@@ -52,7 +54,9 @@ export async function getPurchases(ctx: Ctx): Promise<Purchase[]> {
   if (ctx.mock) {
     const base = loadMock<MockNessie>("nessie-purchases").purchases.map((p) => ({ ...p, at: relativeDate(ctx.now, p) }));
     const extras = readExtras(ctx.user.phone).map((e) => ({ ...e, at: new Date(e.at) }));
-    return [...base, ...extras].sort((a, b) => +b.at - +a.at);
+    // Web sign-ups get six weeks of their own habits to notice (history.ts); the plain demo user keeps just the mock file.
+    const history = ctx.user.signedUpAt ? simulatedHistory(ctx.user.phone, ctx.now) : [];
+    return [...base, ...history, ...extras].sort((a, b) => +b.at - +a.at);
   }
   type Row = { _id: string; description?: string; amount: number; purchase_date?: string; merchant_id?: string };
   let rows: Row[];

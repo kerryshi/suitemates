@@ -28,7 +28,8 @@ export async function watchWith(ctx: Ctx, deps: WatchDeps): Promise<WatchEvent[]
   ctx.kv.set(SEEN_KEY, seen);
   const events: WatchEvent[] = [];
   if (baselined) ctx.log(`baselined ${seen.length} purchases`);
-  for (const p of fresh.slice(0, MAX_PER_POLL)) {
+  // Fake history entering the window as days pass is not a new purchase: no roast for it.
+  for (const p of fresh.filter((x) => !x.simulated).slice(0, MAX_PER_POLL)) {
     const stamped = p.dateOnly && ymd(p.at) === ymd(ctx.now) ? { ...p, at: ctx.now, dateOnly: false } : p;
     const withStamp = all.map((x) => (x.id === p.id ? stamped : x));
     events.push({

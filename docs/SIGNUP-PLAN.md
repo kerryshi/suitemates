@@ -146,3 +146,11 @@ No "text this number to start". Drafted Sat Oct 10 evening by Ismail with Claude
 - Next: Sunny's joined plans (Abdullah), Penny's bills/paydays (Kerry). Two-way (reading their own Google Calendar's
   free/busy so agents avoid real conflicts) needs Google OAuth: a stretch goal.
 - Needs `PUBLIC_URL` (the tunnel) so the link works off this laptop.
+
+## Running it for real (demo setup)
+- `npm run tunnel`: Cloudflare quick tunnel; writes the public address to `data/public-url.txt` and starts a new tunnel
+  if Cloudflare drops it. The server reads that file per request (`core/kit.ts publicUrl`): QR codes and calendar links
+  follow with no restart. `PUBLIC_URL` in `.env` is only a fallback.
+- `TRANSPORT=imessage npm run dev`: the Photon connection now reconnects after network drops (`core/transport.ts keepAlive`).
+- Photon CLI (`npm i -g @photon-ai/cli`, `photon login`, Node ≥ 20.12) + `PHOTON_AUTO_ADD=1`: sign-ups land on the
+  Photon allowlist automatically. `users add` on an existing number overwrites it, so `core/photon-users.ts` lists first.

@@ -16,6 +16,7 @@ import type { PersonaId } from "./types.ts";
 import { cardFor, introTexts, normalizePhone, parseSignup } from "./signup.ts";
 import { photonCliAddUser, type AddUser } from "./photon-users.ts";
 import { calToken, calUrl, calendarItems, toIcs } from "./calendar.ts";
+import { publicUrl } from "./kit.ts";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const AVATARS = new Set(["dean", "penny", "sunny", "dean-icon", "penny-icon", "sunny-icon"]);
@@ -40,7 +41,7 @@ export function startHttp(opts: { engine: Engine; transport: Transport; port: nu
       const path = url.pathname;
       if (path === "/health") return reply(200, { ok: true });
       // The address QR codes should point at (the tunnel), even when the page is opened on localhost.
-      if (path === "/config.json") return reply(200, { publicUrl: (process.env.PUBLIC_URL || "").replace(/\/$/, "") || null });
+      if (path === "/config.json") return reply(200, { publicUrl: publicUrl() ?? null });
       if (req.method === "GET" && path === "/") return file(res, join(ROOT, "web", "index.html"), "text/html; charset=utf-8");
       // The student's shared calendar feed (core/calendar.ts): private link, Google Calendar subscribes to it.
       const cal = /^\/cal\/([\w-]{24})\.ics$/.exec(path);

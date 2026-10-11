@@ -5,6 +5,7 @@ import type { Turn } from "./store.ts";
 
 const MAX_TOOL_ROUNDS = 3;
 const TOOL_TIMEOUT_MS = 10_000;
+const PROACTIVE_HISTORY = 4; // turns of chat a proactive text sees (enough to not repeat itself)
 
 export type Setting = "dm" | "group" | "proactive";
 
@@ -25,9 +26,18 @@ export interface RespondArgs {
 
 export async function respond(a: RespondArgs): Promise<string> {
   const system = `${a.persona.prompt.trim()}\n\n${contextBlock(a)}`;
+  // A proactive text is an instruction from us, not something the student said. Without saying so, a model with
+  // the real chat history in front of it answers the facts as if the student pasted them ("sending my old intro
+  // back at me?") or returns nothing. A short history keeps it from re-answering old turns.
+  const proactive = a.setting === "proactive";
+  const text = proactive
+    ? `${a.text}\n\n(This line is from ${a.product}, not from the student: they haven't said anything new. ` +
+      "Turn these facts into the one text you're sending them now, in your voice. Don't reply to it as a message.)"
+    : a.text;
+  const history = proactive ? a.history.slice(-PROACTIVE_HISTORY) : a.history;
   const messages: LlmMessage[] = [
-    ...a.history.map((t): LlmMessage => (t.role === "user" ? { role: "user", text: t.text } : { role: "model", text: t.text })),
-    { role: "user", text: a.text, image: a.image },
+    ...history.map((t): LlmMessage => (t.role === "user" ? { role: "user", text: t.text } : { role: "model", text: t.text })),
+    { role: "user", text, image: a.image },
   ];
   for (let round = 0; round < MAX_TOOL_ROUNDS; round++) {
     // Proactive texts carry complete facts: no tool round, so a purchase roast lands fast.

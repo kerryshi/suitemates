@@ -76,3 +76,21 @@ test("a failing context is skipped, the reply still goes out", async () => {
     dean.context = real; // persona modules are shared within this test process
   }
 });
+
+test("a proactive text is framed as coming from us, not the student, and sees only the last few turns", async () => {
+  const { respond } = await import("../core/agent.ts");
+  let seen: LlmMessage[] = [];
+  await respond({
+    persona: loadPersonas().get("academic")!,
+    ctx: { user: { phone: "+1", canvasLinked: true, onboardingStep: "done" }, mock: true, now: new Date(), kv: { get: () => undefined, set: () => {} }, log: () => {} },
+    llm: { name: "spy", chat: async (req) => ((seen = req.messages), { text: "ok" }), json: async () => "{}" },
+    history: Array.from({ length: 12 }, (_, i) => ({ role: i % 2 ? ("model" as const) : ("user" as const), text: `turn ${i}` })),
+    text: "[proactive] intro: Hey, I'm Dean.",
+    setting: "proactive",
+    product: "Suitemates",
+    names,
+  });
+  assert.equal(seen.length, 5); // 4 history turns + the instruction
+  const last = seen.at(-1) as Extract<LlmMessage, { role: "user" }>;
+  assert.match(last.text, /^\[proactive\] intro: Hey, I'm Dean\.\n\n\(This line is from Suitemates, not from the student/);
+});

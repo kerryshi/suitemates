@@ -3,6 +3,8 @@
 // (`npm i -g @photon-ai/cli`, then `photon login`), and PHOTON_AUTO_ADD=1. Off or failing → the sign-up stays
 // pending and someone adds them in the dashboard (/admin shows them).
 import { spawn } from "node:child_process";
+import { existsSync } from "node:fs";
+import { join } from "node:path";
 
 export interface AddResult {
   ok: boolean;
@@ -19,9 +21,10 @@ export function safeName(name: string): string {
 
 function run(args: string[], timeoutMs = 20_000): Promise<{ code: number; out: string; err: string }> {
   return new Promise((resolve) => {
-    // Windows needs the .cmd shim, which needs a shell; every argument is validated (E.164 phone, safeName).
-    const win = process.platform === "win32";
-    const child = spawn(win ? "photon.cmd" : "photon", win ? args.map((a) => `"${a}"`) : args, { shell: win, timeout: timeoutMs });
+    // No shell anywhere: on Windows run the CLI's script with this Node (the photon.cmd shim would need one).
+    const script = join(process.env.APPDATA ?? "", "npm", "node_modules", "@photon-ai", "cli", "dist", "photon.js");
+    const [cmd, argv] = process.platform === "win32" && existsSync(script) ? [process.execPath, [script, ...args]] : ["photon", args];
+    const child = spawn(cmd, argv, { timeout: timeoutMs });
     let out = "";
     let err = "";
     child.stdout.on("data", (d) => (out += d));
@@ -39,13 +42,29 @@ export function lineFor(listJson: string, phone: string): string | undefined {
   } catch {
     return undefined;
   }
-  const users = Array.isArray(data) ? data : ((data as { data?: unknown; users?: unknown })?.data ?? (data as { users?: unknown })?.users);
-  if (!Array.isArray(users)) return undefined;
+  // `users list --json` is an array; `users add --json` is one user; tolerate { data } / { users } wrappers too.
+  const wrapped = (data as { data?: unknown; users?: unknown }) ?? {};
+  const inner = Array.isArray(data) ? data : (wrapped.data ?? wrapped.users ?? data);
+  const users = Array.isArray(inner) ? inner : [inner];
   const digits = (s: string) => s.replace(/\D/g, "").slice(-10);
-  const mine = users.find((u) => JSON.stringify(u).replace(/\D/g, "").includes(digits(phone)));
+  const mine = users.find((u) => u && JSON.stringify(u).replace(/\D/g, "").includes(digits(phone))) as { assignedPhoneNumber?: string } | undefined;
   if (!mine) return undefined;
+  // Photon's field (seen live): { phoneNumber, assignedPhoneNumber }. Else any other +1 number in the entry.
+  if (typeof mine.assignedPhoneNumber === "string" && /^\+1\d{10}$/.test(mine.assignedPhoneNumber)) return mine.assignedPhoneNumber;
   const numbers = JSON.stringify(mine).match(/\+1\d{10}/g) ?? [];
   return numbers.find((n) => digits(n) !== digits(phone));
+}
+
+// Is this phone already a user in a `users list --json` dump?
+export function onList(listJson: string, phone: string): boolean {
+  try {
+    const data = JSON.parse(listJson);
+    const users = Array.isArray(data) ? data : (data?.data ?? data?.users ?? []);
+    const d = phone.replace(/\D/g, "").slice(-10);
+    return Array.isArray(users) && users.some((u) => String(u?.phoneNumber ?? "").replace(/\D/g, "").slice(-10) === d);
+  } catch {
+    return false;
+  }
 }
 
 export const photonCliAddUser: AddUser = async (phone, firstName) => {
@@ -54,11 +73,14 @@ export const photonCliAddUser: AddUser = async (phone, firstName) => {
   const project = process.env.SPECTRUM_PROJECT_ID;
   if (!project || !/^[\w-]+$/.test(project)) return { ok: false, error: "SPECTRUM_PROJECT_ID missing" };
   const auth = process.env.PHOTON_API_TOKEN && /^[\w.~-]+$/.test(process.env.PHOTON_API_TOKEN) ? ["-t", process.env.PHOTON_API_TOKEN] : [];
-  const add = await run(["spectrum", "users", "add", "--phone", phone, "--first-name", safeName(firstName), "-p", project, "--json", ...auth]);
-  // Already on the list is fine: we still want their line.
-  if (add.code !== 0 && !/already|exists|409/i.test(add.out + add.err)) {
-    return { ok: false, error: (add.err || add.out || `photon exited ${add.code}`).trim().slice(0, 300) };
-  }
+  // Already on the list → just read their line. `users add` on an existing number UPDATES that person (it overwrote
+  // a real name and email with our placeholders once), so never call it for someone who's already there.
   const list = await run(["spectrum", "users", "list", "-p", project, "--json", ...auth]);
-  return { ok: true, line: (list.code === 0 ? lineFor(list.out, phone) : undefined) ?? (process.env.POOL_NUMBER || undefined) };
+  if (list.code !== 0) return { ok: false, error: (list.err || list.out || `photon exited ${list.code}`).trim().slice(0, 300) };
+  if (onList(list.out, phone)) return { ok: true, line: lineFor(list.out, phone) ?? (process.env.POOL_NUMBER || undefined) };
+  // Non-interactive add needs a last name and an email; we collect neither. Placeholders, and no --invite (no email).
+  const placeholder = ["--last-name", "Suitemates", "--email", `sms-${phone.slice(1)}@example.com`];
+  const add = await run(["spectrum", "users", "add", "--phone", phone, "--first-name", safeName(firstName), ...placeholder, "-p", project, "--json", ...auth]);
+  if (add.code !== 0) return { ok: false, error: (add.err || add.out || `photon exited ${add.code}`).trim().slice(0, 300) };
+  return { ok: true, line: lineFor(add.out, phone) ?? (process.env.POOL_NUMBER || undefined) };
 };

@@ -10,6 +10,7 @@ import { onboard } from "./onboarding.ts";
 // Every persona line in the group chat receives its own copy of each message. Copies with the same
 // sender + text inside this window are one message: the router runs once.
 export const DEDUPE_TTL_MS = 15_000;
+const SHARED_TIMEOUT_MS = 3_000; // Persona.context budget per reply
 
 interface Batch {
   at: number;
@@ -90,7 +91,14 @@ export class Engine {
     });
     this.log(`router → [${chosen.join(", ")}]`);
 
-    const texts = await Promise.all(chosen.map((id) => this.reply(id, user, ev.text ?? "", ev.image, "group")));
+    // In router order, one at a time: each persona sees what the earlier ones just said, so Dean can answer
+    // Sunny's plan with the deadline it collides with instead of talking past it.
+    const texts: string[] = [];
+    for (const id of chosen) {
+      const earlier = texts.map((t, i) => `${this.d.config.names[chosen[i]]}: "${t}"`).join(" ");
+      const text = (ev.text ?? "") + (earlier ? `\n\n(Already said in this chat just now: ${earlier})` : "");
+      texts.push(await this.reply(id, user, text, ev.image, "group"));
+    }
     return chosen.map((id, i): Outbound => {
       const handle = batch.handles.get(id);
       if (handle) return { persona: id, handle, text: texts[i] };
@@ -168,9 +176,30 @@ export class Engine {
     }
   }
 
+  // The other personas' Persona.context lines for this user. A slow or failing one is skipped, never fatal.
+  private async shared(id: PersonaId, user: UserProfile): Promise<string[]> {
+    const others = [...this.d.personas.values()].filter((p) => p.id !== id && p.context);
+    const lines = await Promise.all(
+      others.map(async (p) => {
+        try {
+          let timer: NodeJS.Timeout | undefined;
+          const timeout = new Promise<string>((r) => (timer = setTimeout(() => r(""), SHARED_TIMEOUT_MS)));
+          const line = await Promise.race([p.context!(this.ctx(p.id, user)), timeout]).finally(() => clearTimeout(timer));
+          return line.trim() ? `${this.d.config.names[p.id]}: ${line.trim()}` : "";
+        } catch (err) {
+          this.log(`WARN ${p.id} context failed: ${err instanceof Error ? err.message : err}`);
+          return "";
+        }
+      }),
+    );
+    return lines.filter(Boolean);
+  }
+
   private async replyOrThrow(id: PersonaId, user: UserProfile, text: string, image: Inbound["image"], setting: Setting): Promise<string> {
     const persona = this.d.personas.get(id)!;
+    const shared = setting === "proactive" ? [] : await this.shared(id, user);
     const out = await respond({
+      shared,
       persona,
       ctx: this.ctx(id, user),
       llm: this.d.llm,

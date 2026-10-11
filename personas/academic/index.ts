@@ -3,6 +3,7 @@ import type { Persona } from "../../core/types.ts";
 import { loadText } from "../../core/kit.ts";
 import { tools } from "./tools.ts";
 import { watch, triggers } from "./watch.ts";
+import { schoolContext } from "./conflicts.ts";
 
 const academic: Persona = {
   id: "academic",
@@ -13,6 +14,7 @@ const academic: Persona = {
   tools,
   watch,
   triggers,
+  context: schoolContext,
 };
 
 export default academic;

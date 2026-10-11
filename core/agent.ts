@@ -18,6 +18,7 @@ export interface RespondArgs {
   setting: Setting;
   product: string;
   names: Record<string, string>; // persona id → display name
+  shared?: string[]; // what the other personas know ("Dean: midterm Wednesday"), from Persona.context
 }
 
 export async function respond(a: RespondArgs): Promise<string> {
@@ -73,6 +74,7 @@ function contextBlock(a: RespondArgs): string {
     `- Setting: ${setting}`,
     `- Now: ${a.ctx.now.toLocaleString("en-US", { weekday: "long", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}.`,
     `- User: ${u.name ?? "unknown name"}; monthly budget ${u.budgetMonthly ? `$${u.budgetMonthly}` : "unknown"}; saving for: ${u.savingsGoal ?? "unknown"}.`,
+    ...(a.shared?.length ? [`- What the others know (use it to plan together; don't recite it): ${a.shared.join(" | ")}`] : []),
     "- Write like a text message: 1–3 short sentences, lowercase is fine, no markdown, no headings.",
     "- Get facts from your tools. Never invent numbers, dates, or names.",
   ].join("\n");

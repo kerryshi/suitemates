@@ -17,6 +17,8 @@ case "${1:-}" in
     NODE="$(command -v node)" || { echo "node not on PATH" >&2; exit 1; }
     sed -e "s#__NODE__#$NODE#g" -e "s#__CODE__#$CODE#g" -e "s#__DATA__#$DATA#g" "$CODE/ops/$LABEL.plist" > "$PLIST"
     launchctl bootout "$DOMAIN/$LABEL" 2>/dev/null || true
+    # bootout returns before launchd lets go; bootstrapping too soon fails with "5: Input/output error".
+    for _ in $(seq 20); do launchctl print "$DOMAIN/$LABEL" >/dev/null 2>&1 || break; sleep 0.5; done
     launchctl bootstrap "$DOMAIN" "$PLIST"   # RunAtLoad starts it; a kickstart here would start it twice
     echo "watchdog running: code $CODE, data $DATA, log $DATA/data/logs/watchdog.log"
     ;;

@@ -1,7 +1,6 @@
 // Plan vs deadline: what's due during a plan's day (or weekend) and the day right after it.
 import type { Tool } from "../../core/types.ts";
-import { fmtWhen } from "../../core/kit.ts";
-import { getAssignments, type Assignment } from "./canvas.ts";
+import { getAssignments, describe } from "./canvas.ts";
 
 const DAY_MS = 86_400_000;
 const WEEKDAYS = ["sun", "mon", "tue", "wed", "thu", "fri", "sat"];
@@ -41,10 +40,6 @@ export function planWindow(day: string, now: Date): Window | undefined {
   return undefined;
 }
 
-function line(a: Assignment, now: Date): string {
-  return `${a.course}: ${a.name}${a.type === "exam" ? " (EXAM)" : ""}, due ${fmtWhen(a.due, now)}${a.points ? `, ${a.points} pts` : ""}`;
-}
-
 export const checkPlanConflicts: Tool = {
   name: "check_plan_conflicts",
   description:
@@ -69,9 +64,9 @@ export const checkPlanConflicts: Tool = {
     const head = win.label !== "the next 3 days" ? `Plan: ${win.label}.`
       : asked ? `Couldn't read "${asked}", so checking the next 3 days.` : "No day given, so checking the next 3 days.";
     const body = during.length
-      ? `Due during it or right after:\n${during.map((a) => `- ${line(a, ctx.now)}`).join("\n")}`
+      ? `Due during it or right after:\n${during.map((a) => `- ${describe(a, ctx.now)}`).join("\n")}`
       : "Nothing due during it or right after. Clear.";
-    const exams = examsAfter.length ? `\nExam coming up after: ${examsAfter.map((a) => line(a, ctx.now)).join("; ")}` : "";
+    const exams = examsAfter.length ? `\nExam coming up after: ${examsAfter.map((a) => describe(a, ctx.now)).join("; ")}` : "";
     return `${head}\n${body}${exams}`;
   },
 };

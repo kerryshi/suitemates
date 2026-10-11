@@ -1,5 +1,5 @@
 // Proactive loop: polls watch() for personas in WATCH every WATCH_MS, and fires the named check-ins
-// (Academic morning_due at MORNING_AT, Financial weekly_money at WEEKLY_AT) once per day/week.
+// (Academic morning_due at MORNING_AT and weekly_plan at WEEKLY_PLAN_AT, Financial weekly_money at WEEKLY_AT) once per day/week.
 // For the demo, /demo/trigger fires any of these on cue; this is the "real" schedule.
 import type { App } from "./app.ts";
 import type { Transport } from "./transport.ts";
@@ -12,6 +12,7 @@ export function startScheduler(app: App, transport: Transport) {
   const { engine, config } = app;
   const schedule: { persona: PersonaId; trigger: string; at: string }[] = [
     { persona: "academic", trigger: "morning_due", at: config.MORNING_AT },
+    { persona: "academic", trigger: "weekly_plan", at: process.env.WEEKLY_PLAN_AT ?? "sun 19:00" },
     { persona: "financial", trigger: "weekly_money", at: config.WEEKLY_AT },
   ];
   const fired = new Set<string>();

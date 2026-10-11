@@ -1,0 +1,257 @@
+{
+  "_note": "Fake Canvas for MOCK=1 (Academic only). Dates are relative so the demo works any day: dueInDays 0 = today, dueWeekday \"sun\" = the coming Sunday, daysAgo 3 = three days ago. time is HH:MM local. score = points earned (graded work only). type: assignment | quiz | exam | discussion. announcements: daysAgo + time. weights: assignment-group weights in percent by type (absent = points-based).",
+  "courses": [
+    {
+      "code": "COMP 421",
+      "name": "Files and Databases",
+      "grade": 91.4,
+      "weights": {
+        "exam": 40,
+        "assignment": 45,
+        "quiz": 15
+      },
+      "syllabus": "COMP 421 Files and Databases. Grading: projects and homework 45%, two midterms 40%, quizzes 15%. Midterm 2 covers indexing, B+ trees and query processing. Late work: 10% off per day, max 3 days."
+    },
+    {
+      "code": "STOR 435",
+      "name": "Intro to Probability",
+      "grade": 84.7,
+      "weights": {
+        "exam": 60,
+        "assignment": 25,
+        "quiz": 15
+      },
+      "syllabus": "STOR 435 Intro to Probability. Grading: problem sets 25%, quizzes 15%, Midterm 1 and Midterm 2 60%. Lowest quiz dropped. Office hours Tue/Thu 2-3 PM, Hanes 120."
+    },
+    {
+      "code": "COMP 577",
+      "name": "Computer Vision",
+      "grade": 88.9,
+      "weights": {
+        "exam": 30,
+        "assignment": 55,
+        "quiz": 15
+      },
+      "syllabus": "COMP 577 Computer Vision. Grading: homework 55%, quizzes 15%, final exam 30%. Collaboration allowed on homework, write your own code."
+    },
+    {
+      "code": "ENGL 105",
+      "name": "Writing at the Research University",
+      "grade": 95.2,
+      "syllabus": "ENGL 105 Writing at the Research University. Grading by points: essays, drafts and discussion posts. Essay 2 draft gets peer review in class."
+    }
+  ],
+  "assignments": [
+    {
+      "id": "g1",
+      "course": "COMP 421",
+      "name": "Midterm 1",
+      "type": "exam",
+      "daysAgo": 18,
+      "time": "14:00",
+      "points": 100,
+      "score": 87
+    },
+    {
+      "id": "g2",
+      "course": "COMP 421",
+      "name": "HW3: SQL Queries",
+      "type": "assignment",
+      "daysAgo": 9,
+      "points": 50,
+      "score": 46
+    },
+    {
+      "id": "g3",
+      "course": "COMP 421",
+      "name": "Quiz 3",
+      "type": "quiz",
+      "daysAgo": 4,
+      "time": "10:00",
+      "points": 10,
+      "score": 9
+    },
+    {
+      "id": "g4",
+      "course": "STOR 435",
+      "name": "Midterm 1",
+      "type": "exam",
+      "daysAgo": 20,
+      "time": "09:30",
+      "points": 100,
+      "score": 78
+    },
+    {
+      "id": "g5",
+      "course": "STOR 435",
+      "name": "Problem Set 5",
+      "type": "assignment",
+      "daysAgo": 6,
+      "time": "17:00",
+      "points": 20,
+      "score": 17
+    },
+    {
+      "id": "g6",
+      "course": "STOR 435",
+      "name": "Quiz 4",
+      "type": "quiz",
+      "daysAgo": 3,
+      "time": "09:30",
+      "points": 10,
+      "score": 7
+    },
+    {
+      "id": "g7",
+      "course": "COMP 577",
+      "name": "HW1: Image Filtering",
+      "type": "assignment",
+      "daysAgo": 12,
+      "points": 50,
+      "score": 44
+    },
+    {
+      "id": "g8",
+      "course": "COMP 577",
+      "name": "Quiz 2",
+      "type": "quiz",
+      "daysAgo": 5,
+      "time": "13:00",
+      "points": 10,
+      "score": 8
+    },
+    {
+      "id": "g9",
+      "course": "ENGL 105",
+      "name": "Essay 1: Literacy Narrative",
+      "type": "assignment",
+      "daysAgo": 14,
+      "points": 100,
+      "score": 96
+    },
+    {
+      "id": "g10",
+      "course": "ENGL 105",
+      "name": "Discussion post: peer review",
+      "type": "discussion",
+      "daysAgo": 7,
+      "points": 5,
+      "score": 5
+    },
+    {
+      "id": "a1",
+      "course": "STOR 435",
+      "name": "Problem Set 6",
+      "type": "assignment",
+      "dueInDays": 0,
+      "time": "17:00",
+      "points": 20
+    },
+    {
+      "id": "a2",
+      "course": "ENGL 105",
+      "name": "Discussion post: source analysis",
+      "type": "discussion",
+      "dueInDays": 0,
+      "time": "23:59",
+      "points": 5
+    },
+    {
+      "id": "q1",
+      "course": "COMP 421",
+      "name": "Quiz 4",
+      "type": "quiz",
+      "dueInDays": 2,
+      "time": "10:00",
+      "points": 10
+    },
+    {
+      "id": "a3",
+      "course": "COMP 421",
+      "name": "Project 1: Buffer Pool Manager",
+      "type": "assignment",
+      "dueWeekday": "sun",
+      "time": "23:59",
+      "points": 100
+    },
+    {
+      "id": "a4",
+      "course": "COMP 577",
+      "name": "HW2: Feature Matching",
+      "type": "assignment",
+      "dueInDays": 3,
+      "time": "23:59",
+      "points": 50
+    },
+    {
+      "id": "q2",
+      "course": "COMP 577",
+      "name": "Quiz 3",
+      "type": "quiz",
+      "dueInDays": 4,
+      "time": "13:00",
+      "points": 10
+    },
+    {
+      "id": "a6",
+      "course": "ENGL 105",
+      "name": "Essay 2 draft",
+      "type": "assignment",
+      "dueInDays": 5,
+      "time": "23:59",
+      "points": 50
+    },
+    {
+      "id": "a5",
+      "course": "STOR 435",
+      "name": "Midterm 2",
+      "type": "exam",
+      "dueInDays": 6,
+      "time": "09:30",
+      "points": 100
+    },
+    {
+      "id": "e2",
+      "course": "COMP 421",
+      "name": "Midterm 2",
+      "type": "exam",
+      "dueInDays": 9,
+      "time": "14:00",
+      "points": 100
+    }
+  ],
+  "announcements": [
+    {
+      "id": "n1",
+      "course": "STOR 435",
+      "title": "Midterm 2 room change",
+      "message": "Midterm 2 is in Hamilton 100 instead of our usual room. Bring a calculator and one page of notes.",
+      "daysAgo": 0,
+      "time": "08:15"
+    },
+    {
+      "id": "n2",
+      "course": "COMP 421",
+      "title": "Project 1 autograder is live",
+      "message": "Submit early to see autograder results. Office hours this weekend: Saturday 1-3 PM in SN 011.",
+      "daysAgo": 1,
+      "time": "16:40"
+    },
+    {
+      "id": "n3",
+      "course": "COMP 577",
+      "title": "HW2 clarification",
+      "message": "For HW2, use SIFT from OpenCV for part 1; implementing it from scratch is extra credit only.",
+      "daysAgo": 3,
+      "time": "11:05"
+    },
+    {
+      "id": "n4",
+      "course": "ENGL 105",
+      "title": "Peer review pairs posted",
+      "message": "Peer review pairs for the Essay 2 draft are posted under People > Groups.",
+      "daysAgo": 6,
+      "time": "09:30"
+    }
+  ]
+}

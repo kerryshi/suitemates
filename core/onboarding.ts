@@ -1,4 +1,5 @@
-// First-contact setup: "hi" → monthly budget → one savings goal → Canvas (pre-linked in the demo).
+// First-contact setup. Penny/Sunny: "hi" → monthly budget → one savings goal → Canvas (pre-linked in the demo).
+// Dean (academic): "hi" → one Canvas question → linked (any answer, mock data).
 // Pure: takes the profile, returns the reply and the updated profile. The engine saves it.
 import type { PersonaId, UserProfile } from "./types.ts";
 
@@ -15,6 +16,7 @@ export interface OnboardNames {
 const DEFAULT_BUDGET = 500;
 
 export function onboard(user: UserProfile, text: string, n: OnboardNames): { reply: string; user: UserProfile } {
+  if (n.me === "academic") return onboardAcademic(user, n);
   const u = { ...user };
   switch (u.onboardingStep) {
     case 0:
@@ -48,6 +50,26 @@ export function onboard(user: UserProfile, text: string, n: OnboardNames): { rep
     default:
       return { user: u, reply: "" };
   }
+}
+
+// Academic asks only about school: one Canvas question, any answer links the demo Canvas (mock data).
+function onboardAcademic(user: UserProfile, n: OnboardNames): { reply: string; user: UserProfile } {
+  const u = { ...user };
+  if (u.onboardingStep === 0) {
+    u.onboardingStep = 1;
+    return {
+      user: u,
+      reply:
+        `hey! i'm ${n.academic} from ${n.product} 👋 i keep track of your classes, deadlines and grades. ` +
+        `to get set up, what's your UNC email or Canvas login? (for the demo, anything works)`,
+    };
+  }
+  u.canvasLinked = true; // demo: whatever they send links the mock Canvas
+  u.onboardingStep = "done";
+  return {
+    user: u,
+    reply: `got it, your Canvas is linked ✅ try "what's due this week?" or "how are my grades?"`,
+  };
 }
 
 export function parseBudget(text: string): number | undefined {

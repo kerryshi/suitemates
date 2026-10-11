@@ -1,0 +1,31 @@
+# fail-first: new tests before the recruit/own-number code exists (2026-10-11 00:20, base 45befe1)
+    at finalizeResolution (node:internal/modules/esm/resolve:274:11)
+    at moduleResolve (node:internal/modules/esm/resolve:859:10)
+    at defaultResolve (node:internal/modules/esm/resolve:983:11)
+    at nextResolve (node:internal/modules/esm/hooks:748:28)
+    at resolveBase (file:///Users/kerryshi/Projects/hacknc-agents/node_modules/tsx/dist/register-nyXW-TH3.mjs:2:10494)
+    at async resolveDirectory (file:///Users/kerryshi/Projects/hacknc-agents/node_modules/tsx/dist/register-nyXW-TH3.mjs:2:11575) {
+  code: 'ERR_MODULE_NOT_FOUND',
+  url: 'file:///Users/kerryshi/Projects/hacknc-agents-recruit/core/recruit.ts'
+}
+
+Node.js v24.3.0
+✖ tests/recruit.test.ts (121.47075ms)
+ℹ tests 2
+ℹ suites 0
+ℹ pass 0
+ℹ fail 2
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 209.279542
+
+✖ failing tests:
+
+test at tests/own-numbers.test.ts:1:1
+✖ tests/own-numbers.test.ts (204.652792ms)
+  'test failed'
+
+test at tests/recruit.test.ts:1:1
+✖ tests/recruit.test.ts (121.47075ms)
+  'test failed'

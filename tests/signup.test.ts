@@ -240,7 +240,8 @@ test("one Photon project per agent: each agent's QR adds them to that agent's pr
     const s = await server(undefined, async (phone, _name, agent) => (calls.push([phone, agent]), { ok: true, line: lines[agent!] }));
     try {
       const dean = (await (await s.post("/signup", { agent: "academic", name: "Sam", phone: "9195550123" })).json()) as Record<string, unknown>;
-      assert.deepEqual([dean.status, dean.textTo], ["added", "+16465550001"]);
+      // Own number per agent: the agent texts first right after sign-up (plan v4, core/http.ts), so "invited".
+      assert.deepEqual([dean.status, dean.textTo], ["invited", "+16465550001"]);
       // Later, Penny's QR: already "added", but Penny's project doesn't know them yet → added there too.
       const penny = (await (await s.post("/signup", { agent: "financial", name: "Sam", phone: "9195550123", budget: "600" })).json()) as Record<string, unknown>;
       assert.equal(penny.textTo, "+16465550002");

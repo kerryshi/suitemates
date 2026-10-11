@@ -7,7 +7,7 @@ const MAX_TOOL_ROUNDS = 3;
 const TOOL_TIMEOUT_MS = 10_000;
 const PROACTIVE_HISTORY = 4; // turns of chat a proactive text sees (enough to not repeat itself)
 
-export type Setting = "dm" | "group" | "proactive";
+export type Setting = "dm" | "group" | "proactive" | "recruit";
 
 const FOCUS = { school: "ace their classes", money: "save money", social: "meet people", balance: "keep school, money and social life balanced" };
 
@@ -34,7 +34,8 @@ export async function respond(a: RespondArgs): Promise<string> {
     ? `${a.text}\n\n(This line is from ${a.product}, not from the student: they haven't said anything new. ` +
       "Turn these facts into the one text you're sending them now, in your voice. Don't reply to it as a message.)"
     : a.text;
-  const history = proactive ? a.history.slice(-PROACTIVE_HISTORY) : a.history;
+  // A recruit handoff is also a text sent first: same short history, but with tools (it answers a real question).
+  const history = proactive || a.setting === "recruit" ? a.history.slice(-PROACTIVE_HISTORY) : a.history;
   const messages: LlmMessage[] = [
     ...history.map((t): LlmMessage => (t.role === "user" ? { role: "user", text: t.text } : { role: "model", text: t.text })),
     { role: "user", text, image: a.image },
@@ -79,6 +80,9 @@ function contextBlock(a: RespondArgs): string {
     dm: "a 1:1 iMessage conversation with the user.",
     group: `the group chat with the user, ${others}. Speak ONLY about your own area; the others cover theirs. One short text.`,
     proactive: "a text you are sending first, unprompted. One short text; no question unless it helps.",
+    recruit:
+      "a text you are sending first, from your own number, because another agent just brought you in (the brief says why). " +
+      "Your hello was already sent. Answer the question with your tools in one or two short lines.",
   }[a.setting];
   return [
     "## Context (written by core — do not repeat it back)",

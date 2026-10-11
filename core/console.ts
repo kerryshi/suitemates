@@ -4,6 +4,7 @@ import { createInterface } from "node:readline";
 import { PERSONA_IDS, type Inbound, type Outbound, type PersonaId } from "./types.ts";
 import type { App } from "./app.ts";
 import type { Transport } from "./transport.ts";
+import { listNotes } from "./memory.ts";
 
 export const DEMO_USER = "+19195550001";
 type Mode = PersonaId | "group";
@@ -17,6 +18,7 @@ const HELP = `commands:
   /reset                   forget this user (re-onboard)
   /trigger <persona> <name>   fire a proactive message, e.g. /trigger academic morning_due
   /who                     show the user profile
+  /notes                   show what the agents remember about this user
   /quit`;
 
 export class ConsoleTransport implements Transport {
@@ -71,6 +73,10 @@ export class ConsoleTransport implements Transport {
       case "/as":
         this.sender = rest[0] ?? DEMO_USER;
         return;
+      case "/notes": {
+        const notes = listNotes(this.app.store, this.sender);
+        return console.log(notes.length ? notes.map((n) => `  - ${this.app.config.names[n.by]}: ${n.text}`).join("\n") : "  (nothing yet)");
+      }
       case "/who":
         return console.log(`  ${JSON.stringify(this.app.store.user(this.sender))}`);
       case "/reset":

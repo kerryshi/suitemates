@@ -13,7 +13,7 @@ interface State {
   users: Record<string, UserProfile>;
   history: Record<string, Turn[]>; // "<persona>:<phone>"
   seen: Record<string, number>; // delivered WatchEvent dedupeKeys → epoch ms
-  kv: Record<string, Record<string, unknown>>; // "<persona>:<phone>"
+  kv: Record<string, Record<string, unknown>>; // "<persona|shared>:<phone>"
 }
 
 const HISTORY_TURNS = 12;
@@ -75,8 +75,8 @@ export class Store {
     return true;
   }
 
-  kv(persona: PersonaId, phone: string) {
-    const key = `${persona}:${phone}`;
+  kv(ns: PersonaId | "shared", phone: string) {
+    const key = `${ns}:${phone}`;
     return {
       get: <T>(k: string) => this.state.kv[key]?.[k] as T | undefined,
       set: (k: string, v: unknown) => {

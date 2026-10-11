@@ -1,0 +1,19 @@
+Suitemates chat · LLM=gemini:gemini-3.6-flash · MOCK=1 · state=data/chat-state.json
+
+  <text>                   send as the current user
+
+(not onboarded yet: say "hi", or /skip)
++19195550001 → Penny> /skip
+  onboarded: budget $600/month, saving for spring break, $400
++19195550001 → Penny> fyi i'm vegetarian and i don't have a car
+[core] financial: tool remember({"note":"is vegetarian and has no car"})
+  [Penny] noted! honestly no car means zero gas and no parking fees, which is a massive win for the spring break fund 💸
++19195550001 → Penny> /to academic
++19195550001 → Dean> what should i eat before my exam saturday?
+[core] academic: tool get_due_assignments({"days":14,"kind":"exam"})
+[core] academic: tool get_due_assignments({"days":14})
+[core] academic: tool get_announcements({})
+  [Dean] Your next exam is actually STOR 435 Midterm 2 on Friday at 9:30 AM—there's no exam this Saturday. On test mornings, go with steady energy like oatmeal, eggs, or peanut butter toast so you don't crash halfway through. Just keep it light and avoid anything super heavy or high-sugar right before.
++19195550001 → Dean> /notes
+  - Penny: is vegetarian and has no car
++19195550001 → Dean> /quit

@@ -1,0 +1,72 @@
+# fail-first: review follow-ups (keyless question saved as a note; phone numbers saved; persona 'remember' tool allowed) — Sat Oct 10 23:37:18 EDT 2026
+✔ Penny remembers a fact and Dean sees it in his next prompt, with no extra call to save it (17.835625ms)
+✔ resetting a user clears their notes (1.632959ms)
+✔ notes keep the newest 15, skip duplicates, and refuse balances and grades (0.707375ms)
+✔ every agent gets remember in DMs and the group; proactive texts see the notes but get no tools (1.914958ms)
+✔ keyless: 'remember: …' saves the note through the stand-in model (1.185708ms)
+✖ keyless: an ordinary question is never saved as a note; only an explicit 'remember: …' is (1.172792ms)
+✖ phone numbers are refused like balances and grades (0.686ms)
+✖ a persona can't define its own 'remember' tool (core adds one to every persona) (0.500041ms)
+ℹ tests 8
+ℹ suites 0
+ℹ pass 5
+ℹ fail 3
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 195.914917
+
+✖ failing tests:
+
+test at tests/memory.test.ts:105:1
+✖ keyless: an ordinary question is never saved as a note; only an explicit 'remember: …' is (1.172792ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+  
+  + [
+  +   {
+  +     at: '2026-10-11T03:37:19.383Z',
+  +     by: 'academic',
+  +     text: 'what should i focus on this semester'
+  +   }
+  + ]
+  - []
+  
+      at TestContext.<anonymous> (/private/tmp/claude-501/-Users-kerryshi/b0226024-20be-4e7f-a8a9-b4788532bbb9/scratchpad/wt-mem/tests/memory.test.ts:108:10)
+      at async Test.run (node:internal/test_runner/test:1069:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:752:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: [ { text: 'what should i focus on this semester', by: 'academic', at: '2026-10-11T03:37:19.383Z' } ],
+    expected: [],
+    operator: 'deepStrictEqual'
+  }
+
+test at tests/memory.test.ts:111:1
+✖ phone numbers are refused like balances and grades (0.686ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  'saved' !== 'private'
+  
+      at TestContext.<anonymous> (/private/tmp/claude-501/-Users-kerryshi/b0226024-20be-4e7f-a8a9-b4788532bbb9/scratchpad/wt-mem/tests/memory.test.ts:114:10)
+      at async Test.run (node:internal/test_runner/test:1069:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:752:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'saved',
+    expected: 'private',
+    operator: 'strictEqual'
+  }
+
+test at tests/memory.test.ts:119:1
+✖ a persona can't define its own 'remember' tool (core adds one to every persona) (0.500041ms)
+  AssertionError [ERR_ASSERTION]: Missing expected exception.
+      at TestContext.<anonymous> (/private/tmp/claude-501/-Users-kerryshi/b0226024-20be-4e7f-a8a9-b4788532bbb9/scratchpad/wt-mem/tests/memory.test.ts:123:10)
+      at async Test.run (node:internal/test_runner/test:1069:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:752:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: undefined,
+    expected: /remember/,
+    operator: 'throws'
+  }

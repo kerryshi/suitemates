@@ -194,3 +194,17 @@ test("Photon helpers: pool line from the users list, CLI-safe names", () => {
   assert.equal(safeName("Zoë O'Neil"), "Zoë O'Neil");
   assert.equal(safeName('Sam"; rm -rf /'), "Friend");
 });
+
+test("lineFor reads Photon's real shape: users list array and a single user from add", () => {
+  const user = { id: "u", type: "shared", phoneNumber: "+19195550123", assignedPhoneNumber: "+16465550177", meta: { opt_in: true } };
+  assert.equal(lineFor(JSON.stringify([{ phoneNumber: "+19195550000", assignedPhoneNumber: "+16465550000" }, user]), "+19195550123"), "+16465550177");
+  assert.equal(lineFor(JSON.stringify(user), "+19195550123"), "+16465550177");
+});
+
+test("onList: someone already in Photon is recognised (so we never re-add and overwrite them)", async () => {
+  const { onList } = await import("../core/photon-users.ts");
+  const list = JSON.stringify([{ phoneNumber: "+19195550123", assignedPhoneNumber: "+16465550177" }]);
+  assert.equal(onList(list, "+19195550123"), true);
+  assert.equal(onList(list, "+19195550999"), false);
+  assert.equal(onList("nope", "+19195550123"), false);
+});

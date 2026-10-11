@@ -20,3 +20,69 @@
 ℹ pass 238
 ℹ fail 0
 typecheck clean
+
+# review round (3-lens adversarial workflow wf_2f0075b7-bf4: SHIP WITH FIXES), red before fix 2026-10-11 02:09
+✖ review #1: a non-answer to Penny keeps Sunny's offer; a later yes to Sunny still brings Dean (3.935625ms)
+✖ review #2: 'ok option 1' to Dean (answering his own 'your call') goes to Dean, doesn't recruit Penny or drop her offer (3.044834ms)
+✖ review #2b: in another agent's thread only a real yes counts, not 'ok' / 'k' / 'bet' (3.14125ms)
+✔ review #4: the party window is ~3 minutes: a yes to Penny at 2.5 min still counts (2.408583ms)
+ℹ pass 11
+ℹ fail 3
+✖ review #1: a non-answer to Penny keeps Sunny's offer; a later yes to Sunny still brings Dean (3.935625ms)
+✖ review #2: 'ok option 1' to Dean (answering his own 'your call') goes to Dean, doesn't recruit Penny or drop her offer (3.044834ms)
+✖ review #2b: in another agent's thread only a real yes counts, not 'ok' / 'k' / 'bet' (3.14125ms)
+
+# green after fix
+✔ review #1: a non-answer to Penny keeps Sunny's offer; a later yes to Sunny still brings Dean (5.264166ms)
+✔ review #2: 'ok option 1' to Dean (answering his own 'your call') goes to Dean, doesn't recruit Penny or drop her offer (3.27825ms)
+✔ review #2b: in another agent's thread only a real yes counts, not 'ok' / 'k' / 'bet' (4.149625ms)
+✔ review #4: the party window is ~3 minutes: a yes to Penny at 2.5 min still counts (2.795875ms)
+ℹ pass 14
+ℹ fail 0
+ℹ tests 242
+ℹ pass 242
+ℹ fail 0
+typecheck clean
+
+# reviewers' probe scenarios on the fixed tree (A, B, C1, C2, D)
+=== A: has Sunny+Penny; Penny's hand-off answer asks her own question; judge says 'yes' to Penny
+  judge → Sunny: "I'm going on the beach trip Saturday"
+      Sunny: you're in for wrightsville saturday 9 am 🏖️ want dean to check your deadlines? 👀
+      Penny: beach is ~$45, only 9% of your $476 left 💸 want me to set aside $45 for it?
+  judge → Penny: "yes"
+      Penny: Penny normal reply
+  photon adds: ["academic"]; pending after: [{"id":"academic","ask":"check saturday","consent":"pending"}]
+=== B: has Sunny+Penny; judge reacts to Penny ('thanks penny'), then answers Sunny 'yes'
+  judge → Sunny: "I'm going on the beach trip Saturday"
+      Sunny: you're in for wrightsville saturday 9 am 🏖️ want dean to check your deadlines? 👀
+      Penny: beach is ~$45, only 9% of your $476 left 💸 want me to set aside $45 for it?
+  judge → Penny: "thanks penny"
+      Penny: Penny normal reply
+  pending after Penny reply: [{"id":"academic","ask":"check saturday","consent":"pending"}]
+  judge → Sunny: "yes"
+      Sunny: on it! Dean is texting you now from their own number 📲 (nothing showing? check Messages → Unknown Senders)
+      Dean: Dean normal reply
+      Dean: Dean normal reply
+      Dean: midterm 2 is saturday 9:30 💀 option 1: take it then go (~85%). option 2: skip it, ~61%. your call.
+  photon adds: ["academic"]
+=== C1: has Sunny+Dean; Dean gives options; judge picks 'ok option 1' in Dean's thread
+  judge → Sunny: "I'm going on the beach trip Saturday"
+      Sunny: you're in for wrightsville saturday 9 am 🏖️ want dean to check your deadlines? 👀
+      Dean: midterm 2 is saturday 9:30 💀 option 1: take it then go (~85%). option 2: skip it, ~61%. your call.
+  judge → Dean: "ok option 1"
+      Dean: Dean normal reply
+  photon adds: ["financial"]
+=== C2: has Sunny+Dean; judge tells Dean 'no i'll skip it'
+  judge → Sunny: "I'm going on the beach trip Saturday"
+      Sunny: you're in for wrightsville saturday 9 am 🏖️ want dean to check your deadlines? 👀
+      Dean: midterm 2 is saturday 9:30 💀 option 1: take it then go (~85%). option 2: skip it, ~61%. your call.
+  judge → Dean: "no i'll skip it"
+      Dean: Dean normal reply
+  pending after: [{"id":"financial","ask":"price the beach trip","consent":"pending"}]
+=== D: has Penny+Sunny; Penny brings Sunny (answers now) + offers Dean; Sunny asks 'want in?'; judge 'yes' to Sunny
+  judge → Penny: "beach saturday, can i afford it"
+      Penny: beach is ~$45, 9% of what's left 💸 want dean to check saturday?
+      Sunny: ismail, omar and priya are going saturday 9 am 🏖️ want in? 🙌
+  judge → Sunny: "yes"
+      Sunny: Sunny normal reply
+  photon adds: ["academic"]

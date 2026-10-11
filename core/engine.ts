@@ -8,7 +8,7 @@ import { introTexts } from "./signup.ts";
 import { keywordScores } from "./router.ts";
 import { onboard } from "./onboarding.ts";
 import { withMemory } from "./memory.ts";
-import { ackText, answersOffer, consentFromText, getPending, recruitTool, runRecruit, setPending } from "./recruit.ts";
+import { ackText, answersOffer, consentFromText, getPending, PLAIN_YES, recruitTool, runRecruit, setPending } from "./recruit.ts";
 import { photonProjectFor, type AddResult, type AddUser } from "./photon-users.ts";
 
 const SHARED_TIMEOUT_MS = 3_000; // Persona.context budget per reply
@@ -74,14 +74,19 @@ export class Engine {
     const offer = getPending(this.d.store, user.phone);
     if (offer && answersOffer(offer, persona, ev.lineKnown, this.now())) {
       const waiting = offer.agents.filter((a) => a.consent === "pending");
-      if (waiting.length) {
-        const answer = consentFromText(ev.text ?? "");
+      const answer = consentFromText(ev.text ?? "");
+      // In another hand-off agent's thread (they replied where the last text landed) only a plain yes accepts, and not
+      // when that agent just asked its own question. Anything else is for that agent, and the offer stays open.
+      const side = Boolean(ev.lineKnown) && offer.from !== persona;
+      const ownQuestion = side && /\?|your call/i.test(this.d.store.history(persona, user.phone).at(-1)?.text ?? "");
+      const accepts = !side || (answer === "yes" && PLAIN_YES.test(ev.text ?? "") && !ownQuestion);
+      if (waiting.length && accepts) {
         setPending(this.d.store, user.phone, { ...offer, agents: offer.agents.filter((a) => a.consent !== "pending") }); // one shot
         if (answer === "no") return [{ persona, handle: ev.handle, text: "no worries 👍" }];
         if (answer === "yes") {
           const r = await runRecruit(this, user.phone, { ...offer, agents: waiting });
           const ids = waiting.map((a) => a.id);
-          return [{ persona, handle: ev.handle, text: ackText(this.d.config.names, ids, r.viaFrom) }, ...r.out];
+          return [{ persona, handle: ev.handle, text: ackText(this.d.config.names, ids, r.viaFrom, undefined, side ? offer.from : undefined) }, ...r.out];
         }
       }
     }

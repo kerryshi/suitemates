@@ -46,6 +46,9 @@ export const setPending = (store: Store, phone: string, p: Pending | undefined) 
 const YES = /^\s*(y|ya|yes|yea|yeah|yep|yup|sure|ok|okay|k|please|pls|do it|go ahead|sounds good|bet|let'?s go|absolutely|of course)\b/i;
 const NO = /\b(n|no|nah|nope|not now|no thanks|nvm|never ?mind|don'?t)\b/i;
 // A short answer to the offer. "no" anywhere wins ("please no"); a question or a long message isn't an answer.
+// In another agent's thread (not the offerer's) only a plain yes accepts; "ok" / "k" / "bet" there are about that agent.
+export const PLAIN_YES = /^\s*(y|ya|yes|yea|yeah|yep|yup|sure)\b/i;
+
 export function consentFromText(text: string): "yes" | "no" | undefined {
   if (NO.test(text) && text.trim().split(/\s+/).length <= 5) return "no";
   if (text.includes("?") || text.trim().split(/\s+/).length > 4) return undefined;
@@ -191,13 +194,22 @@ export async function runRecruit(engine: Engine, phone: string, p: Pending): Pro
 
 // The offering agent's "on it", sent before the others' texts land. Only an agent on its own Photon project texts
 // from its own number; on one shared project (or via) it jumps in here, name-tagged.
-export function ackText(names: Record<PersonaId, string>, ids: PersonaId[], viaFrom: PersonaId[], ownNumber = (id: PersonaId) => photonProjectFor(id).own): string {
+// viaThread: the offerer, when the yes came in another agent's thread: a fallback agent speaks in the offerer's thread.
+export function ackText(
+  names: Record<PersonaId, string>,
+  ids: PersonaId[],
+  viaFrom: PersonaId[],
+  ownNumber = (id: PersonaId) => photonProjectFor(id).own,
+  viaThread?: PersonaId,
+): string {
   const own = ids.filter((id) => !viaFrom.includes(id) && ownNumber(id)).map((id) => names[id]);
-  const here = ids.filter((id) => viaFrom.includes(id) || !ownNumber(id)).map((id) => names[id]);
+  const there = viaThread ? ids.filter((id) => viaFrom.includes(id)).map((id) => names[id]) : [];
+  const here = ids.filter((id) => (viaFrom.includes(id) && !viaThread) || (!viaFrom.includes(id) && !ownNumber(id))).map((id) => names[id]);
   const and = (xs: string[]) => xs.join(" and ");
   const parts = [
     own.length ? `${and(own)} ${own.length > 1 ? "are" : "is"} texting you now from ${own.length > 1 ? "their own numbers" : "their own number"} 📲` : "",
     here.length ? `${and(here)} ${here.length > 1 ? "are" : "is"} jumping in right here` : "",
+    there.length ? `${and(there)} ${there.length > 1 ? "are" : "is"} jumping in over in ${names[viaThread!]}'s thread` : "",
   ].filter(Boolean);
   const filter = own.length ? " (nothing showing? check Messages → Unknown Senders)" : "";
   return `on it! ${parts.join(", and ")}${filter}`;

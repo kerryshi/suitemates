@@ -164,3 +164,62 @@ test("a 'yes' to an agent outside the hand-off still doesn't accept it", async (
   const out = await s.engine.handle({ persona: "financial", sender: PHONE, text: "yes", handle: "penny-space", messageId: "y2", lineKnown: true } as Inbound);
   assert.ok(!out.some((o) => o.persona === "academic"));
 });
+
+// Review of kerry/yes-any-thread (3-lens workflow): another hand-off agent's thread may only ACCEPT, never consume.
+function partySetup(lastFromDean?: string) {
+  const s = setup(0, { agents: ["social", "financial", "academic"].slice(0, lastFromDean ? 3 : 2) as PersonaId[], greeted: ["social", "financial", "academic"].slice(0, lastFromDean ? 3 : 2) as PersonaId[] });
+  (s.engine.d as { llm: LlmClient }).llm = {
+    ...spy,
+    chat: async (req) => {
+      const last = req.messages.at(-1) as LlmMessage;
+      if (/You are Sunny,/.test(req.system) && last.role === "user" && /beach/i.test(last.text))
+        return { toolCalls: lastFromDean
+          ? [{ name: "bring_in", args: { agent: "academic", ask: "check saturday" } }, { name: "bring_in", args: { agent: "financial", ask: "price it" } }]
+          : [{ name: "bring_in", args: { agent: "financial", ask: "price it" } }, { name: "bring_in", args: { agent: "academic", ask: "check saturday" } }] };
+      if (lastFromDean && /You are Dean,/.test(req.system) && last.role === "user" && last.text.startsWith("[handoff")) return { text: lastFromDean };
+      return spy.chat(req);
+    },
+  };
+  const to = (persona: PersonaId, text: string) => s.engine.handle({ persona, sender: PHONE, text, handle: `${persona}-space`, messageId: `x${Math.random()}`, lineKnown: true } as Inbound);
+  return { s, to };
+}
+
+test("review #1: a non-answer to Penny keeps Sunny's offer; a later yes to Sunny still brings Dean", async () => {
+  const { s, to } = partySetup();
+  await to("social", "I'm going on the beach trip Saturday");
+  const thanks = await to("financial", "thanks penny");
+  assert.deepEqual(thanks.map((o) => [o.persona, o.text]), [["financial", "Penny reply"]], "Penny hears it");
+  const yes = await to("social", "yes");
+  assert.ok(yes.some((o) => o.persona === "academic" && o.text === "Dean answer"), JSON.stringify(yes.map((o) => [o.persona, o.text])));
+  void s;
+});
+
+test("review #2: 'ok option 1' to Dean (answering his own 'your call') goes to Dean, doesn't recruit Penny or drop her offer", async () => {
+  // They have Sunny and Dean: Sunny brings Dean (theirs: answers at once, ending in a question) and offers Penny.
+  const { s, to } = partySetup("option 1: take it then go (~85%). option 2: skip it (~61%). your call.");
+  s.store.saveUser({ ...s.store.user(PHONE), agents: ["social", "academic"], greeted: ["social", "academic"] });
+  await to("social", "I'm going on the beach trip Saturday");
+  const ok = await to("academic", "ok option 1");
+  assert.ok(!ok.some((o) => o.persona === "financial"), "Penny not recruited off Dean's question");
+  assert.deepEqual(ok.map((o) => o.persona), ["academic"]);
+  const yes = await to("social", "yes"); // the offer is still there in Sunny's thread
+  assert.ok(yes.some((o) => o.persona === "financial" && o.text === "Penny answer"));
+});
+
+test("review #2b: in another agent's thread only a real yes counts, not 'ok' / 'k' / 'bet'", async () => {
+  const { to } = partySetup();
+  await to("social", "I'm going on the beach trip Saturday");
+  const ok = await to("financial", "ok");
+  assert.deepEqual(ok.map((o) => o.persona), ["financial"]);
+  const yes = await to("financial", "yeah");
+  assert.ok(yes.some((o) => o.persona === "academic" && o.text === "Dean answer"));
+});
+
+test("review #4: the party window is ~3 minutes: a yes to Penny at 2.5 min still counts", async () => {
+  const { s, to } = partySetup();
+  await to("social", "I'm going on the beach trip Saturday");
+  const at = Date.now() + 150_000;
+  (s.engine as unknown as { now: () => number }).now = () => at;
+  const yes = await to("financial", "yes");
+  assert.ok(yes.some((o) => o.persona === "academic" && o.text === "Dean answer"));
+});

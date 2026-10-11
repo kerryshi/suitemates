@@ -20,6 +20,7 @@ import {
 } from "./board.ts";
 import { categoriesOf, fitNote, fits, isCategory, rankByFit } from "./interests.ts";
 import { PITCHED_KEY } from "./watch.ts";
+import { calendarLink } from "./calendar.ts";
 
 export type { Activity } from "./board.ts";
 
@@ -146,7 +147,7 @@ const startActivity: Tool = {
     const same = args.new_plan === true ? undefined : findDuplicate(b, name);
     if (same) return `Similar plan already exists: ${describe(b, same, ctx)}. Ask if they want to join it (join_activity) or really start a separate one (new_plan true).`;
     const cost = typeof args.cost === "number" && args.cost > 0 ? args.cost : undefined;
-    const a: Activity = { id: slug(name, b.activities), name, when, ...(cost ? { costEstimate: cost } : {}), signups: [] };
+    const a: Activity = { id: slug(name, b.activities), name, when, ...(cost ? { costEstimate: cost } : {}), signups: [], createdAt: ctx.now.getTime() };
     b.activities.push(a);
     addSignup(b, a, ctx.user.phone);
     const named = rememberUser(b, ctx, str(args.my_name));
@@ -212,4 +213,4 @@ const findMatches: Tool = {
   },
 };
 
-export const tools: Tool[] = [listSignups, joinActivity, leaveActivity, startActivity, findMatches];
+export const tools: Tool[] = [listSignups, joinActivity, leaveActivity, startActivity, findMatches, calendarLink];

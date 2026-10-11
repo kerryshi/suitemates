@@ -22,5 +22,6 @@ Sign-ups persist in `data/social.json` (shared by chat + dev). Reset between reh
 - [ ] Create the group chat by hand in iMessage; write the steps in STATUS
 
 ## Shared calendar (added by Ismail, see docs/SIGNUP-PLAN.md)
-- [ ] `calendar(ctx)` in `index.ts`: the plans this student joined as `CalendarItem`s (`{ id: "social:<plan id>", title, start, end }`).
+- [x] `calendar(ctx)` in `index.ts` (`calendar.ts`): the plans this student joined as `CalendarItem`s (`{ id: "social:<plan id>", title, start, end }`).
+      Free-text times ("Sunday 4 PM", "tomorrow at 3pm") go on their next day, 2-hour blocks; a plan with no day stays off. Sunny also has `calendar_link`.
       They land in the student's Google Calendar feed next to Dean's deadlines (`core/calendar.ts`, `/cal/<token>.ics`).

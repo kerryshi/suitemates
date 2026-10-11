@@ -440,3 +440,123 @@ test("review: watching sports as an interest doesn't fit pickup games", async ()
   assert.deepEqual(fits(soccer, ["football fan"]), []);
   assert.deepEqual(fits(soccer, ["football"]), ["football"]);
 });
+
+// ---- shared calendar: the plans they joined ----
+test("parseWhen reads plan times from the day the plan was made", async () => {
+  const { parseWhen } = await import("./calendar.ts");
+  const made = new Date(2026, 9, 10, 22, 0); // made Saturday 10 PM
+  const at = (w: string) => {
+    const r = parseWhen(w, made);
+    const hm = (d: Date) => `${d.getMonth() + 1}/${d.getDate()} ${d.getHours()}:${String(d.getMinutes()).padStart(2, "0")}`;
+    return r && `${hm(r.start)}${r.end ? ` to ${hm(r.end)}` : ""}${r.timed ? "" : " untimed"}`;
+  };
+  assert.equal(at("Sunday 4 PM"), "10/11 16:00");
+  assert.equal(at("Saturday 9 AM"), "10/17 9:00"); // 9 AM had passed when it was made
+  assert.equal(at("Friday 8 PM"), "10/16 20:00");
+  assert.equal(at("Sat 10:30am"), "10/17 10:30");
+  assert.equal(at("tomorrow at 3pm"), "10/11 15:00");
+  assert.equal(at("tonight"), "10/10 20:00 untimed");
+  assert.equal(at("Thursday noon"), "10/15 12:00");
+  assert.equal(at("Sunday 16:00"), "10/11 16:00");
+  assert.equal(at("Sunday"), "10/11 12:00 untimed");
+  assert.equal(at("whenever"), undefined);
+});
+
+test("review: ranges, a.m./p.m. spellings, no-meridiem hours, day parts, plurals", async () => {
+  const { parseWhen } = await import("./calendar.ts");
+  const made = new Date(2026, 9, 10, 22, 0);
+  const hm = (w: string) => {
+    const r = parseWhen(w, made)!;
+    const f = (d: Date) => `${d.getHours()}:${String(d.getMinutes()).padStart(2, "0")}`;
+    return `${f(r.start)}${r.end ? `-${f(r.end)}` : ""}${r.timed ? "" : " untimed"}`;
+  };
+  assert.equal(hm("Sunday 4-6 PM"), "16:00-18:00");
+  assert.equal(hm("Sunday 4 - 6pm"), "16:00-18:00");
+  assert.equal(hm("sunday 11am-1pm"), "11:00-13:00");
+  assert.equal(hm("Sunday 4PM-6PM"), "16:00-18:00");
+  assert.equal(hm("Sunday at 4:00"), "16:00");
+  assert.equal(hm("Wed 7:30"), "19:30");
+  assert.equal(hm("Sat 10:30"), "10:30");
+  assert.equal(hm("Sunday 4 p.m."), "16:00");
+  assert.equal(hm("Sun 4p"), "16:00");
+  assert.equal(hm("Sunday 4.30pm"), "16:30");
+  assert.equal(hm("Friday night"), "20:00 untimed");
+  assert.equal(hm("Saturday afternoon"), "15:00 untimed");
+  assert.equal(hm("Sundays 4pm"), "16:00");
+  assert.equal(hm("5v5 basketball Sunday"), "12:00 untimed"); // "5v5" isn't 5 o'clock
+});
+
+test("review: a plan never moves on later refreshes, and the DST week keeps its wall-clock time", async () => {
+  const { parseWhen, plansCalendar } = await import("./calendar.ts");
+  const made = new Date(2026, 9, 10, 22, 0);
+  const t1 = parseWhen("tomorrow at 3pm", made)!.start.getTime();
+  assert.equal(parseWhen("tomorrow at 3pm", made)!.start.getTime(), t1);
+  // The calendar reads from the plan's createdAt, not from now: same event on Sunday night and Monday.
+  const c = (now: Date) => ({ ...ctx(), now });
+  await run("start_activity", { name: "Frisbee on the quad", when: "Sunday 4 PM" }, c(made));
+  const sunNight = await plansCalendar(c(new Date(2026, 9, 11, 21, 0)));
+  const monday = await plansCalendar(c(new Date(2026, 9, 12, 10, 0)));
+  assert.equal(sunNight[0].start.getTime(), monday[0].start.getTime());
+  assert.equal(monday[0].start.getDate(), 11);
+  const dst = parseWhen("Saturday 9 AM", new Date(2026, 9, 31, 12, 0))!.start; // across Nov 1 fall-back
+  assert.deepEqual([dst.getDate(), dst.getHours()], [7, 9]);
+});
+
+test("calendar has only the plans they joined, as 2-hour blocks with who's going", async () => {
+  const { plansCalendar } = await import("./calendar.ts");
+  const c = { ...ctx(), now: new Date(2026, 9, 10, 22, 0) };
+  assert.deepEqual(await plansCalendar(c), []);
+  await run("join_activity", { activity: "soccer" });
+  await run("join_activity", { activity: "boba" });
+  const items = await plansCalendar(c);
+  assert.deepEqual(items.map((i) => i.id), ["social:soccer", "social:boba"]);
+  const soccer = items[0];
+  assert.equal(soccer.title, "Pickup soccer at Hooker Fields");
+  assert.equal(soccer.end!.getTime() - soccer.start.getTime(), 2 * 3_600_000);
+  assert.equal(soccer.note, "With Omar, Priya, Sam (from Sunny)");
+  assert.equal(items[1].note, "With Sam, about $7 (from Sunny)");
+  await run("leave_activity", { activity: "boba" });
+  assert.deepEqual((await plansCalendar(c)).map((i) => i.id), ["social:soccer"]);
+});
+
+test("a plan with no day stays off the calendar; an untimed one says so", async () => {
+  const { plansCalendar } = await import("./calendar.ts");
+  const c = { ...ctx(), now: new Date(2026, 9, 10, 22, 0) };
+  await run("start_activity", { name: "Chess club", when: "whenever we can" });
+  await run("start_activity", { name: "Kayak at Jordan Lake", when: "Sunday" });
+  const items = await plansCalendar(c);
+  assert.deepEqual(items.map((i) => i.title), ["Kayak at Jordan Lake"]);
+  assert.match(items[0].note!, /^With just you so far\. Time not set yet \("Sunday"\) \(from Sunny\)$/);
+});
+
+test("Sunny is wired for the shared calendar and can hand out the link herself", async () => {
+  const p = loadPersonas().get("social")!;
+  assert.equal(typeof p.calendar, "function");
+  const out = await run("calendar_link", {});
+  assert.match(out, /^Their private calendar link: http.*\/cal\/[A-Za-z0-9_-]+\.ics/);
+  assert.doesNotMatch(out, /19195550001/); // the link isn't the phone number
+});
+
+test("end to end: a Sunny-only student's .ics feed has the plan they joined", async () => {
+  const { Engine } = await import("../../core/engine.ts");
+  const { Store } = await import("../../core/store.ts");
+  const { FakeLlm } = await import("../../core/llm/fake.ts");
+  const { calendarItems, toIcs } = await import("../../core/calendar.ts");
+  const store = new Store(null);
+  store.saveUser({ ...store.user(NEW), name: "Jordan", onboardingStep: "done", agents: ["social"] });
+  const engine = new Engine({
+    personas: loadPersonas(),
+    store,
+    llm: new FakeLlm(),
+    config: { names: { academic: "Dean", financial: "Penny", social: "Sunny" }, PRODUCT_NAME: "Suitemates", mock: true, fakeRoute: undefined, GROUP_SETTLE_MS: 10 },
+    routerPrompt: "",
+    log: () => {},
+  });
+  await run("join_activity", { activity: "soccer", my_name: "Jordan" }, ctx(NEW));
+  const items = await calendarItems(engine, NEW);
+  assert.deepEqual(items.map((i) => i.id), ["social:soccer"]); // no school items: Sunny is their only agent
+  const ics = toIcs(items, "Suitemates · Jordan");
+  assert.match(ics, /UID:social:soccer@suitemates\r\n/);
+  assert.match(ics, /SUMMARY:Pickup soccer at Hooker Fields\r\n/);
+  assert.match(ics, /DESCRIPTION:With Omar\\, Priya\\, Sam \(from Sunny\)\r\n/);
+});

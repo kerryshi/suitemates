@@ -15,11 +15,13 @@ export interface Activity {
   costEstimate?: number;
   signups: string[]; // phones
   joinedAt?: Record<string, number>; // phone → board.seq when they joined live (seeded sign-ups have none; kept after leaving)
+  createdAt?: number; // epoch ms, plans made with start_activity: "tomorrow"/"Sunday" are read from this day (calendar.ts)
 }
 
 export interface Board {
   gen?: string; // new on every reseed, so watch() dedupeKeys from a rehearsal don't block the live demo
   seq?: number; // join counter: orders live joins
+  seededAt?: number; // epoch ms the board was seeded: the seeded plans' "Saturday 9 AM" is read from this day
   students: { phone: string; name: string }[];
   activities: Activity[];
 }
@@ -42,7 +44,7 @@ function boardFile(): string | null {
 
 function seed(): Board {
   const { students, activities } = loadMock<Board>("students");
-  return { gen: `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`, seq: 0, students, activities };
+  return { gen: `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`, seq: 0, seededAt: Date.now(), students, activities };
 }
 
 // Save a fresh seed right away so its gen stays put until the next reset.

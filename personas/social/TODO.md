@@ -20,3 +20,7 @@ Sign-ups persist in `data/social.json` (shared by chat + dev). Reset between reh
 - [x] Sunny `intro` trigger (`watch.ts`): hello + the open plan that best fits their sign-up interests, with who's in; no fit → the most popular plan. Fired by /admin "send intro"; on cue: `npm run trigger -- social intro +1<phone>`
 - [x] Use `user.interests` from sign-up (`interests.ts`): categories map to plans by name; `list_signups` and `find_matches` put fits first and say so; `find_matches` takes a category ("outdoors")
 - [ ] Create the group chat by hand in iMessage; write the steps in STATUS
+
+## Shared calendar (added by Ismail, see docs/SIGNUP-PLAN.md)
+- [ ] `calendar(ctx)` in `index.ts`: the plans this student joined as `CalendarItem`s (`{ id: "social:<plan id>", title, start, end }`).
+      They land in the student's Google Calendar feed next to Dean's deadlines (`core/calendar.ts`, `/cal/<token>.ics`).

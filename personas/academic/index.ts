@@ -4,6 +4,7 @@ import { loadText } from "../../core/kit.ts";
 import { tools } from "./tools.ts";
 import { watch, triggers } from "./watch.ts";
 import { schoolContext } from "./conflicts.ts";
+import { schoolCalendar } from "./calendar.ts";
 
 const academic: Persona = {
   id: "academic",
@@ -15,6 +16,7 @@ const academic: Persona = {
   watch,
   triggers,
   context: schoolContext,
+  calendar: schoolCalendar,
 };
 
 export default academic;

@@ -1,5 +1,6 @@
 // Small helpers personas may import (alongside core/types.ts).
 import { readFileSync } from "node:fs";
+import { createHmac } from "node:crypto";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 
@@ -39,4 +40,16 @@ export function relativeDate(now: Date, r: { dueInDays?: number; dueWeekday?: st
 export function fmtWhen(d: Date, now: Date): string {
   const day = ymd(d) === ymd(now) ? "today" : d.toLocaleDateString("en-US", { weekday: "long" });
   return `${day} ${d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}`;
+}
+
+// The student's private shared-calendar link (served by core/http.ts from core/calendar.ts). The token is an
+// HMAC of the phone: unguessable, nothing stored.
+export function calToken(phone: string): string {
+  const secret = process.env.CAL_SECRET || process.env.SPECTRUM_PROJECT_SECRET || "dev-only-calendar-secret";
+  return createHmac("sha256", secret).update(phone).digest("base64url").slice(0, 24);
+}
+
+export function calUrl(phone: string): string {
+  const base = (process.env.PUBLIC_URL || `http://localhost:${process.env.PORT || 3000}`).replace(/\/$/, "");
+  return `${base}/cal/${calToken(phone)}.ics`;
 }

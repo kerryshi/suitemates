@@ -138,3 +138,11 @@ No "text this number to start". Drafted Sat Oct 10 evening by Ismail with Claude
   the one with the most keyword hits (`keywordScores`) → the last one you talked to. Replies are name-tagged when you
   have more than one. A dedicated line (`Inbound.lineKnown`) always answers as itself.
 - Sharing data: `Persona.context` (prompts) today; next, a shared calendar (see below).
+
+## Shared calendar → Google Calendar (built)
+- `Persona.calendar?(ctx) → CalendarItem[]`; `core/calendar.ts` merges the student's agents into one iCalendar feed at
+  `/cal/<token>.ics` (token = HMAC of the phone). Google Calendar → Other calendars → From URL subscribes, no OAuth.
+- Dean: next 3 weeks of deadlines (30-min block ending at the due time) and exams (75 min). Tool `calendar_link`.
+- Next: Sunny's joined plans (Abdullah), Penny's bills/paydays (Kerry). Two-way (reading their own Google Calendar's
+  free/busy so agents avoid real conflicts) needs Google OAuth: a stretch goal.
+- Needs `PUBLIC_URL` (the tunnel) so the link works off this laptop.

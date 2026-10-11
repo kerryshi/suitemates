@@ -10,6 +10,7 @@ import { onboard } from "./onboarding.ts";
 import { withMemory } from "./memory.ts";
 import { ackText, answersOffer, consentFromText, getPending, PLAIN_YES, recruitTool, runRecruit, setPending } from "./recruit.ts";
 import { photonProjectFor, type AddResult, type AddUser } from "./photon-users.ts";
+import { govern } from "./governance.ts";
 
 const SHARED_TIMEOUT_MS = 3_000; // Persona.context budget per reply
 
@@ -272,7 +273,8 @@ export class Engine {
           }
         : remembered;
     const shared = setting === "proactive" ? [] : await this.shared(id, user);
-    const out = await respond({
+    const started = this.now();
+    const raw = await respond({
       shared,
       persona,
       ctx: this.ctx(id, user),
@@ -285,6 +287,13 @@ export class Engine {
       names: this.d.config.names,
     });
     const said = setting === "proactive" || setting === "recruit" ? [] : [{ role: "user" as const, text }];
+    // Governance (core/governance.ts): a text may only say another agent is texting if that hand-off went out this
+    // turn (bring_in exists only in DM turns). Checked before history, so a false claim isn't re-read next turn.
+    const made = getPending(this.d.store, user.phone);
+    const dispatched = setting === "dm" && made && made.from === id && made.offeredAt >= started ? made.agents.filter((a) => a.consent !== "pending").map((a) => a.id) : [];
+    const v = govern(raw, { persona: id, setting, trace: [], dispatched, alreadyIn: [] }, this.d.config.names);
+    for (const h of v.hits) this.log(`${id}: governed ${h.rule}: ${h.detail}`);
+    const out = v.text;
     this.d.store.pushHistory(id, user.phone, ...said, { role: "model", text: out });
     return out;
   }

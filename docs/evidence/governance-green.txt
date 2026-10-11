@@ -1,0 +1,6 @@
+# kerry/governance green — 2026-10-11 03:31:43 EDT
+ℹ tests 283
+ℹ pass 275
+ℹ fail 0
+ℹ todo 8
+tsc clean

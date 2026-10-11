@@ -1,0 +1,10 @@
+✖ Penny: an NYC trip is not priced as the beach trip (02:07 '$45') (1.097458ms)
+✖ Dean: a day he can't read is never reported clear (02:08 'clear for fall break') (14.885125ms)
+✖ G1: a claim that another agent is texting, when no hand-off went out, is rewritten (01:59 Penny) (0.220458ms)
+✔ G1: true claims and plain mentions pass byte-for-byte (0.100167ms)
+ℹ pass 1
+ℹ fail 3
+✖ failing tests:
+✖ Penny: an NYC trip is not priced as the beach trip (02:07 '$45') (1.097458ms)
+✖ Dean: a day he can't read is never reported clear (02:08 'clear for fall break') (14.885125ms)
+✖ G1: a claim that another agent is texting, when no hand-off went out, is rewritten (01:59 Penny) (0.220458ms)

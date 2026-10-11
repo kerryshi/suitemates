@@ -84,7 +84,8 @@ export class SpectrumTransport implements Transport {
       if (!sender || this.isOurLine(sender)) continue;
       const c = message.content;
       let ev: Inbound | null = null;
-      const base = { persona, kind: im.type === "group" ? ("group" as const) : ("dm" as const), sender, handle: space.id, messageId: message.id };
+      const lineKnown = this.apps.get(persona) === app || this.isOurLine(im.phone);
+      const base = { persona, lineKnown, kind: im.type === "group" ? ("group" as const) : ("dm" as const), sender, handle: space.id, messageId: message.id };
       if (c.type === "text" && c.text) {
         if (this.isEcho(c.text)) continue;
         ev = { ...base, text: c.text };

@@ -35,8 +35,16 @@ const STOP = new Set(
 
 // Fallback + keyless mode: a persona wakes if any 4+ letter word of its routerLine appears in the text.
 export function keywordRoute(text: string, personas: Map<PersonaId, Persona>): PersonaId[] {
+  return [...keywordScores(text, personas)].filter(([, n]) => n > 0).map(([id]) => id);
+}
+
+// How many distinct routerLine words each persona has in the text (DM routing on a shared number picks the max).
+export function keywordScores(text: string, personas: Map<PersonaId, Persona>): Map<PersonaId, number> {
   const words = new Set(text.toLowerCase().match(/[a-z]+/g)?.map(stem) ?? []);
-  return [...personas.values()]
-    .filter((p) => (p.routerLine.toLowerCase().match(/[a-z]{4,}/g) ?? []).some((w) => !STOP.has(w) && words.has(stem(w))))
-    .map((p) => p.id);
+  return new Map(
+    [...personas.values()].map((p) => {
+      const line = new Set((p.routerLine.toLowerCase().match(/[a-z]{4,}/g) ?? []).filter((w) => !STOP.has(w)).map(stem));
+      return [p.id, [...line].filter((w) => words.has(w)).length] as const;
+    }),
+  );
 }

@@ -34,6 +34,12 @@ export function parseSignup(
     .slice(0, 10);
   const focus = FOCUS.find((f) => f === body.focus);
   const win = String(body.win ?? "").trim().slice(0, 160);
+  // One agent's QR (body.agent) signs you up with that agent and only touches its fields; the old all-in-one form
+  // (no agent) signs you up with all three. Answers given to another agent are kept: the backend is shared.
+  const agent = AGENTS.find((a) => a === body.agent);
+  if (body.agent !== undefined && !agent) return { error: "Unknown agent." };
+  const has = (field: string) => body[field] !== undefined && body[field] !== "";
+  const forMe = (who: PersonaId) => !agent || agent === who;
   return {
     user: {
       ...existing,
@@ -41,16 +47,19 @@ export function parseSignup(
       name,
       ...(focus ? { focus } : {}),
       ...(win ? { win } : {}),
-      budgetMonthly: budget ?? existing.budgetMonthly ?? 500,
-      savingsGoal: goal || existing.savingsGoal || "an emergency fund",
-      interests,
-      canvasLinked: body.canvas !== false, // demo: mock Canvas unless they opt out
+      budgetMonthly: (forMe("financial") ? budget : undefined) ?? existing.budgetMonthly ?? 500,
+      savingsGoal: (forMe("financial") && goal) || existing.savingsGoal || "an emergency fund",
+      interests: forMe("social") && (has("interests") || !agent) ? interests : existing.interests ?? [],
+      canvasLinked: forMe("academic") ? body.canvas !== false : existing.canvasLinked, // demo: mock Canvas unless they opt out
       onboardingStep: "done",
       signupStatus: existing.signupStatus ?? "pending",
       signedUpAt: existing.signedUpAt ?? now.toISOString(),
+      agents: [...new Set([...(existing.agents ?? []), ...(agent ? [agent] : AGENTS)])],
     },
   };
 }
+
+const AGENTS: PersonaId[] = ["academic", "financial", "social"];
 
 const AVATAR: Record<PersonaId, string> = { academic: "dean", financial: "penny", social: "sunny" };
 const ROLE: Record<PersonaId, string> = { academic: "school", financial: "money", social: "plans" };

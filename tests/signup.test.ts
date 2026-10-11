@@ -28,6 +28,7 @@ test("parseSignup fills the profile, skips text onboarding, and needs a name", (
     {
       phone: "+19195550123", name: "Sam", budgetMonthly: 700, savingsGoal: "an emergency fund", interests: ["gym", "food"],
       canvasLinked: true, onboardingStep: "done", signupStatus: "pending", signedUpAt: "1970-01-01T00:00:00.000Z",
+      agents: ["academic", "financial", "social"],
     },
   );
   assert.deepEqual(parseSignup({ phone: "9195550123", name: "" }, blank), { error: "Tell us your first name." });
@@ -148,7 +149,7 @@ test("QR flow: sign up → added to Photon → page gets the number → their 'h
   const calls: [string, string][] = [];
   const s = await server(undefined, async (phone, name) => (calls.push([phone, name]), { ok: true, line: "+16465550177" }));
   try {
-    assert.equal((await fetch(s.base + "/qr")).status, 200);
+    assert.equal((await fetch(s.base + "/qr")).status, 200); // old poster URL → landing
     const res = await s.post("/signup", { name: "Sam", phone: "(919) 555-0123" });
     assert.deepEqual(await res.json(), { ok: true, name: "Sam", status: "added", textTo: "+16465550177" });
     assert.deepEqual(calls, [["+19195550123", "Sam"]]);

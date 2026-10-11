@@ -1,9 +1,21 @@
 # STATUS: hacknc-agents (team build)
 
-Last updated: 2026-10-10 18:45 EDT · Devpost due Sun 10:00 AM · repo github.com/kerryshi/hacknc-agents (private)
+Last updated: 2026-10-10 23:40 EDT · Devpost due Sun 10:00 AM · repo github.com/kerryshi/hacknc-agents (private)
 Plan of record: `docs/PLAN.md` (architect). Owners: Kerry = core + Financial, Ismail = Academic, Abdullah = Social.
 
-## Where we are (main = a599349)
+## Where we are (main, 23:40)
+- Tonight 21:00–23:40 (all merged, `npm test` 173/173, typecheck clean):
+  - #13: onboarding takes only a plain amount as the budget (a question like "can i afford a $60 hoodie?" was read as $60).
+  - #18: `/admin*` and `/demo/trigger` are never public without `DEMO_TOKEN`; `npm run tunnel` refuses to start without it.
+    Verified through a real Cloudflare quick tunnel: /admin/signups and /demo/trigger → 403, /health → 200.
+  - #19: on the shared pool, replies and intros from a persona other than the line's (Dean, Sunny via pickPersona) were
+    dropped ("no space for academic"); they now go out in the conversation the user texted.
+  - Shared memory (`core/memory.ts`): `remember` on every agent, notes in every prompt, `/notes`. Live with Gemini 23:28:
+    Penny saved "is vegetarian and has no car" unprompted (`docs/evidence/memory-live.txt`).
+  - Ismail: web sign-up with per-agent QR codes, Photon auto-add, contact cards, DM routing among a user's agents
+    (`Engine.pickPersona`), shared calendar feed, per-person Canvas, tunnel + Photon reconnect. Abdullah: Heel Life events (#17).
+- Gemini works on the free tier with Kerry's new key: `check-gemini` OK 21:18; Penny live over iMessage 21:3x; a three-persona
+  group message ran clean in the terminal at 21:44 (7 calls). Free-tier limits are a few calls a minute: space demo messages.
 - All three personas are on main: Social PR #1 (59e47cb) and PR #2 (squash a924976: watch() match + hot-plan texts, review fixes),
   Academic (a00e502: check_plan_conflicts + tests), Financial (0de7113: Penny + Nessie), Penny wakes on "how much is…" (b60fc06).
 - Names: Suitemates, Dean (academic), Penny (financial), Sunny (social); defaults in core/config.ts and `.env.example`.
@@ -23,7 +35,10 @@ Plan of record: `docs/PLAN.md` (architect). Owners: Kerry = core + Financial, Is
 - Ruling (Kerry, 17:55): the pool doesn't block the demo. Pitch: per-persona numbers + agent-made group chats are a plan-tier
   upgrade (Business = dedicated lines), not a rewrite. Core already routes by line (`core/transport.ts:62`, `:128`): set
   `*_LINE` and it works. Never run on dedicated lines, so say "designed for", not "tested on".
-- Ruling 2026-10-10 (Kerry): DMs → Penny (DEFAULT_PERSONA=financial); Dean and Sunny answer in the iMessage group via the router.
+- Rulings 21:50–22:15 (Kerry): real iMessage group chats don't work on the Pro pool (Photon: no group creation; a test group
+  text arrived as a DM). Instead, DMs on Kerry's hub number will go through the router (up to 2 agents, tagged) behind
+  `DM_ROUTER=1`, re-planned on top of Ismail's `pickPersona`; not built yet. Teammates' persona numbers stay 1:1 on their own
+  servers (default off). Memory is per server: notes on the hub don't reach Ismail's Dean or Abdullah's Sunny.
 - iMessage works one-to-one on the Pro pool (17:36–17:39, `docs/evidence/imessage-roundtrip.txt`): Kerry's texts reached the
   server, went to Penny, and onboarding completed; Kerry confirmed Penny's first reply arrived. The fix was adding the phone
   under Photon Users (otherwise `Target not allowed`). That run was LLM=fake/MOCK=1, and the roast after onboarding was not
@@ -31,10 +46,9 @@ Plan of record: `docs/PLAN.md` (architect). Owners: Kerry = core + Financial, Is
 - Nessie verified live 18:36 (PR #9, `docs/evidence/nessie-live-run.txt`): `npm run buy` → GET 200 → one Penny event 2 s later,
   console transport, FAKE_LLM=1. Needed PR #8: a purchase POSTed without `status` made every later GET 400, and Nessie has no
   DELETE route, so the first sandbox account is abandoned (`data/nessie.json.poisoned`). Nessie drops cents: demo uses whole dollars.
-- Gemini: Kerry's key is valid (first call returned a correct functionCall) but every call after that gets 429 quota exceeded on
-  gemini-3.6-flash and 3.5-flash, even after 65 s idle. A key- or project-level limit; Kerry is getting a better key. No Gemini calls until then.
-- NOT yet run for real: Gemini (Social join/match has only run keyless, where the fake LLM calls `join_activity({})` and can't join),
-  iMessage group chat, Canvas.
+- NOT yet run for real: iMessage group chat (not supported on Pro); Sunny's join/match over iMessage with Gemini.
+  Canvas: see `personas/academic/TODO.md` (Ismail).
+- Demo risk: Dean's and Sunny's own numbers depend on Ismail's and Abdullah's laptops staying up during judging.
 
 ## Demo runbook
 - Penny purchase on real Nessie: `MOCK=0 npm run buy -- Sheetz 4`. Whole dollars only (ruling 2026-10-10, Kerry): the sandbox stores
@@ -50,15 +64,14 @@ Plan of record: `docs/PLAN.md` (architect). Owners: Kerry = core + Financial, Is
 - Join/match needs `GEMINI_API_KEY`; keyless only lists plans.
 
 ## Next (Kerry)
-1. A Gemini key with quota (the current one 429s) → `npm run check-gemini` → a scripted social session (two phones join soccer/boba, find matches, leave).
+1. Judging host (this Mac): `photon login` (or PHOTON_API_TOKEN), then `.env`: `PHOTON_AUTO_ADD=1` and a long random `DEMO_TOKEN`;
+   restart `npm run dev` on latest main; `npm run tunnel`. Admin page over the tunnel: `<url>/admin?token=<DEMO_TOKEN>`.
 2. `.env.example` (names done in the kerry/review-fixes merge; Claude's Read is denied `.env.*`): add `NESSIE_OWNER_PHONE=` (unset = every onboarded phone gets
    Penny's purchase and weekly texts, `personas/financial/watch.ts:18`) and `NESSIE_MERCHANT_ID=` (printed by `npm run setup-nessie`).
 3. Photon one-to-one works (see "Where we are"). For every tester, add their phone under Photon Users first. `.env`:
    `SPECTRUM_PROJECT_ID/SECRET`, `DEFAULT_PERSONA=financial`, no `*_LINE` → `TRANSPORT=imessage npm run dev`.
 4. Nessie: key and sandbox account are set up (`data/nessie.json`). Still to do: set `NESSIE_OWNER_PHONE` in `.env` to your phone before the demo.
-5. iMessage group: create it by hand (your phone, the pool number, and teammates already on the Users allowlist), send
-   "I'm going on the beach trip Saturday", expect replies from Sunny plus Dean and/or Penny. Untested on the Pro pool; open risk:
-   whether a group thread reaches us when members are routed through different pool numbers (Photon bullet above).
+5. DM router on the hub (`DM_ROUTER=1`): plan ready (on top of `pickPersona`), waiting on Kerry's go.
 
 ## Open questions
 - `getPurchases` tolerates only 404 (`personas/financial/nessie.ts:58-61`): any other Nessie error logs on every poll. Follow-up.

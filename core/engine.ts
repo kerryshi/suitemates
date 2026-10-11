@@ -7,6 +7,7 @@ import { respond, type Setting } from "./agent.ts";
 import { introTexts } from "./signup.ts";
 import { keywordScores, route } from "./router.ts";
 import { onboard } from "./onboarding.ts";
+import { withMemory } from "./memory.ts";
 
 // Every persona line in the group chat receives its own copy of each message. Copies with the same
 // sender + text inside this window are one message: the router runs once.
@@ -225,7 +226,7 @@ export class Engine {
   }
 
   private async replyOrThrow(id: PersonaId, user: UserProfile, text: string, image: Inbound["image"], setting: Setting): Promise<string> {
-    const persona = this.d.personas.get(id)!;
+    const persona = withMemory(this.d.personas.get(id)!, { store: this.d.store, user, names: this.d.config.names, text });
     const shared = setting === "proactive" ? [] : await this.shared(id, user);
     const out = await respond({
       shared,

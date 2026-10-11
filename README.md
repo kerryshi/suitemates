@@ -59,6 +59,10 @@ scheduler ─────────┘      └ router (Gemini JSON, keyword f
 - **DM:** onboarding (budget → goal → Canvas) until done, then the persona answers with its tools.
 - **Group chat:** each persona's number receives its own copy of every message. Core treats the copies as one message, runs the router once, and each chosen persona replies from its own number.
 - **Proactive:** `watch()` / `triggers` → events → core composes → DM from that persona's number.
+- **Shared memory:** every agent gets a core `remember` tool for durable facts the user mentions ("vegetarian, no car").
+  All three agents see the user's newest 15 notes in every prompt, so reading them costs no Gemini call; saving rides along
+  with the agent's other tool calls. No exact balances or grades. Notes live per server (`data/state.json`), `/reset` clears
+  them, `/notes` in `npm run chat` lists them (`core/memory.ts`). Nothing to change in your persona folder; don't name a tool `remember`.
 
 **Numbers and plan tiers.** The design above gives each persona its own number, which is Photon's Business plan
 (dedicated lines). For the demo we run on the Pro plan, a shared pool: each tester is added to the project's allowlist and
@@ -102,7 +106,7 @@ Built at HackNC 2026 by Kerry Shi (@kerryshi), Ismail (@ismail-gasmi) and Abdull
 
 ## Layout
 ```
-core/        Kerry: engine, router runner, agent loop, Gemini, Photon transport, scheduler, /demo/trigger, store
+core/        Kerry: engine, router runner, agent loop, Gemini, Photon transport, scheduler, /demo/trigger, store, memory
 personas/    one folder per persona, owned by one person (see TEAM.md)
 mock/        fake Canvas courses, Nessie purchases, students + sign-ups (dates are relative to today)
 scripts/     chat, trigger, check-gemini

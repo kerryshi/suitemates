@@ -1,0 +1,10 @@
+  /notes                   show what the agents remember about this user
++19195550001 → Penny> remember: vegetarian, no car
+[core] financial: tool remember({})
+  [Penny] (fake LLM) remember → saved: vegetarian, no car
++19195550001 → Dean> remember that i work tuesdays
+[core] academic: tool remember({})
+  [Dean] (fake LLM) remember → saved: i work tuesdays
++19195550001 → Dean> /notes
+  - Penny: vegetarian, no car
+  - Dean: i work tuesdays

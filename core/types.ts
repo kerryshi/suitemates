@@ -22,6 +22,7 @@ export interface UserProfile {
   greeted?: PersonaId[]; // agents that already sent their intro + contact card
   lastAgent?: PersonaId; // who answered their last DM (shared pool: replies go back to them by default)
   signedUpAt?: string; // ISO
+  canvasToken?: string; // their own Canvas access token (Dean's sign-up). Server-side only: never logged or listed.
 }
 
 // What every tool, watch() and trigger receives.
@@ -71,6 +72,9 @@ export interface Persona {
   // What this persona puts on the student's shared calendar (core/calendar.ts serves it as an .ics feed Google
   // Calendar subscribes to): Dean's deadlines and exams, Sunny's plans they joined. Optional.
   calendar?(ctx: Ctx): Promise<CalendarItem[]>;
+  // Check this agent's own web sign-up fields (e.g. Dean verifies a Canvas token) and say what to save on the
+  // profile. An error blocks the sign-up with that message. Optional.
+  signup?(body: Record<string, unknown>, ctx: Ctx): Promise<{ error: string } | { profile: Partial<UserProfile>; note?: string }>;
 }
 
 export interface CalendarItem {

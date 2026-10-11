@@ -103,3 +103,42 @@ test("a dedicated line always answers as itself; one agent → no name tag", asy
     s.close();
   }
 });
+
+test("Dean's sign-up checks a Canvas token with Canvas before saving it; it's never listed; it turns on live Canvas", async () => {
+  const realFetch = globalThis.fetch;
+  globalThis.fetch = (async (url: string | URL | Request, init?: RequestInit) => {
+    if (!String(url).includes("instructure.com")) return realFetch(url, init);
+    const auth = new Headers(init?.headers).get("authorization");
+    return auth === "Bearer 1234~goodgoodgoodgoodgoodgood"
+      ? new Response(JSON.stringify({ name: "Sam Lee", short_name: "Sam" }), { status: 200 })
+      : new Response("unauthorized", { status: 401 });
+  }) as typeof fetch;
+  const s = await setup();
+  try {
+    assert.deepEqual(await s.signup({ agent: "academic", canvasToken: "nope" }), {
+      error: "That doesn't look like a Canvas token. Copy it again from Canvas → Account → Settings.",
+    });
+    assert.match(String((await s.signup({ agent: "academic", canvasToken: "1234~badbadbadbadbadbadbad" })).error), /didn't accept that token/);
+    assert.equal(s.store.user(PHONE).signedUpAt, undefined); // nothing saved on a failed check
+
+    const ok = await s.signup({ agent: "academic", canvasToken: " 1234~goodgoodgoodgoodgoodgood " });
+    assert.equal(ok.note, "Connected to Sam's Canvas.");
+    assert.equal(s.store.user(PHONE).canvasToken, "1234~goodgoodgoodgoodgoodgood");
+    assert.doesNotMatch(await (await fetch(s.base + "/admin/signups")).text(), /goodgood/);
+
+    const { isLive } = await import("../personas/academic/canvas.ts");
+    const ctx = { user: s.store.user(PHONE), mock: true, now: new Date(), kv: { get: () => undefined, set: () => {} }, log: () => {} };
+    const live = process.env.CANVAS_LIVE;
+    process.env.CANVAS_LIVE = "1";
+    try {
+      assert.equal(isLive(ctx), true); // their own token, no CANVAS_OWNER_PHONE needed
+      assert.equal(isLive({ ...ctx, user: { ...ctx.user, canvasToken: undefined } }), false);
+    } finally {
+      if (live === undefined) delete process.env.CANVAS_LIVE;
+      else process.env.CANVAS_LIVE = live;
+    }
+  } finally {
+    globalThis.fetch = realFetch;
+    s.close();
+  }
+});

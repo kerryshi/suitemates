@@ -22,7 +22,7 @@ Already working (keyless): `MOCK=1 npm run chat -- academic` then type `what's d
 ## Sign-up flow (see docs/SIGNUP-PLAN.md)
 - [x] `intro` trigger: Dean texts first after sign-up (`/demo/trigger?persona=academic&name=intro&phone=…`)
 - [x] `web/index.html` sign-up page + `web/admin.html` (send intro) → `POST /signup`, `/admin/intro`
-- [ ] Canvas layer prep: per-user token (`ctx.user.canvasToken`) → env `CANVAS_TOKEN` → mock
+- [x] Per-person Canvas: token on Dean's sign-up form, checked with Canvas, saved server-side (`UserProfile.canvasToken`) → env token for the owner → mock
 
 ## Fake Canvas + school-only setup (Sat night)
 - [x] `mock-canvas.json`: 4 classes with grades, graded assignments/quizzes/exams, this week's assignments + quizzes, exams soon

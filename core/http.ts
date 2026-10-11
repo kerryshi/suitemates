@@ -74,6 +74,11 @@ export function startHttp(opts: { engine: Engine; transport: Transport; port: nu
         if (!phone) return reply(400, { error: "Enter a 10-digit US phone number." });
         const r = parseSignup(params, store.user(phone));
         if ("error" in r) return reply(400, r);
+        // The chosen agent checks its own fields (Dean: a Canvas token) before anything is saved.
+        const persona = typeof params.agent === "string" ? engine.d.personas.get(params.agent as PersonaId) : undefined;
+        const own = persona?.signup ? await persona.signup(params, engine.ctx(persona.id, r.user)) : { profile: {} };
+        if ("error" in own) return reply(400, own);
+        Object.assign(r.user, own.profile);
         // Put them on the Photon allowlist so their first text gets through, and find the number they text.
         const fresh = r.user.signupStatus === "pending";
         const added = fresh ? await addUser(phone, r.user.name ?? "") : { ok: true };
@@ -82,7 +87,7 @@ export function startHttp(opts: { engine: Engine; transport: Transport; port: nu
         const textTo = ("line" in added ? added.line : undefined) || process.env.POOL_NUMBER || undefined;
         const why = "error" in added && added.error ? `; photon: ${added.error}` : "";
         console.log(`[signup] ${user.name} ${phone} (${user.signupStatus}${why})`);
-        return reply(200, { ok: true, name: user.name, status: user.signupStatus, textTo, calendar: calUrl(phone), agents: user.agents });
+        return reply(200, { ok: true, name: user.name, status: user.signupStatus, textTo, calendar: calUrl(phone), agents: user.agents, ...(own.note ? { note: own.note } : {}) });
       }
 
       const authed = !opts.token || params.token === opts.token;

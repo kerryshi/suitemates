@@ -57,6 +57,11 @@
   button:hover, a.button:hover { transform: translateY(-1px); box-shadow: 0 10px 28px rgb(var(--c) / .5); }
   button:disabled { opacity: .6; cursor: wait; }
   .error { color: var(--error); margin: 12px 0 0; min-height: 1.2em; }
+  details.how { margin-top: 8px; color: var(--muted); font-size: .9rem; }
+  details.how summary { cursor: pointer; color: rgb(var(--c)); font-weight: 600; }
+  details.how a { color: rgb(var(--c)); }
+  details.how ol { margin: 8px 0 0; padding-left: 20px; }
+  .ok { color: #7ee2a8; margin: 8px 0 0; }
   #done h3 { margin: 22px 0 4px; font-size: 1rem; }
   .pair { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; }
   .pair a { flex: 1 1 160px; }
@@ -97,6 +102,7 @@
 
       <div class="card" id="done" hidden>
         <h2 id="doneTitle">You're in!</h2>
+        <p class="ok" id="note" hidden></p>
         <div id="sayHey" hidden>
           <p>Last step: say hey in iMessage and <span class="who"></span> will introduce themself.</p>
           <a class="button" id="heyLink" href="#">Say hey to <span class="who"></span></a>
@@ -125,8 +131,15 @@
       fields: `
         <label for="win">What would make this semester a win? <span class="hint">(optional)</span></label>
         <input id="win" name="win" type="text" maxlength="160" placeholder="3.5 GPA, no all-nighters">
-        <div class="row"><input id="canvas" name="canvas" type="checkbox" checked><label for="canvas">Let Dean read my Canvas</label></div>`,
-      body: (f) => ({ canvas: f.canvas.checked, win: f.win.value.trim() }),
+        <div class="row"><input id="canvas" name="canvas" type="checkbox" checked><label for="canvas">Let Dean read my Canvas</label></div>
+        <label for="canvasToken">Canvas access token <span class="hint">(optional: without it Dean uses demo data)</span></label>
+        <input id="canvasToken" name="canvasToken" type="text" autocomplete="off" spellcheck="false" placeholder="7006~…">
+        <details class="how"><summary>How do I get this?</summary>
+          <ol><li>Open <a href="https://uncch.instructure.com/profile/settings" target="_blank" rel="noopener">Canvas → Account → Settings</a>.</li>
+          <li>Under Approved Integrations, tap <b>+ New Access Token</b>, purpose "Dean", pick an expiry date.</li>
+          <li>Copy the token and paste it here. Dean only reads your Canvas; delete the token in Canvas anytime.</li></ol>
+        </details>`,
+      body: (f) => ({ canvas: f.canvas.checked, win: f.win.value.trim(), canvasToken: f.canvasToken.value.trim() || undefined }),
     },
     financial: {
       name: "Penny", avatar: "penny", color: "236 72 153", pitch: "Money: spending, your budget, and whether you can afford it.",
@@ -183,6 +196,7 @@
       const out = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(out.error || "Something went wrong. Try again.");
       document.getElementById("doneTitle").textContent = `You're in, ${out.name}!`;
+      if (out.note) Object.assign(document.getElementById("note"), { textContent: `✓ ${out.note}`, hidden: false });
       form.hidden = true;
       document.getElementById("done").hidden = false;
       if (out.textTo && out.status !== "pending") {

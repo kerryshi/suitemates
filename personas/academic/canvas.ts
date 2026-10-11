@@ -131,15 +131,32 @@ const digits = (s?: string) => (s ?? "").replace(/\D/g, "").slice(-10);
 // Live only for the token's owner (CANVAS_OWNER_PHONE), so nobody else ever sees their data, and only when
 // MOCK=0 or CANVAS_LIVE=1 (lets Canvas go live while Nessie stays on mock).
 export function isLive(ctx: Ctx): boolean {
-  const owner = process.env.CANVAS_OWNER_PHONE;
   const on = !ctx.mock || process.env.CANVAS_LIVE === "1";
-  return on && !!process.env.CANVAS_TOKEN && !!owner && digits(owner) === digits(ctx.user.phone);
+  return on && !!tokenFor(ctx);
+}
+
+// Their own token from sign-up, else the server's CANVAS_TOKEN but only for its owner (CANVAS_OWNER_PHONE).
+function tokenFor(ctx: Ctx): string | undefined {
+  if (ctx.user.canvasToken) return ctx.user.canvasToken;
+  const owner = process.env.CANVAS_OWNER_PHONE;
+  return owner && digits(owner) === digits(ctx.user.phone) ? process.env.CANVAS_TOKEN || undefined : undefined;
+}
+
+// Sign-up check: does this token open a Canvas account? Returns the account's name, or why not.
+export async function checkCanvasToken(token: string): Promise<{ ok: true; name: string } | { ok: false; error: string }> {
+  try {
+    const me = await api<{ name?: string; short_name?: string }>("/users/self", token);
+    return { ok: true, name: me.short_name ?? me.name ?? "your account" };
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    return { ok: false, error: /401|403/.test(msg) ? "Canvas didn't accept that token. Copy it again from Canvas → Account → Settings." : `Couldn't reach Canvas: ${msg.slice(0, 120)}` };
+  }
 }
 
 async function live(ctx: Ctx): Promise<Snapshot> {
   const hit = cache.get(ctx.user.phone);
   if (hit && Date.now() - hit.at < CACHE_MS) return hit.snap;
-  const snap = await fetchCanvas(ctx.now);
+  const snap = await fetchCanvas(ctx.now, tokenFor(ctx)!);
   cache.set(ctx.user.phone, { at: Date.now(), snap });
   const file = join(dirname(process.env.DATA_FILE ?? "data/state.json"), "canvas", `${digits(ctx.user.phone)}.json`);
   mkdirSync(dirname(file), { recursive: true });
@@ -148,10 +165,10 @@ async function live(ctx: Ctx): Promise<Snapshot> {
   return snap;
 }
 
-async function api<T>(path: string): Promise<T> {
+async function api<T>(path: string, token: string): Promise<T> {
   const base = process.env.CANVAS_BASE_URL ?? "https://uncch.instructure.com";
   const res = await fetch(`${base}/api/v1${path}`, {
-    headers: { authorization: `Bearer ${process.env.CANVAS_TOKEN}` },
+    headers: { authorization: `Bearer ${token}` },
     signal: AbortSignal.timeout(15_000),
   });
   if (!res.ok) throw new Error(`Canvas ${res.status} on ${path.split("?")[0]}: ${(await res.text()).slice(0, 200)}`);
@@ -200,8 +217,8 @@ export function htmlToText(html?: string | null): string {
     .replace(/[ \t]+/g, " ").replace(/\n\s*\n+/g, "\n").trim();
 }
 
-async function fetchCanvas(now: Date): Promise<Snapshot> {
-  const raw = await api<ApiCourse[]>("/courses?enrollment_state=active&include[]=total_scores&include[]=term&include[]=syllabus_body&per_page=50");
+async function fetchCanvas(now: Date, token: string): Promise<Snapshot> {
+  const raw = await api<ApiCourse[]>("/courses?enrollment_state=active&include[]=total_scores&include[]=term&include[]=syllabus_body&per_page=50", token);
   // Skip org shells (advising, career hubs, trainings): real classes have a term.
   const classes = raw.filter((c) => c.term?.name && c.term.name !== "Default Term");
   const courses: Course[] = [];
@@ -209,8 +226,8 @@ async function fetchCanvas(now: Date): Promise<Snapshot> {
   for (const c of classes) {
     const code = courseCode(c.course_code);
     const [list, groups] = await Promise.all([
-      api<ApiAssignment[]>(`/courses/${c.id}/assignments?include[]=submission&per_page=100`),
-      api<{ id: number; group_weight?: number }[]>(`/courses/${c.id}/assignment_groups?per_page=50`),
+      api<ApiAssignment[]>(`/courses/${c.id}/assignments?include[]=submission&per_page=100`, token),
+      api<{ id: number; group_weight?: number }[]>(`/courses/${c.id}/assignment_groups?per_page=50`, token),
     ]);
     courses.push({
       code,
@@ -240,6 +257,7 @@ async function fetchCanvas(now: Date): Promise<Snapshot> {
   const anns = codes
     ? await api<{ id: number; title: string; message?: string; posted_at?: string; context_code?: string }[]>(
         `/announcements?${codes}&start_date=${since}&end_date=${new Date(now.getTime() + 86_400_000).toISOString().slice(0, 10)}&per_page=50`,
+        token,
       )
     : [];
   // Classes by code ("COMP 311"); org pages by their name ("UNC Department of Computer Science: Career Services Hub").
@@ -262,4 +280,14 @@ function startOfDay(d: Date): Date {
   const s = new Date(d);
   s.setHours(0, 0, 0, 0);
   return s;
+}
+
+// Persona.signup for Dean: an optional Canvas token on the web form, checked against Canvas before it's saved.
+export async function deanSignup(body: Record<string, unknown>): Promise<{ error: string } | { profile: { canvasToken?: string }; note?: string }> {
+  const token = typeof body.canvasToken === "string" ? body.canvasToken.trim() : "";
+  if (!token) return { profile: {} };
+  if (!/^[\w~]{20,200}$/.test(token)) return { error: "That doesn't look like a Canvas token. Copy it again from Canvas → Account → Settings." };
+  const check = await checkCanvasToken(token);
+  if (!check.ok) return { error: check.error };
+  return { profile: { canvasToken: token }, note: `Connected to ${check.name}'s Canvas.` };
 }

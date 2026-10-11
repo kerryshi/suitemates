@@ -32,7 +32,7 @@ export function onboard(user: UserProfile, text: string, n: OnboardNames): { rep
       const budget = parseBudget(text);
       if (budget === undefined && (u.onboardingRetries ?? 0) < 1) {
         u.onboardingRetries = (u.onboardingRetries ?? 0) + 1;
-        return { user: u, reply: "just the number is perfect — like 600" };
+        return { user: u, reply: "let's finish setup first: what's your monthly budget? just the number is perfect, like 600" };
       }
       u.budgetMonthly = budget ?? DEFAULT_BUDGET;
       u.onboardingStep = 2;
@@ -72,8 +72,16 @@ function onboardAcademic(user: UserProfile, n: OnboardNames): { reply: string; u
   };
 }
 
+// Only a plain amount counts ("600", "$1,200", "about 1.5k a month"), so a question like
+// "can i afford a $60 hoodie?" is never read as the budget.
 export function parseBudget(text: string): number | undefined {
-  const m = /\$?\s*(\d[\d,]*(?:\.\d+)?)\s*(k\b)?/i.exec(text);
+  const t = text
+    .trim()
+    .toLowerCase()
+    .replace(/[.!?\s]+$/, "")
+    .replace(/^(?:(?:my budget is|budget is|it's|its|like|about|around|maybe|roughly|~)\s*)+/, "")
+    .replace(/\s*(?:a month|per month|\/\s*month|\/\s*mo|a mo|monthly)$/, "");
+  const m = /^\$?\s*(\d[\d,]*(?:\.\d+)?)\s*(k)?$/.exec(t);
   if (!m) return undefined;
   const n = Number(m[1].replace(/,/g, "")) * (m[2] ? 1000 : 1);
   return Number.isFinite(n) && n > 0 ? Math.round(n) : undefined;

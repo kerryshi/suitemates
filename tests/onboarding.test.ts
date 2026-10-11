@@ -44,6 +44,20 @@ test("Academic asks only for Canvas, and any answer links the demo Canvas", () =
   assert.equal(u.onboardingStep, "done");
 });
 
+// Live 2026-10-10: "can i afford a $60 hoodie?" as the second text set a $60 budget and the question was lost.
+test("a question during setup isn't read as the budget: only a plain amount counts", () => {
+  const q = run("hi", "can i afford a $60 hoodie?");
+  assert.equal(q.u.onboardingStep, 1);
+  assert.equal(q.u.budgetMonthly, undefined);
+  assert.match(q.replies[1], /finish setup/);
+  for (const ok of ["600", "$600", "$1,200", "1.2k", "600/month", "about $800 a month", "600!", "~600"]) {
+    assert.notEqual(parseBudget(ok), undefined, ok);
+  }
+  for (const bad of ["can i afford a $60 hoodie?", "how much is a $5 coffee", "i spent 40 on boba"]) {
+    assert.equal(parseBudget(bad), undefined, bad);
+  }
+});
+
 test("budget parsing handles $ signs, commas and k", () => {
   assert.equal(parseBudget("$1,200"), 1200);
   assert.equal(parseBudget("like 1.5k a month"), 1500);

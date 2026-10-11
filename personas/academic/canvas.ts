@@ -234,14 +234,16 @@ async function fetchCanvas(now: Date): Promise<Snapshot> {
       });
     }
   }
-  const codes = classes.map((c) => `context_codes[]=course_${c.id}`).join("&");
+  // Announcements also come from the non-class pages (CS department hub, advising): students want those too.
+  const codes = raw.map((c) => `context_codes[]=course_${c.id}`).join("&");
   const since = new Date(now.getTime() - 14 * 86_400_000).toISOString().slice(0, 10);
   const anns = codes
     ? await api<{ id: number; title: string; message?: string; posted_at?: string; context_code?: string }[]>(
         `/announcements?${codes}&start_date=${since}&end_date=${new Date(now.getTime() + 86_400_000).toISOString().slice(0, 10)}&per_page=50`,
       )
     : [];
-  const byCtx = new Map(classes.map((c) => [`course_${c.id}`, courseCode(c.course_code)]));
+  // Classes by code ("COMP 311"); org pages by their name ("UNC Department of Computer Science: Career Services Hub").
+  const byCtx = new Map(raw.map((c) => [`course_${c.id}`, classes.includes(c) ? courseCode(c.course_code) : c.name]));
   return {
     source: "canvas",
     courses,

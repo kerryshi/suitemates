@@ -1,0 +1,83 @@
+Suitemates voice review fixes, probe round 4: Sunny only (S1 greeting, S2 tool list_signups, S3 join + bring_in), real Gemini, terminal path
+worktree: /Users/kerryshi/Projects/hacknc-agents-voice  branch: kerry/voice  HEAD: a8198aa + uncommitted personas/social/prompt.md (the edit this file evidences; committed right after)
+driver: scratchpad/voice-probe-r4.mts (same harness as voice-probe-wf-r2.mts: createApp + ConsoleTransport.onLine + engine.handle; MOCK=1, TRANSPORT=terminal, CANVAS_LIVE=0, PHOTON_AUTO_ADD=0, WATCH=, NESSIE_OWNER_PHONE=, FAKE_LLM=0, fresh scratchpad SOCIAL_FILE/DATA_FILE/CHAT_STATE/MOCK_PURCHASES_FILE per conversation; model calls spaced >=15 s, cap 12)
+setup per conversation (0 model calls): /to social, /reset, hi, kerry, "soccer, beach", /skip
+Each conversation is its own process with a freshly seeded board, so A/B/C/D are four separate students meeting Sunny.
+'sent' = what ConsoleTransport.send printed (capEmoji(text)). Overlap = longest run of consecutive words shared with any line of the prompt, old (b5a0d73) or new, quoted examples included (prescribed bring_in question excluded).
+
+Prompt v1 = this commit's rewrite of lines 5-10 and 26 (one made-up example, beat rotation list). Conversations A, B.
+Prompt v2 = v1 + "You only know the others' names and plans, so never make up habits or stories about them" after v1 invented
+           quirks for seeded students in 5/6 texts. Conversations C, D. v2 is what is committed.
+
+== conversation A (prompt v1) · run 2026-10-11T07:20:07.446Z · model calls 6 · Suitemates chat · LLM=gemini:gemini-3.6-flash · MOCK=1
+[S1] greeting · input: hey sunny · model calls 2
+  tool call: list_signups({})
+  sent [Sunny] (emoji 0) beach trip to wrightsville is saturday 9 am with ismail, omar, and priya. omar is 100% fighting everyone for the aux. want in?
+    overlap with the prompt (old or new): 3 word(s) "omar and priya" · banned/recycled-tail hits: 0
+[S2] tool (list_signups) · input: anyone down for soccer this weekend · model calls 2
+  tool call: list_signups({"activity":"soccer"})
+  sent [Sunny] (emoji 0) pickup soccer at hooker fields is sunday 4 pm, omar, priya, and sam are in. sam promised not to kick the ball into the trees this time. want in?
+    overlap with the prompt (old or new): 6 word(s) "omar priya and sam are in" · banned/recycled-tail hits: 0
+[S3] hand-off (join_activity + bring_in) · input: i'm in for the beach trip saturday · model calls 2
+  tool call: join_activity({"my_name":"Kerry","activity":"beach trip"}), bring_in({"ask":"price beach trip against their budget","agent":"financial"}), bring_in({"agent":"academic","ask":"check what's due around saturday"}), remember({"note":"Going on Saturday beach trip to Wrightsville."})
+  sent [Sunny] (emoji 0) you're in! you, ismail, omar, and priya are rolling to wrightsville saturday 9 am. ismail is already packing three bags of snacks. want penny and dean to check the cost and your deadlines?
+    overlap with the prompt (old or new): 4 word(s) "omar and priya are" · banned/recycled-tail hits: 0
+
+== conversation B (prompt v1) · run 2026-10-11T07:21:40.649Z · model calls 6 · Suitemates chat · LLM=gemini:gemini-3.6-flash · MOCK=1
+[S1] greeting · input: hey sunny · model calls 2
+  tool call: list_signups({})
+  sent [Sunny] (emoji 0) ismail, omar, and priya are locked in for the beach trip to wrightsville saturday 9 am. pretty sure omar is going to forget the speaker like always.
+    overlap with the prompt (old or new): 4 word(s) "omar and priya are" · banned/recycled-tail hits: 0
+[S2] tool (list_signups) · input: anyone down for soccer this weekend · model calls 2
+  tool call: list_signups({"activity":"soccer"})
+  sent [Sunny] (emoji 0) omar, priya, and sam are playing pickup soccer at hooker fields sunday 4 pm. sam claims he's actually passing the ball this time. want in?
+    overlap with the prompt (old or new): 5 word(s) "omar priya and sam are" · banned/recycled-tail hits: 0
+[S3] hand-off (join_activity + bring_in) · input: i'm in for the beach trip saturday · model calls 2
+  tool call: join_activity({"my_name":"Kerry","activity":"beach trip"}), bring_in({"ask":"price beach trip against their budget","agent":"financial"}), bring_in({"ask":"check what's due around saturday","agent":"academic"})
+  sent [Sunny] (emoji 0) you're on the roster with ismail, omar, and priya for saturday 9 am! aux cord duty is officially yours. want penny and dean to check the cost and your deadlines?
+    overlap with the prompt (old or new): 3 word(s) "omar and priya" · banned/recycled-tail hits: 0
+
+== conversation C (prompt v2) · run 2026-10-11T07:23:47.941Z · model calls 6 · Suitemates chat · LLM=gemini:gemini-3.6-flash · MOCK=1
+[S1] greeting · input: hey sunny · model calls 2
+  tool call: list_signups({})
+  sent [Sunny] (emoji 0) hey! beach trip to wrightsville is saturday 9 am with ismail, omar, and priya. sand in the car floorboards is practically guaranteed. want in?
+    overlap with the prompt (old or new): 3 word(s) "omar and priya" · banned/recycled-tail hits: 0
+[S2] tool (list_signups) · input: anyone down for soccer this weekend · model calls 2
+  tool call: list_signups({"activity":"soccer"})
+  sent [Sunny] (emoji 0) omar, priya, and sam have pickup soccer at hooker fields sunday 4 pm. omar plays like there's a scout in the bleachers. want in?
+    overlap with the prompt (old or new): 4 word(s) "omar priya and sam" · banned/recycled-tail hits: 0
+[S3] hand-off (join_activity + bring_in) · input: i'm in for the beach trip saturday · model calls 2
+  tool call: join_activity({"my_name":"Kerry","activity":"beach trip"}), bring_in({"asked":false,"ask":"price beach trip against their budget","agent":"financial"}), bring_in({"agent":"academic","ask":"check what's due around saturday","asked":false})
+  sent [Sunny] (emoji 0) you're in! wrightsville saturday 9 am with ismail, omar, and priya. i'm calling aux cord rights early. want penny and dean to check the cost and your deadlines?
+    overlap with the prompt (old or new): 3 word(s) "omar and priya" · banned/recycled-tail hits: 0
+
+== conversation D (prompt v2) · run 2026-10-11T07:25:20.627Z · model calls 6 · Suitemates chat · LLM=gemini:gemini-3.6-flash · MOCK=1
+[S1] greeting · input: hey sunny · model calls 2
+  tool call: list_signups({})
+  sent [Sunny] (emoji 0) beach trip to wrightsville saturday 9 am with ismail, omar, and priya. carpool aux is going to be wild, want in?
+    overlap with the prompt (old or new): 3 word(s) "omar and priya" · banned/recycled-tail hits: 0
+[S2] tool (list_signups) · input: anyone down for soccer this weekend · model calls 2
+  tool call: list_signups({"activity":"soccer"})
+  sent [Sunny] (emoji 0) pickup soccer at hooker fields sunday 4 pm with omar, priya, and sam. shin guards optional, ego checks mandatory. want in?
+    overlap with the prompt (old or new): 4 word(s) "omar priya and sam" · banned/recycled-tail hits: 0
+[S3] hand-off (join_activity + bring_in) · input: i'm in for the beach trip saturday · model calls 2
+  tool call: join_activity({"my_name":"Kerry","activity":"beach trip"}), bring_in({"ask":"price beach trip against their budget","agent":"financial"}), bring_in({"ask":"check what's due around saturday","agent":"academic"})
+  sent [Sunny] (emoji 0) you're locked in for saturday 9 am with ismail, omar, and priya—dibs on not driving. want penny and dean to check the cost and your deadlines?
+    overlap with the prompt (old or new): 3 word(s) "omar and priya" · banned/recycled-tail hits: 0
+
+== summary ==
+all 12 texts (v1 + v2): emoji total 0 · max overlap with the prompt 6 words · banned/recycled-tail hits 0 · duplicate texts 0
+v2 only (committed prompt), 6 texts: emoji total 0 · max overlap with the prompt 4 words · banned/recycled-tail hits 0 · duplicate texts 0
+
+== reading (the executor's own read, NOT the blind judge: an actor cannot verify itself) ==
+Recycled tails: 0/12. No "not ready for you" (was 3 of 3 join replies in rounds 2, 3 and workflow-r2), no "you're coming"
+(was S1b and wf-r2 S1), no line from the new made-up example. The longest word run shared with the prompt, old or new,
+is a name roster that list_signups returned ("omar, priya, and sam are in"), never a joke or tail.
+Duplicates across the four conversations: 0. Every S3 join reply has a different beat (snacks, aux cord duty,
+aux cord rights, dibs on not driving); the aux cord theme came up in 4/12 texts in different words.
+Beat on the tool answers (S2): 4/4 have one (no plain roster readout; wf-r2 S2 was one).
+Invented facts about seeded students: v1 5/6 texts (omar fights for the aux, sam kicks into the trees, ismail packs
+snacks, omar forgets the speaker, sam claims he passes); v2 1/6 (C S2 "omar plays like there's a scout in the
+bleachers"). That is why v2 adds the "never make up habits or stories about them" clause; one residual in six.
+Emoji: 0 in all 12 texts, raw and sent. Greetings ending in "?": 3/4 end in "want in?" (an offer, which the prompt
+allows: "End with a question only when you need an answer ('want in?', ...)").

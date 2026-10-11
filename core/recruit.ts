@@ -13,6 +13,9 @@ import { photonProjectFor, type AddResult } from "./photon-users.ts";
 import { introTexts } from "./signup.ts";
 
 export const OFFER_TTL_MS = 10 * 60_000;
+// A yes texted to another agent of the same hand-off (Penny answered first, so they replied in her thread) counts
+// for a shorter while: later on, a "yes" there is more likely about that agent's own question.
+export const PARTY_TTL_MS = 3 * 60_000;
 
 export interface RecruitAsk {
   id: PersonaId;
@@ -24,6 +27,16 @@ export interface Pending {
   text: string; // what the student said
   offeredAt: number;
   agents: RecruitAsk[];
+  party?: PersonaId[]; // every agent in this hand-off (the offerer + everyone it brought in): a yes to any of them counts
+}
+
+// May this inbound answer the offer? On a shared number any thread; else the offerer's thread, or (briefly) the
+// thread of another agent from the same hand-off.
+export function answersOffer(p: Pending, persona: PersonaId, lineKnown: boolean | undefined, now: number): boolean {
+  const age = now - p.offeredAt;
+  if (age >= OFFER_TTL_MS) return false;
+  if (!lineKnown || p.from === persona) return true;
+  return age < PARTY_TTL_MS && Boolean(p.party?.includes(persona));
 }
 
 export const getPending = (store: Store, phone: string) => store.kv("shared", phone).get<Pending>("recruit");
@@ -87,7 +100,11 @@ export function recruitTool(d: RecruitDeps): Tool {
       const p = getPending(d.store, user.phone);
       const sameTurn = p && p.from === d.from && p.text === said(d.text) && d.now() - p.offeredAt < OFFER_TTL_MS;
       const base: Pending = sameTurn ? p : { from: d.from, text: said(d.text), offeredAt: d.now(), agents: [] };
-      setPending(d.store, user.phone, { ...base, agents: [...base.agents.filter((a) => a.id !== agent), { id: agent, ask, consent }] });
+      setPending(d.store, user.phone, {
+        ...base,
+        agents: [...base.agents.filter((a) => a.id !== agent), { id: agent, ask, consent }],
+        party: [...new Set([...(base.party ?? [d.from]), agent])],
+      });
       if (consent !== "none" && d.needsAdd(agent, user)) d.startAdd(agent, user);
       const n = d.names[agent];
       if (consent === "none")

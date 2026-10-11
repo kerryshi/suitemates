@@ -154,13 +154,16 @@ test("an agent they already have answers from its own thread right away: no ques
   assert.deepEqual(s.adds.map((a) => a.persona), ["academic"], "Penny is not re-added");
 });
 
-test("a 'yes' texted to a different agent's number doesn't accept Sunny's offer", async () => {
+test("a 'yes' in another hand-off agent's thread only counts for a few minutes; the offerer's own thread keeps it longer", async () => {
   const s = setup({ user: { agents: ["social", "financial"], greeted: ["social", "financial"] } });
-  await s.dm("ask penny if i can afford boba"); // Penny is already theirs: answered, nothing pending
-  await s.dm(BEACH); // Dean pending, offered by Sunny
+  await s.dm(BEACH); // Penny is theirs (answers now), Dean pending, offered by Sunny
+  const later = Date.now() + 4 * 60_000; // past PARTY_TTL_MS, inside OFFER_TTL_MS
+  (s.engine as unknown as { now: () => number }).now = () => later;
   const out = await s.dm("yes", "financial");
-  assert.deepEqual(out.map((o) => [o.persona, o.text]), [["financial", "Penny reply"]]);
+  assert.deepEqual(out.map((o) => [o.persona, o.text]), [["financial", "Penny reply"]], "4 min later, a yes to Penny is about Penny");
   assert.deepEqual(s.pending()?.agents.map((a) => a.id), ["academic"]);
+  const sunny = await s.dm("yes"); // still fine in Sunny's own thread
+  assert.ok(sunny.some((o) => o.persona === "academic" && o.text === "Dean answer"));
 });
 
 test("if Penny can't be added (full project, dead token), she still answers: through Sunny's thread, name-tagged by transport", async () => {

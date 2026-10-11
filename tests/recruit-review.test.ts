@@ -127,3 +127,40 @@ test("S8: with a deliver hook, 'yes' answers with the ack at once; each agent's 
   const penny = delivered.flat().filter((o) => o.persona === "financial");
   assert.ok(penny.some((o) => o.card) && penny.some((o) => o.text === "Penny answer"), JSON.stringify(delivered));
 });
+
+test("a 'yes' in the thread of an agent from the same hand-off counts (Penny answered first, so they said yes to her)", async () => {
+  // They already have Penny: on the beach text she answers at once in her own thread, Dean waits for a yes.
+  const s = setup(0, { agents: ["social", "financial"], greeted: ["social", "financial"] });
+  const both: LlmClient = {
+    ...spy,
+    chat: async (req) => {
+      const last = req.messages.at(-1) as LlmMessage;
+      if (/You are Sunny,/.test(req.system) && last.role === "user" && /beach/i.test(last.text))
+        return { toolCalls: [{ name: "bring_in", args: { agent: "financial", ask: "price it" } }, { name: "bring_in", args: { agent: "academic", ask: "check saturday" } }] };
+      return spy.chat(req);
+    },
+  };
+  (s.engine.d as { llm: LlmClient }).llm = both;
+  await s.dm("I'm going on the beach trip Saturday");
+  const penny = s.engine.handle({ persona: "financial", sender: PHONE, text: "Yes", handle: "penny-space", messageId: "y1", lineKnown: true } as Inbound);
+  const out = await penny;
+  assert.ok(out.some((o) => o.persona === "academic" && o.text === "Dean answer"), JSON.stringify(out.map((o) => [o.persona, o.text])));
+  assert.equal(out[0].persona, "financial", "the ack comes from the agent they said yes to");
+  assert.equal(s.store.kv("shared", PHONE).get("recruit"), undefined);
+});
+
+test("a 'yes' to an agent outside the hand-off still doesn't accept it", async () => {
+  const s = setup(0, { agents: ["social", "financial"], greeted: ["social", "financial"] }); // Sunny offers Penny? no: Penny is theirs
+  // Sunny offers Dean only; a yes texted to Penny (not part of this hand-off) is just a message to Penny.
+  (s.engine.d as { llm: LlmClient }).llm = {
+    ...spy,
+    chat: async (req) => {
+      const last = req.messages.at(-1) as LlmMessage;
+      if (/You are Sunny,/.test(req.system) && last.role === "user" && /beach/i.test(last.text)) return { toolCalls: [{ name: "bring_in", args: { agent: "academic", ask: "check saturday" } }] };
+      return spy.chat(req);
+    },
+  };
+  await s.dm("I'm going on the beach trip Saturday");
+  const out = await s.engine.handle({ persona: "financial", sender: PHONE, text: "yes", handle: "penny-space", messageId: "y2", lineKnown: true } as Inbound);
+  assert.ok(!out.some((o) => o.persona === "academic"));
+});

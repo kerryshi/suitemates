@@ -1,0 +1,22 @@
+# yes-in-any-hand-off-thread: red before (2026-10-11 02:02)
+✖ a 'yes' in the thread of an agent from the same hand-off counts (Penny answered first, so they said yes to her) (8.453666ms)
+✔ a 'yes' to an agent outside the hand-off still doesn't accept it (4.187375ms)
+ℹ pass 9
+ℹ fail 1
+✖ a 'yes' in the thread of an agent from the same hand-off counts (Penny answered first, so they said yes to her) (8.453666ms)
+
+# green
+✔ S1: 'yes' after the background add settled reuses it (no second Photon CLI run, no wait) (67.001542ms)
+✔ consent: 'no' wins over a polite yes-word, and a question isn't a yes (0.070042ms)
+✔ S8: with a deliver hook, 'yes' answers with the ack at once; each agent's texts go out as soon as that agent is ready (703.885209ms)
+✔ a 'yes' in the thread of an agent from the same hand-off counts (Penny answered first, so they said yes to her) (9.799709ms)
+✔ a 'yes' to an agent outside the hand-off still doesn't accept it (4.781375ms)
+✔ 'yes' on Sunny's thread: Sunny acks, then Penny and Dean each text first from their own number with hello, card, answer (6.811083ms)
+✔ 'no' drops the offer; anything that isn't yes or no also drops it (one-shot) and gets a normal reply (2.433167ms)
+✔ a 'yes' in another hand-off agent's thread only counts for a few minutes; the offerer's own thread keeps it longer (3.013416ms)
+ℹ pass 21
+ℹ fail 0
+ℹ tests 238
+ℹ pass 238
+ℹ fail 0
+typecheck clean

@@ -8,7 +8,7 @@ import { introTexts } from "./signup.ts";
 import { keywordScores } from "./router.ts";
 import { onboard } from "./onboarding.ts";
 import { withMemory } from "./memory.ts";
-import { ackText, consentFromText, getPending, OFFER_TTL_MS, recruitTool, runRecruit, setPending } from "./recruit.ts";
+import { ackText, answersOffer, consentFromText, getPending, recruitTool, runRecruit, setPending } from "./recruit.ts";
 import { photonProjectFor, type AddResult, type AddUser } from "./photon-users.ts";
 
 const SHARED_TIMEOUT_MS = 3_000; // Persona.context budget per reply
@@ -72,7 +72,7 @@ export class Engine {
     }
     // An offer to bring another agent in (core/recruit.ts), answered in the conversation it was made in.
     const offer = getPending(this.d.store, user.phone);
-    if (offer && this.now() - offer.offeredAt < OFFER_TTL_MS && (!ev.lineKnown || offer.from === persona)) {
+    if (offer && answersOffer(offer, persona, ev.lineKnown, this.now())) {
       const waiting = offer.agents.filter((a) => a.consent === "pending");
       if (waiting.length) {
         const answer = consentFromText(ev.text ?? "");

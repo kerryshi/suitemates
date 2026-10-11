@@ -119,3 +119,13 @@ No "text this number to start". Drafted Sat Oct 10 evening by Ismail with Claude
 3. **Friends' personas talk to each other (stretch, Kerry).** "Ask Sam's Sunny when he's free this weekend": needs both
    users signed up, a consent flag per user, and an agent-to-agent call that returns only free/busy blocks (never grades
    or money). Demo-able with two mock students.
+
+## QR → add your number → say hey (built Sat night)
+
+1. `GET /qr` shows a QR of the sign-up page (open it through the public tunnel URL so the QR points there).
+2. The form posts `/signup`; `core/photon-users.ts` runs `photon spectrum users add --phone … --first-name …` to put them on the
+   Photon Users allowlist, then `users list --json` to find the pool number they text (fallback `POOL_NUMBER`).
+3. The page opens Messages with "hey" typed to that number (`sms:<n>&body=hey`).
+4. Their first text → `core/engine.ts` sends every persona's intro + contact card in that conversation (status `invited`).
+- Needs: `npm i -g @photon-ai/cli`, `photon login` (or `PHOTON_API_TOKEN`), `PHOTON_AUTO_ADD=1`, and a public URL.
+  Without the CLI the sign-up stays `pending` and `/admin` → "Send intro" still works after a manual dashboard add.

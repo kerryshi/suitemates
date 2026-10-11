@@ -16,7 +16,7 @@ export interface UserProfile {
   interests?: string[];
   focus?: "school" | "money" | "social" | "balance"; // "this semester I'm mostly trying to…"
   win?: string; // "what would make this semester a win?" (free text)
-  signupStatus?: "pending" | "invited";
+  signupStatus?: "pending" | "added" | "invited"; // pending → on the Photon allowlist → greeted
   signedUpAt?: string; // ISO
 }
 

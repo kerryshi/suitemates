@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Suitemates QR</title>
+<style>
+  :root { --ink: #0d3550; --soft: #3d6680; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; min-height: 100vh; display: grid; place-items: center; color: var(--ink); text-align: center;
+    font: 18px/1.4 "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+    background: radial-gradient(ellipse 120% 40% at 50% 105%, #7ccf4a 0 38%, transparent 39%), linear-gradient(180deg, #5ec8f2, #e9fbff 70%);
+  }
+  main { padding: 24px 16px; }
+  h1 { font-size: 2.6rem; margin: 0; text-shadow: 0 2px 0 rgba(255,255,255,.7); }
+  p { margin: 6px 0 20px; color: var(--soft); }
+  .card { display: inline-block; padding: 22px; border-radius: 28px; background: rgba(255,255,255,.75);
+    border: 1px solid rgba(255,255,255,.95); box-shadow: 0 12px 34px rgba(13,53,80,.22); }
+  #qr { width: min(72vw, 360px); height: min(72vw, 360px); }
+  #qr img, #qr canvas { width: 100% !important; height: 100% !important; }
+  .faces { display: flex; justify-content: center; gap: 10px; margin-top: 18px; }
+  .faces img { width: 64px; height: 64px; border-radius: 50%; border: 3px solid #fff; box-shadow: 0 4px 10px rgba(13,53,80,.25); }
+  .url { font-size: .85rem; color: var(--soft); margin-top: 14px; word-break: break-all; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Suitemates</h1>
+  <p>Scan, add your number, say hey. Dean, Penny and Sunny take it from there.</p>
+  <div class="card"><div id="qr" role="img" aria-label="QR code for the sign-up page"></div></div>
+  <div class="faces">
+    <img src="/avatars/dean.png" alt="Dean"><img src="/avatars/penny.png" alt="Penny"><img src="/avatars/sunny.png" alt="Sunny">
+  </div>
+  <div class="url" id="url"></div>
+</main>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script>
+  // Encodes ?url=… if given, else this server's own address. Open /qr through the public tunnel URL.
+  const target = new URLSearchParams(location.search).get("url") || `${location.origin}/`;
+  document.getElementById("url").textContent = target;
+  new QRCode(document.getElementById("qr"), { text: target, width: 360, height: 360, colorDark: "#0d3550", colorLight: "#ffffff", correctLevel: QRCode.CorrectLevel.M });
+</script>
+</body>
+</html>

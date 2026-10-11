@@ -13,7 +13,8 @@ import { fileURLToPath } from "node:url";
 import type { Engine } from "./engine.ts";
 import type { Transport } from "./transport.ts";
 import type { PersonaId } from "./types.ts";
-import { introTexts, normalizePhone, parseSignup } from "./signup.ts";
+import { cardFor, introTexts, normalizePhone, parseSignup } from "./signup.ts";
+import { photonCliAddUser, type AddUser } from "./photon-users.ts";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const AVATARS = new Set(["dean", "penny", "sunny", "dean-icon", "penny-icon", "sunny-icon"]);
@@ -24,7 +25,8 @@ function file(res: ServerResponse, path: string, type: string) {
   res.end(readFileSync(path));
 }
 
-export function startHttp(opts: { engine: Engine; transport: Transport; port: number; token?: string }) {
+export function startHttp(opts: { engine: Engine; transport: Transport; port: number; token?: string; addUser?: AddUser }) {
+  const addUser = opts.addUser ?? photonCliAddUser;
   const { engine, transport } = opts;
   const store = engine.d.store;
   const server = createServer(async (req, res) => {
@@ -37,6 +39,7 @@ export function startHttp(opts: { engine: Engine; transport: Transport; port: nu
       const path = url.pathname;
       if (path === "/health") return reply(200, { ok: true });
       if (req.method === "GET" && path === "/") return file(res, join(ROOT, "web", "index.html"), "text/html; charset=utf-8");
+      if (req.method === "GET" && path === "/qr") return file(res, join(ROOT, "web", "qr.html"), "text/html; charset=utf-8");
       if (req.method === "GET" && path === "/admin") return file(res, join(ROOT, "web", "admin.html"), "text/html; charset=utf-8");
       const avatar = /^\/avatars\/([a-z-]+)\.png$/.exec(path);
       if (req.method === "GET" && avatar && AVATARS.has(avatar[1])) return file(res, join(ROOT, "docs", "avatars", `${avatar[1]}.png`), "image/png");
@@ -57,9 +60,15 @@ export function startHttp(opts: { engine: Engine; transport: Transport; port: nu
         if (!phone) return reply(400, { error: "Enter a 10-digit US phone number." });
         const r = parseSignup(params, store.user(phone));
         if ("error" in r) return reply(400, r);
-        store.saveUser(r.user);
-        console.log(`[signup] ${r.user.name} ${phone} (${r.user.signupStatus})`);
-        return reply(200, { ok: true, name: r.user.name, status: r.user.signupStatus });
+        // Put them on the Photon allowlist so their first text gets through, and find the number they text.
+        const fresh = r.user.signupStatus === "pending";
+        const added = fresh ? await addUser(phone, r.user.name ?? "") : { ok: true };
+        const user = { ...r.user, ...(fresh && added.ok ? { signupStatus: "added" as const } : {}) };
+        store.saveUser(user);
+        const textTo = ("line" in added ? added.line : undefined) || process.env.POOL_NUMBER || undefined;
+        const why = "error" in added && added.error ? `; photon: ${added.error}` : "";
+        console.log(`[signup] ${user.name} ${phone} (${user.signupStatus}${why})`);
+        return reply(200, { ok: true, name: user.name, status: user.signupStatus, textTo });
       }
 
       const authed = !opts.token || params.token === opts.token;
@@ -91,6 +100,8 @@ export function startHttp(opts: { engine: Engine; transport: Transport; port: nu
         phone: params.phone ? String(params.phone) : undefined,
         force: true,
       });
+      // An intro always comes with that persona's contact card.
+      if (params.name === "intro" && params.phone) outs.push(cardFor(engine, params.persona as PersonaId, normalizePhone(params.phone) ?? String(params.phone)));
       for (const o of outs) await transport.send(o);
       return reply(200, { sent: outs });
     } catch (err) {

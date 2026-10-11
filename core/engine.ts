@@ -4,6 +4,7 @@ import type { LlmClient } from "./llm/client.ts";
 import type { Store } from "./store.ts";
 import type { Config } from "./config.ts";
 import { respond, type Setting } from "./agent.ts";
+import { introTexts } from "./signup.ts";
 import { route } from "./router.ts";
 import { onboard } from "./onboarding.ts";
 
@@ -53,6 +54,13 @@ export class Engine {
       this.d.store.saveUser(r.user);
       const extra = r.user.onboardingStep === "done" ? await this.onboarded(r.user.phone) : [];
       return [{ persona: ev.persona, handle: ev.handle, text: r.reply }, ...extra];
+    }
+    // Signed up on the web and just sent their first text (the "hey" the QR page pre-fills): every persona
+    // introduces itself with its contact card, in this same conversation.
+    if (user.signupStatus && user.signupStatus !== "invited") {
+      this.d.store.saveUser({ ...user, signupStatus: "invited" });
+      const intros = await introTexts(this, user.phone);
+      return intros.map((o) => ({ ...o, handle: ev.handle }));
     }
     const text = await this.reply(ev.persona, user, ev.text ?? "", ev.image, "dm");
     return [{ persona: ev.persona, handle: ev.handle, text }];

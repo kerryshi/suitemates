@@ -3,6 +3,7 @@
 // (`npm i -g @photon-ai/cli`, then `photon login`), and PHOTON_AUTO_ADD=1. Off or failing → the sign-up stays
 // pending and someone adds them in the dashboard (/admin shows them).
 import { spawn } from "node:child_process";
+import type { PersonaId } from "./types.ts";
 import { existsSync } from "node:fs";
 import { join } from "node:path";
 
@@ -11,7 +12,22 @@ export interface AddResult {
   line?: string; // the number they text (their pool number), when we can tell
   error?: string;
 }
-export type AddUser = (phone: string, firstName: string) => Promise<AddResult>;
+export type AddUser = (phone: string, firstName: string, agent?: PersonaId) => Promise<AddResult>;
+
+// The Photon project an agent lives on, and the CLI token for that project's account. With one project per agent
+// (<AGENT>_PROJECT_ID, each teammate's own plan) a sign-up for Penny must land on Penny's allowlist, not on the
+// shared SPECTRUM_PROJECT_ID's (which is someone else's plan): that's why only one agent's QR worked. Each plan
+// is a different Photon account, so each needs its own token (<AGENT>_PHOTON_API_TOKEN) unless one login sees all.
+export function photonProjectFor(agent?: PersonaId): { project?: string; token?: string; own: boolean } {
+  const A = agent?.toUpperCase();
+  // Same rule as the transport (core/config.ts projects): an agent has its own project only with both ID and SECRET.
+  const ownProject = A && process.env[`${A}_PROJECT_ID`] && process.env[`${A}_PROJECT_SECRET`] ? process.env[`${A}_PROJECT_ID`] : undefined;
+  return {
+    project: ownProject || process.env.SPECTRUM_PROJECT_ID,
+    token: (A && process.env[`${A}_PHOTON_API_TOKEN`]) || process.env.PHOTON_API_TOKEN,
+    own: Boolean(ownProject),
+  };
+}
 
 // Names go to a CLI argument: letters, spaces, - ' . only, so nothing can reach a shell.
 export function safeName(name: string): string {
@@ -67,12 +83,13 @@ export function onList(listJson: string, phone: string): boolean {
   }
 }
 
-export const photonCliAddUser: AddUser = async (phone, firstName) => {
+export const photonCliAddUser: AddUser = async (phone, firstName, agent) => {
   if (process.env.PHOTON_AUTO_ADD !== "1") return { ok: false, error: "PHOTON_AUTO_ADD is off" };
   if (!/^\+1\d{10}$/.test(phone)) return { ok: false, error: "bad phone" };
-  const project = process.env.SPECTRUM_PROJECT_ID;
-  if (!project || !/^[\w-]+$/.test(project)) return { ok: false, error: "SPECTRUM_PROJECT_ID missing" };
-  const auth = process.env.PHOTON_API_TOKEN && /^[\w.~-]+$/.test(process.env.PHOTON_API_TOKEN) ? ["-t", process.env.PHOTON_API_TOKEN] : [];
+  const { project, token } = photonProjectFor(agent);
+  const which = agent ? `${agent.toUpperCase()}_PROJECT_ID or SPECTRUM_PROJECT_ID` : "SPECTRUM_PROJECT_ID";
+  if (!project || !/^[\w-]+$/.test(project)) return { ok: false, error: `${which} missing` };
+  const auth = token && /^[\w.~-]+$/.test(token) ? ["-t", token] : [];
   // Already on the list → just read their line. `users add` on an existing number UPDATES that person (it overwrote
   // a real name and email with our placeholders once), so never call it for someone who's already there.
   const list = await run(["spectrum", "users", "list", "-p", project, "--json", ...auth]);

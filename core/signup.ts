@@ -3,6 +3,7 @@
 import type { Engine } from "./engine.ts";
 import type { Outbound, PersonaId, UserProfile } from "./types.ts";
 import { parseBudget } from "./onboarding.ts";
+import { photonProjectFor } from "./photon-users.ts";
 
 const FOCUS = ["school", "money", "social", "balance"] as const;
 
@@ -100,7 +101,13 @@ export function cardFor(engine: Engine, id: PersonaId, phone: string): Outbound 
       photo: `docs/avatars/${AVATAR[id]}.png`,
       // The number THIS person texts: Photon's shared pool gives each person their own (looked up at sign-up),
       // so one fixed number from .env showed the wrong one to everyone but its owner. Dedicated line only on Business.
-      phone: engine.d.store.user(phone).poolLine || process.env[`${id.toUpperCase()}_PROJECT_ID`] && process.env[`${id.toUpperCase()}_LINE`] || undefined,
+      // With one Photon project per agent, that project's own number for this person (poolLines), never the
+      // shared project's poolLine (it's another project's number); one shared project → poolLine as before.
+      phone: (() => {
+        const u = engine.d.store.user(phone);
+        const { own, project } = photonProjectFor(id);
+        return (own ? u.poolLines?.[project!] : u.poolLine) || (own && process.env[`${id.toUpperCase()}_LINE`]) || undefined;
+      })(),
       note: `${names[id]} handles ${ROLE[id]} in ${PRODUCT_NAME}.`,
     },
   };

@@ -30,7 +30,7 @@ After printing QR codes: `cp data/public-url.txt data/printed-url.txt` so a tunn
 | A second server crashed | `EADDRINUSE` in the server log | Keep the :3000 listener, close the other terminal |
 | Sign-up page unreachable (tunnel) | no `data/public-url.txt` or `<url>/health` fails, 2 ticks | `npm run tunnel`, reload the /join pages |
 | Printed QR codes point at an old address | `data/printed-url.txt` ≠ `data/public-url.txt` | Show the live /join QR or reprint, then `cp` as above |
-| iMessage connection flapping | ≥2 `connection lost` lines in 2 min | Photon outage (see next) → `npm run chat -- group`; else Wi-Fi; persists → restart server |
+| iMessage connection flapping | ≥2 `connection lost` lines in 2 min | Photon outage (see next) → `npm run chat` (terminal, starts on Sunny); else Wi-Fi; persists → restart server |
 | Server error while handling a text | `[imessage] handler error` | Read the server log; replies stopped → restart server |
 | Photon API unreachable | `photon ping` fails twice (checked every 2 min) | Offline? fix Wi-Fi. Else Photon is down: tell judges, terminal demo |
 | Photon CLI logged out | `photon whoami` fails (every 2 min) | `photon login` — until then every sign-up stays pending |

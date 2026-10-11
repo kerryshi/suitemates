@@ -8,8 +8,8 @@ Already working (keyless): `MOCK=1 npm run chat -- academic` then type `what's d
 - [x] `get_due_assignments` over mock/canvas.json (this is THE template tool everyone copies)
 - [x] `morning_due` trigger: `npm run trigger -- academic morning_due`
 - [x] `watch()` 24h warnings (only polled if WATCH includes `academic`)
-- [ ] Generate a UNC Canvas token (Canvas → Account → Settings → New Access Token). If UNC blocks it, stay on mock. (Ismail: still to do by hand; on mock for now)
-- [ ] With a token: `MOCK=0 CANVAS_TOKEN=... npm run chat -- academic` and confirm `canvas.ts` (UNVERIFIED planner call)
+- [x] UNC Canvas token generated (expires Oct 12); lives only in Ismail's `.env`
+- [x] Live Canvas verified on a UNC account: 5 classes, 108 assignments, 21 announcements (`canvas.ts` now reads courses/assignments/announcements, not the planner)
 - [x] Write the voice in `prompt.md` (calm, organized older student). Checked against real Gemini (gemini-3.6-flash) on mock data
 - [x] Tune `routerLine` in `index.ts` so Academic speaks up in the group chat when a plan collides with a deadline (plans with a day attached now wake Academic in keyless mode too)
 - [x] Academic avatar (Frutiger Aero look): Kerry's `docs/avatars/dean.png` (contact photo) and `dean-icon.png`
@@ -34,5 +34,6 @@ Already working (keyless): `MOCK=1 npm run chat -- academic` then type `what's d
 - [x] Live snapshot: courses + grades + weights + syllabus, all assignments + scores, announcements; owner-only; cached
 - [x] Tools: get_announcements, get_syllabus, grade_impact
 - [x] Proactive: morning_due adds tomorrow, weekly_plan (Sun 19:00), exam week notice, new announcements
-- [ ] `CANVAS_LIVE=1` once the Gemini key is paid (real grades through Gemini)
-- [ ] Shared context for the other personas (`Persona.context`), then the group-chat negotiation (Dean offers options + grade impact)
+- [x] `CANVAS_LIVE=1` on the paid Gemini key (owner only)
+- [x] Shared context (`Persona.context`) + shared calendar feed (`calendar.ts`); group chat dropped for separate agents
+- [ ] LAST: cross-person scheduling (a friend's Sunny proposes → both Deans find a time → Dean asks me with the impact on my day)

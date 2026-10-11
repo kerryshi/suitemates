@@ -2,6 +2,7 @@
 import type { Ctx, Persona } from "./types.ts";
 import type { LlmClient, LlmMessage } from "./llm/client.ts";
 import type { Turn } from "./store.ts";
+import { capEmoji } from "./voice.ts";
 
 const MAX_TOOL_ROUNDS = 3;
 const TOOL_TIMEOUT_MS = 10_000;
@@ -24,7 +25,13 @@ export interface RespondArgs {
   shared?: string[]; // what the other personas know ("Dean: midterm Wednesday"), from Persona.context
 }
 
+// The reply is capped at one emoji here as well as in the transports, so history holds what the student saw (a
+// 2-emoji model turn left in history is an example the model copies next turn).
 export async function respond(a: RespondArgs): Promise<string> {
+  return capEmoji(await reply(a));
+}
+
+async function reply(a: RespondArgs): Promise<string> {
   const system = `${a.persona.prompt.trim()}\n\n${contextBlock(a)}`;
   // A proactive text is an instruction from us, not something the student said. Without saying so, a model with
   // the real chat history in front of it answers the facts as if the student pasted them ("sending my old intro
@@ -96,7 +103,7 @@ function contextBlock(a: RespondArgs): string {
       ? [`- This semester they're mostly trying to: ${FOCUS[u.focus ?? "balance"]}${u.win ? `; a win would be: "${u.win}"` : ""}. Lean your advice that way.`]
       : []),
     ...(a.shared?.length ? [`- What the others know (use it to plan together; don't recite it): ${a.shared.join(" | ")}`] : []),
-    "- Text like their friend, not a notification or reminder app: usually one short line (two max), lowercase is fine, emojis in your own style, no markdown, no headings, no lists, never start with Reminder:/Heads up:/Alert:.",
+    "- Text like their friend, not a notification or reminder app: usually one short line (two max), lowercase, no markdown, no headings, no lists, never start with Reminder:/Heads up:/Alert:. Emoji: usually none, at most one, never as a sign-off at the end of a text. End with a question only when you need an answer.",
     "- Get facts from your tools. Never invent numbers, dates, or names.",
   ].join("\n");
 }

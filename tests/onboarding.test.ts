@@ -80,7 +80,7 @@ test("a DM from a new user gets onboarding, not the LLM", async () => {
 
 test("Sunny asks only about plans: first name, then what they're into, never money or Canvas", () => {
   const { u, replies } = runAs("social", "hi", "I'm kerry!", "soccer, boba and hiking");
-  assert.match(replies[0], /^hey! i'm Breeze from Canopy 👋 i'm the plans person.*what's your first name\?$/);
+  assert.match(replies[0], /^hey, i'm Breeze from Canopy\. i'm the plans person.*what's your first name\?$/);
   assert.match(replies[1], /^nice to meet you, Kerry! what are you into\?/);
   assert.match(replies[2], /what's happening this weekend/);
   assert.doesNotMatch(replies.join(" "), /budget|saving|Canvas/);
@@ -121,7 +121,7 @@ test("a DM to Sunny's line from a new user gets Sunny's setup, not the LLM", asy
   });
   const out = await engine.handle({ persona: "social", sender: "+3", text: "hi", handle: "h", messageId: "1" });
   assert.equal(llmCalls, 0);
-  assert.match(out[0].text, /i'm Breeze from Canopy 👋 i'm the plans person/);
+  assert.match(out[0].text, /i'm Breeze from Canopy\. i'm the plans person/);
 });
 
 test("review: greetings and filler are never saved as a name, so Sunny re-asks", () => {

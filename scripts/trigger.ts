@@ -6,6 +6,7 @@ import { loadDotEnv } from "../core/env.ts";
 import { createApp } from "../core/app.ts";
 import { DEMO_USER } from "../core/console.ts";
 import type { PersonaId } from "../core/types.ts";
+import { capEmoji } from "../core/voice.ts";
 
 loadDotEnv();
 const [persona, name, phoneArg] = process.argv.slice(2);
@@ -26,6 +27,6 @@ if (process.env.SERVER_URL) {
   const app = createApp({ storeFile: process.env.CHAT_STATE ?? "data/chat-state.json" });
   const outs = await app.engine.trigger(persona as PersonaId, name, { phone, force: true });
   if (outs.length === 0) console.log("(no events)");
-  for (const o of outs) console.log(`[${app.config.names[o.persona]}] → ${o.handle}: ${o.text}`);
+  for (const o of outs) console.log(`[${app.config.names[o.persona]}] → ${o.handle}: ${capEmoji(o.text)}`); // as a transport sends it
   if (phoneArg) console.error(`(printed only, not sent to ${phone}; set SERVER_URL=http://localhost:${process.env.PORT ?? 3000} to send through the running server)`);
 }

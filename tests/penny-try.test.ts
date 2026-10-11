@@ -46,7 +46,7 @@ test("Penny's intro: hello, her card, then where the month stands", async () => 
     await s.post("/signup", { agent: "financial", name: "Sam", phone: SAM, budget: "600", goal: "spring break, $400" });
     const out = await s.hey(SAM);
     assert.deepEqual(out.map((o) => (o.card ? "card" : "text")), ["text", "card", "text"]);
-    assert.match(out[0].text, /i'm Penny 💸/);
+    assert.match(out[0].text, /i'm Penny\./);
     assert.match(out[2].text, /this month: \$600\.00 budget, \$[\d.]+ left, about \$[\d.]+ a day\. saving for: spring break, \$400\./);
   } finally {
     s.close();

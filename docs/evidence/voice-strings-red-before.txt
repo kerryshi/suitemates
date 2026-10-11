@@ -1,0 +1,267 @@
+$ npx tsx --test personas/academic/academic.test.ts tests/onboarding.test.ts tests/signup.test.ts tests/penny-try.test.ts   # 2026-10-11 02:17 EDT, strings changed, pins NOT yet updated
+✔ get_due_assignments lists the week soonest first and marks the exam (13.898584ms)
+✔ get_due_assignments respects days (0.331916ms)
+✔ a Saturday plan collides with the Sunday-night deadlines (0.601584ms)
+✔ a clear day says so and still warns about an exam right after (0.284958ms)
+✔ kind filters to this week's quizzes, or exams over two weeks (0.944292ms)
+✔ get_grades shows every class grade with its graded work (0.235125ms)
+✔ get_grades for one class, and an unknown class lists the real ones (0.306958ms)
+✔ tonight skips what's already past and keeps what's still due (0.209417ms)
+✔ an unreadable day falls back to the next 3 days instead of guessing (0.362ms)
+✔ planWindow: weekend from a weekday is Sat through Mon; a weekday is that day plus the next (0.165208ms)
+✔ morning_due lists today's two items with one dedupe key per day (0.305542ms)
+✖ watch: 24h warnings, a week's notice per exam, and announcements from the last day, each once (0.987542ms)
+✖ weekly_plan groups the week by day and flags exams after it (0.884625ms)
+✖ morning_due adds tomorrow's work (0.330583ms)
+✔ grade_impact shows skip / half / ace against the current grade (0.817167ms)
+✔ announcements and syllabus tools (0.679416ms)
+✔ live Canvas helpers: course codes, exam vs practice, html (0.341709ms)
+✔ live Canvas only for the token's owner, never another phone (0.213208ms)
+✔ group chat: a plan with a day wakes Academic, small talk doesn't (0.537417ms)
+✖ proactive facts read as a text to the student (core sends them raw if Gemini fails) (0.588125ms)
+✖ intro: first who Dean is (no assignments), then the next deadline as its own text (0.313333ms)
+✔ hi → budget → goal finishes onboarding with Canvas linked (0.724625ms)
+✔ a non-number budget is re-asked once, then defaults to 500 (0.260916ms)
+✔ Academic asks only for Canvas, and any answer links the demo Canvas (0.118375ms)
+✔ a question during setup isn't read as the budget: only a plain amount counts (0.118875ms)
+✔ budget parsing handles $ signs, commas and k (0.055875ms)
+✔ a DM from a new user gets onboarding, not the LLM (0.422958ms)
+✖ Sunny asks only about plans: first name, then what they're into, never money or Canvas (1.395458ms)
+✔ Sunny re-asks a name once, then moves on without one (0.506208ms)
+✔ name and interest parsing (0.501583ms)
+✖ a DM to Sunny's line from a new user gets Sunny's setup, not the LLM (0.228584ms)
+✔ review: greetings and filler are never saved as a name, so Sunny re-asks (0.907083ms)
+✔ review: switching persona mid-setup restarts with that persona's setup and keeps earlier answers (0.136042ms)
+✔ review: 'all of the above' means every category, 'idk' means none (0.053792ms)
+[http] listening on :0 (GET / sign-up, /admin, POST /demo/trigger, GET /health)
+[signup] Sam +19195550123 (added)
+[http] listening on :0 (GET / sign-up, /admin, POST /demo/trigger, GET /health)
+✖ Penny's intro: hello, her card, then where the month stands (21.535708ms)
+[signup] Sam +19195550123 (added)
+[http] listening on :0 (GET / sign-up, /admin, POST /demo/trigger, GET /health)
+✔ try Penny: only after her hello; a purchase lands in that person's ledger and she roasts it (11.629875ms)
+[signup] X +19195550123 (added)
+[signup] X +19195550124 (added)
+[http] listening on :0 (GET / sign-up, /admin, POST /demo/trigger, GET /health)
+✔ one person's demo purchases never show up for someone else (10.920416ms)
+[signup] Sam +19195550123 (added)
+[http] listening on :0 (GET / sign-up, /admin, POST /demo/trigger, GET /health)
+✔ Penny tells the other agents how the month is going, never the balance (3.80225ms)
+[signup] Sam +19195550123 (added)
+✔ Penny's patterns: six weeks of habits per sign-up, never roasted, asked about once, with swap math (5.24225ms)
+[http] listening on :0 (GET / sign-up, /admin, POST /demo/trigger, GET /health)
+✔ normalizePhone accepts US formats only (0.722791ms)
+✔ parseSignup fills the profile, skips text onboarding, and needs a name (1.371ms)
+[signup] Sam +19195550123 (pending; photon: off in tests)
+[http] listening on :0 (GET / sign-up, /admin, POST /demo/trigger, GET /health)
+✖ sign up → pending → admin sends Dean's intro first → invited (28.600834ms)
+[http] listening on :0 (GET / sign-up, /admin, POST /demo/trigger, GET /health)
+✔ bad sign-ups are rejected; admin needs DEMO_TOKEN when set; intro only for signed-up phones (6.683709ms)
+[signup] Sam +19195550123 (pending; photon: off in tests)
+✔ a Photon refusal leaves the sign-up pending (5.034042ms)
+[http] listening on :0 (GET / sign-up, /admin, POST /demo/trigger, GET /health)
+✔ focus and 'a win' are saved (unknown focus dropped) and reach every persona's prompt (4.520625ms)
+[signup] Sam +19195550123 (added)
+[signup] Sam +19195550123 (invited)
+[http] listening on :0 (GET / sign-up, /admin, POST /demo/trigger, GET /health)
+✔ QR flow: sign up → added to Photon → page gets the number → their 'hey' gets every intro + card (7.316834ms)
+[signup] Sam +19195550123 (pending; photon: photon: not logged in)
+✔ if Photon can't add them, the sign-up stays pending for /admin (1.419083ms)
+✔ Photon helpers: pool line from the users list, CLI-safe names (0.571542ms)
+✔ lineFor reads Photon's real shape: users list array and a single user from add (0.119334ms)
+[http] listening on :0 (GET / sign-up, /admin, POST /demo/trigger, GET /health)
+✔ onList: someone already in Photon is recognised (so we never re-add and overwrite them) (0.686334ms)
+[signup] Sam +19195550123 (invited)
+[signup] Sam +19195550123 (invited)
+[signup] Sam +19195550123 (invited)
+[signup] Sam +19195550123 already has financial; sent their number again
+[http] listening on :0 (GET / sign-up, /admin, POST /demo/trigger, GET /health)
+✔ one Photon project per agent: each agent's QR adds them to that agent's project and texts that agent's number (6.744708ms)
+[signup] Sam +19195550123 (added)
+[signup] Sam +19195550123 (added)
+✔ one shared project (no <AGENT>_PROJECT_ID): unchanged, one add and one number for every agent (1.810709ms)
+✔ photonProjectFor: an agent's own project and token, else the shared ones (0.134834ms)
+[http] listening on :0 (GET / sign-up, /admin, POST /demo/trigger, GET /health)
+✔ the real CLI call goes to the chosen agent's project with that agent's token (236.982584ms)
+[signup] Sam +19195550123 (invited)
+[signup] Sam +19195550123 (pending; photon: 401)
+[http] listening on :0 (GET / sign-up, /admin, POST /demo/trigger, GET /health)
+✔ review: if an agent's add fails, its sign-up is pending and never points at another project's number (4.181791ms)
+[signup] Sam +19195550123 (invited)
+[http] listening on :0 (GET / sign-up, /admin, POST /demo/trigger, GET /health)
+✔ review: a contact card never shows the old shared-project number for an agent on its own project (4.625625ms)
+[signup] Sam +19195550123 (invited)
+[signup] Sam +19195550123 already has financial; sent their number again
+[http] listening on :0 (GET / sign-up, /admin, POST /demo/trigger, GET /health)
+✔ review: a changed project id means not added there yet, so the next sign-up adds them again (3.39425ms)
+[signup] Sam +19195550123 (added)
+[signup] Sam +19195550123 already has social; sent their number again
+[signup] Sam +19195550123 (added)
+✔ signing up again with the same agent changes nothing and just returns your number for it (3.227209ms)
+ℹ tests 58
+ℹ suites 0
+ℹ pass 49
+ℹ fail 9
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 538.635
+
+✖ failing tests:
+
+test at personas/academic/academic.test.ts:111:1
+✖ watch: 24h warnings, a week's notice per exam, and announcements from the last day, each once (0.987542ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  + actual - expected
+  
+  + 'STOR 435 Midterm 2 is Wednesday 9:30 AM, 6 days out. start reviewing today, a little every day. no cramming.'
+  - '📚 STOR 435 Midterm 2 is Wednesday 9:30 AM, 6 days out. start reviewing today, a little every day. no cramming 👀'
+  
+      at TestContext.<anonymous> (/Users/kerryshi/Projects/hacknc-agents-voice/personas/academic/academic.test.ts:115:10)
+      at async Test.run (node:internal/test_runner/test:1069:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:752:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'STOR 435 Midterm 2 is Wednesday 9:30 AM, 6 days out. start reviewing today, a little every day. no cramming.',
+    expected: '📚 STOR 435 Midterm 2 is Wednesday 9:30 AM, 6 days out. start reviewing today, a little every day. no cramming 👀',
+    operator: 'strictEqual'
+  }
+
+test at personas/academic/academic.test.ts:120:1
+✖ weekly_plan groups the week by day and flags exams after it (0.884625ms)
+  AssertionError [ERR_ASSERTION]: The input did not match the regular expression /^your week 📚 Thu: STOR 435 Problem Set 6, ENGL 105 Discussion post: source analysis · Sat: COMP 421 Quiz 4 \(quiz\)/. Input:
+  
+  'your week. Thu: STOR 435 Problem Set 6, ENGL 105 Discussion post: source analysis · Sat: COMP 421 Quiz 4 (quiz) · Sun: COMP 421 Project 1: Buffer Pool Manager, COMP 577 HW2: Feature Matching · Mon: COMP 577 Quiz 3 (quiz) · Tue: ENGL 105 Essay 2 draft · Wed: STOR 435 Midterm 2 (EXAM). Exams after that: COMP 421: Midterm 2 (EXAM), due Saturday 2:00 PM, 100 pts.'
+  
+      at TestContext.<anonymous> (/Users/kerryshi/Projects/hacknc-agents-voice/personas/academic/academic.test.ts:122:10)
+      at async Test.run (node:internal/test_runner/test:1069:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:752:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'your week. Thu: STOR 435 Problem Set 6, ENGL 105 Discussion post: source analysis · Sat: COMP 421 Quiz 4 (quiz) · Sun: COMP 421 Project 1: Buffer Pool Manager, COMP 577 HW2: Feature Matching · Mon: COMP 577 Quiz 3 (quiz) · Tue: ENGL 105 Essay 2 draft · Wed: STOR 435 Midterm 2 (EXAM). Exams after that: COMP 421: Midterm 2 (EXAM), due Saturday 2:00 PM, 100 pts.',
+    expected: /^your week 📚 Thu: STOR 435 Problem Set 6, ENGL 105 Discussion post: source analysis · Sat: COMP 421 Quiz 4 \(quiz\)/,
+    operator: 'match'
+  }
+
+test at personas/academic/academic.test.ts:127:1
+✖ morning_due adds tomorrow's work (0.330583ms)
+  AssertionError [ERR_ASSERTION]: The input did not match the regular expression /^morning 😤 you've got 2 things due today: .* Tomorrow: COMP 421 Project 1: Buffer Pool Manager\.$/. Input:
+  
+  "morning. you've got 2 things due today: STOR 435 Problem Set 6 at 5:00 PM; ENGL 105 Discussion post: source analysis at 11:59 PM. Tomorrow: COMP 421 Project 1: Buffer Pool Manager."
+  
+      at TestContext.<anonymous> (/Users/kerryshi/Projects/hacknc-agents-voice/personas/academic/academic.test.ts:129:10)
+      at async Test.run (node:internal/test_runner/test:1069:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:752:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: "morning. you've got 2 things due today: STOR 435 Problem Set 6 at 5:00 PM; ENGL 105 Discussion post: source analysis at 11:59 PM. Tomorrow: COMP 421 Project 1: Buffer Pool Manager.",
+    expected: /^morning 😤 you've got 2 things due today: .* Tomorrow: COMP 421 Project 1: Buffer Pool Manager\.$/,
+    operator: 'match'
+  }
+
+test at personas/academic/academic.test.ts:180:1
+✖ proactive facts read as a text to the student (core sends them raw if Gemini fails) (0.588125ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  + actual - expected
+  
+  + "STOR 435 Problem Set 6 is due today 5:00 PM. don't make me ask twice."
+  - "⏰ STOR 435 Problem Set 6 is due today 5:00 PM. don't make me ask twice 😤"
+  
+      at TestContext.<anonymous> (/Users/kerryshi/Projects/hacknc-agents-voice/personas/academic/academic.test.ts:182:10)
+      at async Test.run (node:internal/test_runner/test:1069:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:752:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: "STOR 435 Problem Set 6 is due today 5:00 PM. don't make me ask twice.",
+    expected: "⏰ STOR 435 Problem Set 6 is due today 5:00 PM. don't make me ask twice 😤",
+    operator: 'strictEqual'
+  }
+
+test at personas/academic/academic.test.ts:185:1
+✖ intro: first who Dean is (no assignments), then the next deadline as its own text (0.313333ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  + actual - expected
+  
+  + 'first thing on your list: STOR 435 Problem Set 6, due today 5:00 PM.'
+  - 'first thing on your list: STOR 435 Problem Set 6, due today 5:00 PM ⏰'
+  
+      at TestContext.<anonymous> (/Users/kerryshi/Projects/hacknc-agents-voice/personas/academic/academic.test.ts:192:10)
+      at async Test.run (node:internal/test_runner/test:1069:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:752:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'first thing on your list: STOR 435 Problem Set 6, due today 5:00 PM.',
+    expected: 'first thing on your list: STOR 435 Problem Set 6, due today 5:00 PM ⏰',
+    operator: 'strictEqual'
+  }
+
+test at tests/onboarding.test.ts:81:1
+✖ Sunny asks only about plans: first name, then what they're into, never money or Canvas (1.395458ms)
+  AssertionError [ERR_ASSERTION]: The input did not match the regular expression /^hey! i'm Breeze from Canopy 👋 i'm the plans person.*what's your first name\?$/. Input:
+  
+  "hey, i'm Breeze from Canopy. i'm the plans person: i find people who want to do the same stuff you do. what's your first name?"
+  
+      at TestContext.<anonymous> (/Users/kerryshi/Projects/hacknc-agents-voice/tests/onboarding.test.ts:83:10)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1062:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:752:18)
+      at Test.postRun (node:internal/test_runner/test:1191:19)
+      at Test.run (node:internal/test_runner/test:1119:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:752:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: "hey, i'm Breeze from Canopy. i'm the plans person: i find people who want to do the same stuff you do. what's your first name?",
+    expected: /^hey! i'm Breeze from Canopy 👋 i'm the plans person.*what's your first name\?$/,
+    operator: 'match'
+  }
+
+test at tests/onboarding.test.ts:113:1
+✖ a DM to Sunny's line from a new user gets Sunny's setup, not the LLM (0.228584ms)
+  AssertionError [ERR_ASSERTION]: The input did not match the regular expression /i'm Breeze from Canopy 👋 i'm the plans person/. Input:
+  
+  "hey, i'm Breeze from Canopy. i'm the plans person: i find people who want to do the same stuff you do. what's your first name?"
+  
+      at TestContext.<anonymous> (/Users/kerryshi/Projects/hacknc-agents-voice/tests/onboarding.test.ts:124:10)
+      at async Test.run (node:internal/test_runner/test:1069:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:752:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: "hey, i'm Breeze from Canopy. i'm the plans person: i find people who want to do the same stuff you do. what's your first name?",
+    expected: /i'm Breeze from Canopy 👋 i'm the plans person/,
+    operator: 'match'
+  }
+
+test at tests/penny-try.test.ts:43:1
+✖ Penny's intro: hello, her card, then where the month stands (21.535708ms)
+  AssertionError [ERR_ASSERTION]: The input did not match the regular expression /i'm Penny 💸/. Input:
+  
+  "(fake LLM) hey Sam, i'm Penny. i watch your spending so your bank account stops crying. i'll tell you if you can afford it, and i will absolutely say something about the 3 am DoorDash."
+  
+      at TestContext.<anonymous> (/Users/kerryshi/Projects/hacknc-agents-voice/tests/penny-try.test.ts:49:12)
+      at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+      at async Test.run (node:internal/test_runner/test:1069:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:332:3) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: "(fake LLM) hey Sam, i'm Penny. i watch your spending so your bank account stops crying. i'll tell you if you can afford it, and i will absolutely say something about the 3 am DoorDash.",
+    expected: /i'm Penny 💸/,
+    operator: 'match'
+  }
+
+test at tests/signup.test.ts:60:1
+✖ sign up → pending → admin sends Dean's intro first → invited (28.600834ms)
+  AssertionError [ERR_ASSERTION]: The input did not match the regular expression /hiii Sam, i'm Penny 💸.*DoorDash\.$/. Input:
+  
+  "(fake LLM) hey Sam, i'm Penny. i watch your spending so your bank account stops crying. i'll tell you if you can afford it, and i will absolutely say something about the 3 am DoorDash."
+  
+      at TestContext.<anonymous> (/Users/kerryshi/Projects/hacknc-agents-voice/tests/signup.test.ts:85:12)
+      at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+      at async Test.run (node:internal/test_runner/test:1069:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:752:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: "(fake LLM) hey Sam, i'm Penny. i watch your spending so your bank account stops crying. i'll tell you if you can afford it, and i will absolutely say something about the 3 am DoorDash.",
+    expected: /hiii Sam, i'm Penny 💸.*DoorDash\.$/,
+    operator: 'match'
+  }
+exit=1

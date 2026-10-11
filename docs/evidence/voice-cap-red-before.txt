@@ -1,0 +1,84 @@
+$ npx tsx --test tests/voice.test.ts tests/voice-wiring.test.ts   # 2026-10-11 02:16 EDT, branch kerry/voice, before core/voice.ts exists
+✖ SpectrumTransport sends at most one emoji, and the echo buffer holds the text that went out (2.802875ms)
+✖ ConsoleTransport prints at most one emoji (0.206583ms)
+✖ a model reply with two emoji: one reaches the student and one is stored in history (6.448625ms)
+
+node:internal/modules/run_main:105
+    triggerUncaughtException(
+    ^
+Error [ERR_MODULE_NOT_FOUND]: Cannot find module '/Users/kerryshi/Projects/hacknc-agents-voice/core/voice.ts' imported from /Users/kerryshi/Projects/hacknc-agents-voice/tests/voice.test.ts
+    at finalizeResolution (node:internal/modules/esm/resolve:274:11)
+    at moduleResolve (node:internal/modules/esm/resolve:859:10)
+    at defaultResolve (node:internal/modules/esm/resolve:983:11)
+    at nextResolve (node:internal/modules/esm/hooks:748:28)
+    at resolveBase (file:///Users/kerryshi/Projects/hacknc-agents/node_modules/tsx/dist/register-nyXW-TH3.mjs:2:10494)
+    at async resolveDirectory (file:///Users/kerryshi/Projects/hacknc-agents/node_modules/tsx/dist/register-nyXW-TH3.mjs:2:11575) {
+  code: 'ERR_MODULE_NOT_FOUND',
+  url: 'file:///Users/kerryshi/Projects/hacknc-agents-voice/core/voice.ts'
+}
+
+Node.js v24.3.0
+✖ tests/voice.test.ts (121.46525ms)
+ℹ tests 4
+ℹ suites 0
+ℹ pass 0
+ℹ fail 4
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 684.984833
+
+✖ failing tests:
+
+test at tests/voice-wiring.test.ts:32:1
+✖ SpectrumTransport sends at most one emoji, and the echo buffer holds the text that went out (2.802875ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  2 !== 1
+  
+      at TestContext.<anonymous> (/Users/kerryshi/Projects/hacknc-agents-voice/tests/voice-wiring.test.ts:34:10)
+      at async Test.run (node:internal/test_runner/test:1069:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:332:3) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 2,
+    expected: 1,
+    operator: 'strictEqual'
+  }
+
+test at tests/voice-wiring.test.ts:42:1
+✖ ConsoleTransport prints at most one emoji (0.206583ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  2 !== 1
+  
+      at TestContext.<anonymous> (/Users/kerryshi/Projects/hacknc-agents-voice/tests/voice-wiring.test.ts:53:10)
+      at async Test.run (node:internal/test_runner/test:1069:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:752:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 2,
+    expected: 1,
+    operator: 'strictEqual'
+  }
+
+test at tests/voice-wiring.test.ts:57:1
+✖ a model reply with two emoji: one reaches the student and one is stored in history (6.448625ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  2 !== 1
+  
+      at TestContext.<anonymous> (/Users/kerryshi/Projects/hacknc-agents-voice/tests/voice-wiring.test.ts:64:10)
+      at async Test.run (node:internal/test_runner/test:1069:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:752:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 2,
+    expected: 1,
+    operator: 'strictEqual'
+  }
+
+test at tests/voice.test.ts:1:1
+✖ tests/voice.test.ts (121.46525ms)
+  'test failed'
+exit=1

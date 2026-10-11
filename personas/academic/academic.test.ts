@@ -112,21 +112,21 @@ test("watch: 24h warnings, a week's notice per exam, and announcements from the 
   const evs = await watch(ctx());
   assert.deepEqual(evs.map((e) => e.kind), ["due_within_24h", "due_within_24h", "exam_week", "announcement", "announcement"]);
   assert.equal(new Set(evs.map((e) => e.dedupeKey)).size, 5);
-  assert.equal(evs[2].facts, "📚 STOR 435 Midterm 2 is Wednesday 9:30 AM, 6 days out. start reviewing today, a little every day. no cramming 👀");
-  assert.match(evs[3].facts, /^👀 new from STOR 435: Midterm 2 room change\. Midterm 2 is in Hamilton 100/);
-  assert.match(evs[4].facts, /^👀 new from COMP 421: Project 1 autograder is live/); // 3-day-old HW2 note is not repeated
+  assert.equal(evs[2].facts, "STOR 435 Midterm 2 is Wednesday 9:30 AM, 6 days out. start reviewing today, a little every day. no cramming.");
+  assert.match(evs[3].facts, /^new from STOR 435: Midterm 2 room change\. Midterm 2 is in Hamilton 100/);
+  assert.match(evs[4].facts, /^new from COMP 421: Project 1 autograder is live/); // 3-day-old HW2 note is not repeated
 });
 
 test("weekly_plan groups the week by day and flags exams after it", async () => {
   const [ev] = await triggers.weekly_plan(ctx());
-  assert.match(ev.facts, /^your week 📚 Thu: STOR 435 Problem Set 6, ENGL 105 Discussion post: source analysis · Sat: COMP 421 Quiz 4 \(quiz\)/);
+  assert.match(ev.facts, /^your week\. Thu: STOR 435 Problem Set 6, ENGL 105 Discussion post: source analysis · Sat: COMP 421 Quiz 4 \(quiz\)/);
   assert.match(ev.facts, /Wed: STOR 435 Midterm 2 \(EXAM\)\./);
   assert.match(ev.facts, /Exams after that: COMP 421: Midterm 2 \(EXAM\)/);
 });
 
 test("morning_due adds tomorrow's work", async () => {
   const [ev] = await triggers.morning_due(ctx(new Date(2026, 9, 10, 8, 0))); // on a Saturday, Sunday's project is "tomorrow"
-  assert.match(ev.facts, /^morning 😤 you've got 2 things due today: .* Tomorrow: COMP 421 Project 1: Buffer Pool Manager\.$/);
+  assert.match(ev.facts, /^morning\. you've got 2 things due today: .* Tomorrow: COMP 421 Project 1: Buffer Pool Manager\.$/);
 });
 
 test("grade_impact shows skip / half / ace against the current grade", async () => {
@@ -179,7 +179,7 @@ test("group chat: a plan with a day wakes Academic, small talk doesn't", () => {
 
 test("proactive facts read as a text to the student (core sends them raw if Gemini fails)", async () => {
   const [ev] = await watch(ctx());
-  assert.equal(ev.facts, "⏰ STOR 435 Problem Set 6 is due today 5:00 PM. don't make me ask twice 😤");
+  assert.equal(ev.facts, "STOR 435 Problem Set 6 is due today 5:00 PM. don't make me ask twice.");
 });
 
 test("intro: first who Dean is (no assignments), then the next deadline as its own text", async () => {
@@ -189,5 +189,5 @@ test("intro: first who Dean is (no assignments), then the next deadline as its o
   assert.doesNotMatch(hello.facts, /STOR|due today/);
   assert.equal(hello.dedupeKey, "academic:intro:+19195550001");
   assert.equal(next.kind, "intro_next_up");
-  assert.equal(next.facts, "first thing on your list: STOR 435 Problem Set 6, due today 5:00 PM ⏰");
+  assert.equal(next.facts, "first thing on your list: STOR 435 Problem Set 6, due today 5:00 PM.");
 });

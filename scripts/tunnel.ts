@@ -9,6 +9,14 @@ import { dirname } from "node:path";
 import { loadDotEnv } from "../core/env.ts";
 
 loadDotEnv();
+if (!process.env.DEMO_TOKEN) {
+  console.error(
+    "[tunnel] DEMO_TOKEN is not set. The tunnel makes this server public, and without a token anyone with the URL can read " +
+      "/admin/signups (everyone's sign-up details) and make the agents text people. Add a long random DEMO_TOKEN to .env, " +
+      "then run npm run tunnel again.",
+  );
+  process.exit(1);
+}
 const port = process.env.PORT || "3000";
 const out = "data/public-url.txt";
 const exe = process.platform === "win32" && existsSync("C:\\Program Files (x86)\\cloudflared\\cloudflared.exe")

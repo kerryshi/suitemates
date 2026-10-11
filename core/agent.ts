@@ -90,7 +90,7 @@ function contextBlock(a: RespondArgs): string {
       ? [`- This semester they're mostly trying to: ${FOCUS[u.focus ?? "balance"]}${u.win ? `; a win would be: "${u.win}"` : ""}. Lean your advice that way.`]
       : []),
     ...(a.shared?.length ? [`- What the others know (use it to plan together; don't recite it): ${a.shared.join(" | ")}`] : []),
-    "- Write like a text message: 1–3 short sentences, lowercase is fine, no markdown, no headings.",
+    "- Text like their friend, not a notification or reminder app: usually one short line (two max), lowercase is fine, emojis in your own style, no markdown, no headings, no lists, never start with Reminder:/Heads up:/Alert:.",
     "- Get facts from your tools. Never invent numbers, dates, or names.",
   ].join("\n");
 }

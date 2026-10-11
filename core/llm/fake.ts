@@ -1,10 +1,12 @@
 // Keyless, deterministic stand-in for Gemini so everyone can build without an API key.
 // Persona chat: calls the first tool whose name words (or, failing that, description words of 5+
-// letters) appear in the message, with args = {}, then echoes the tool result. Router: see keywordRoute in core/router.ts.
+// letters) appear in the message, with args = {}, then echoes the tool result.
 import type { Tool } from "../types.ts";
 import type { LlmClient, LlmMessage, LlmStep } from "./client.ts";
 
-const SKIP = new Set(["get", "list", "set", "the", "for", "my", "and", "check"]);
+const SKIP = new Set(["get", "list", "set", "the", "for", "my", "and", "check", "in"]);
+// Core tools the keyless model calls only when their name is said ("bring dean in"), never off a description word.
+const NAME_ONLY = new Set(["bring_in"]);
 
 export class FakeLlm implements LlmClient {
   readonly name = "fake";
@@ -33,7 +35,7 @@ function pickTool(text: string, tools: Tool[]): Tool | undefined {
   const words = new Set(text.toLowerCase().match(/[a-z]+/g)?.map(stem) ?? []);
   const byName = tools.find((t) => t.name.split("_").some((w) => !SKIP.has(w) && words.has(stem(w))));
   if (byName) return byName;
-  return tools.find((t) => (t.description.toLowerCase().match(/[a-z]{5,}/g) ?? []).some((w) => !VAGUE.has(w) && words.has(stem(w))));
+  return tools.find((t) => !NAME_ONLY.has(t.name) && (t.description.toLowerCase().match(/[a-z]{5,}/g) ?? []).some((w) => !VAGUE.has(w) && words.has(stem(w))));
 }
 
 export function stem(w: string): string {

@@ -4,7 +4,7 @@
 |---|---|---|---|
 | Kerry | `core/` (shared layer) + `personas/financial/` | `kerry/core`, `fin/nessie` | `[core]`, `[financial]` |
 | Ismail | `personas/academic/` | `academic/canvas` | `[academic]` |
-| Abdullah | `personas/social/` + `personas/social/router-prompt.md` (the group router) | `social/matching` | `[social]` |
+| Abdullah | `personas/social/` | `social/matching` | `[social]` |
 
 Your first hour is in your folder's `TODO.md`.
 
@@ -22,10 +22,10 @@ Your first hour is in your folder's `TODO.md`.
 - [ ] 5 PM: shared layer live; everyone's tools working on mock data
 - [ ] 8 PM: each persona replies in its own voice over Photon
 - [ ] 11 PM: Financial reacts to Nessie purchases; Academic answers from Canvas; Social matches two phones
-- [ ] 2 AM: group chat router and one three-persona hand-off working
+- [ ] 2 AM: agents recruit each other: Sunny → Penny + Dean hand-off on a real phone (replaced the group chat, Kerry 00:50)
 - [ ] 4 AM: feature freeze; everything merged to `main`; `git tag demo && git push origin demo`
 - [ ] 6 AM: demo video recorded from the `demo` tag only
 - [ ] 9 AM: Devpost + GitHub link + video submitted (repo made public first)
 
 ## Cut order if we're behind
-Receipt photos → weekly check-in → Social. Keep Financial and the group chat.
+Receipt photos → weekly check-in → Social. Keep Financial and the hand-off.

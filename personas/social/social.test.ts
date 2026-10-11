@@ -5,7 +5,9 @@ import type { Ctx } from "../../core/types.ts";
 import { mkdtempSync, readdirSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { keywordRoute } from "../../core/router.ts";
+import { keywordScores } from "../../core/router.ts";
+// Which agents a text is about (DM routing on a shared number).
+const keywordRoute = (text: string, personas: Parameters<typeof keywordScores>[1]) => [...keywordScores(text, personas)].filter(([, n]) => n > 0).map(([id]) => id);
 import { loadPersonas } from "../../core/personas.ts";
 import { clean, findActivities, loadBoard, saveBoard, useBoardFile } from "./board.ts";
 import { tools } from "./tools.ts";
@@ -550,8 +552,7 @@ test("end to end: a Sunny-only student's .ics feed has the plan they joined", as
     personas: loadPersonas(),
     store,
     llm: new FakeLlm(),
-    config: { names: { academic: "Dean", financial: "Penny", social: "Sunny" }, PRODUCT_NAME: "Suitemates", mock: true, fakeRoute: undefined, GROUP_SETTLE_MS: 10 },
-    routerPrompt: "",
+    config: { names: { academic: "Dean", financial: "Penny", social: "Sunny" }, PRODUCT_NAME: "Suitemates", mock: true },
     log: () => {},
   });
   await run("join_activity", { activity: "soccer", my_name: "Jordan" }, ctx(NEW));

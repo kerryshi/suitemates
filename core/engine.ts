@@ -5,35 +5,29 @@ import type { Store } from "./store.ts";
 import type { Config } from "./config.ts";
 import { respond, type Setting } from "./agent.ts";
 import { introTexts } from "./signup.ts";
-import { keywordScores, route } from "./router.ts";
+import { keywordScores } from "./router.ts";
 import { onboard } from "./onboarding.ts";
 import { withMemory } from "./memory.ts";
+import { ackText, consentFromText, getPending, OFFER_TTL_MS, recruitTool, runRecruit, setPending } from "./recruit.ts";
+import { photonProjectFor, type AddResult, type AddUser } from "./photon-users.ts";
 
-// Every persona line in the group chat receives its own copy of each message. Copies with the same
-// sender + text inside this window are one message: the router runs once.
-export const DEDUPE_TTL_MS = 15_000;
 const SHARED_TIMEOUT_MS = 3_000; // Persona.context budget per reply
-
-interface Batch {
-  at: number;
-  handles: Map<PersonaId, string>;
-  messageIds: string[];
-  release: () => void;
-}
 
 export interface EngineDeps {
   personas: Map<PersonaId, Persona>;
   store: Store;
   llm: LlmClient;
-  config: Pick<Config, "names" | "PRODUCT_NAME" | "mock" | "fakeRoute" | "GROUP_SETTLE_MS"> & { watchList?: PersonaId[] };
-  routerPrompt: string;
+  config: Pick<Config, "names" | "PRODUCT_NAME" | "mock"> & { watchList?: PersonaId[] };
   now?: () => number;
   log?: (msg: string) => void;
+  addUser?: AddUser; // Photon allowlist add (core/photon-users.ts); unset = no per-agent projects to add anyone to
+  // Send texts outside the turn (a recruited agent's texts, as soon as each is ready). Set by core/main.ts.
+  deliver?: (outs: Outbound[]) => Promise<void>;
 }
 
 export class Engine {
   readonly d: EngineDeps;
-  private readonly batches = new Map<string, Batch>();
+  private readonly adds = new Map<string, Promise<AddResult>>(); // "<phone>|<agent>" → Photon add in flight
   private readonly now: () => number;
   readonly log: (msg: string) => void;
 
@@ -43,8 +37,9 @@ export class Engine {
     this.log = deps.log ?? ((m) => console.log(`[core] ${m}`));
   }
 
+  // Every message is a DM to one agent (there's no group chat: agents bring each other in, core/recruit.ts).
   async handle(ev: Inbound): Promise<Outbound[]> {
-    return ev.kind === "group" ? this.group(ev) : this.dm(ev);
+    return this.dm(ev);
   }
 
   private async dm(ev: Inbound): Promise<Outbound[]> {
@@ -63,19 +58,67 @@ export class Engine {
       this.d.store.saveUser(user);
     }
     // Signed up on the web and just texted in (the "hey Dean" the QR page pre-fills): each agent they signed up
-    // with that hasn't said hi yet introduces itself with its contact card, in this same conversation.
-    const toGreet = (user.agents ?? []).filter((id) => !(user.greeted ?? []).includes(id));
+    // with that hasn't said hi yet introduces itself with its contact card, in this same conversation. On an
+    // agent's own number only that agent: the others say hi from their own numbers.
+    const ungreeted = (user.agents ?? []).filter((id) => !(user.greeted ?? []).includes(id));
+    const toGreet = ev.lineKnown ? ungreeted.filter((id) => id === persona) : ungreeted;
     if (user.signupStatus && toGreet.length) {
       const order = [persona, ...toGreet.filter((id) => id !== persona)].filter((id) => toGreet.includes(id));
-      this.d.store.saveUser({ ...user, signupStatus: "invited", greeted: [...(user.greeted ?? []), ...order], lastAgent: order[0] });
+      // Marked greeted before the (slow) hellos are written, so a second text arriving meanwhile doesn't greet them
+      // twice. introTexts never throws for a failing intro (it falls back to the plain hello).
+      this.d.store.saveUser({ ...user, signupStatus: "invited", greeted: [...new Set([...(user.greeted ?? []), ...order])], lastAgent: order[0] });
       const intros = await introTexts(this, user.phone, order);
       return intros.map((o) => ({ ...o, handle: ev.handle }));
     }
+    // An offer to bring another agent in (core/recruit.ts), answered in the conversation it was made in.
+    const offer = getPending(this.d.store, user.phone);
+    if (offer && this.now() - offer.offeredAt < OFFER_TTL_MS && (!ev.lineKnown || offer.from === persona)) {
+      const waiting = offer.agents.filter((a) => a.consent === "pending");
+      if (waiting.length) {
+        const answer = consentFromText(ev.text ?? "");
+        setPending(this.d.store, user.phone, { ...offer, agents: offer.agents.filter((a) => a.consent !== "pending") }); // one shot
+        if (answer === "no") return [{ persona, handle: ev.handle, text: "no worries 👍" }];
+        if (answer === "yes") {
+          const r = await runRecruit(this, user.phone, { ...offer, agents: waiting });
+          const ids = waiting.map((a) => a.id);
+          return [{ persona, handle: ev.handle, text: ackText(this.d.config.names, ids, r.viaFrom) }, ...r.out];
+        }
+      }
+    }
+    const turnStart = this.now();
     const text = await this.reply(persona, user, ev.text ?? "", ev.image, "dm");
     if (user.agents?.length && user.lastAgent !== persona) this.d.store.saveUser({ ...this.d.store.user(user.phone), lastAgent: persona });
     // One shared number and several agents: say who's talking.
     const tag = !ev.lineKnown && (user.agents?.length ?? 0) > 1 ? `${this.d.config.names[persona]}: ` : "";
-    return [{ persona, handle: ev.handle, text: tag + text }];
+    const reply: Outbound = { persona, handle: ev.handle, text: tag + text };
+    // bring_in this turn for an agent they named or already have: no question, it texts now.
+    const made = getPending(this.d.store, user.phone);
+    const ready = made && made.from === persona && made.offeredAt >= turnStart ? made.agents.filter((a) => a.consent !== "pending") : [];
+    if (!made || !ready.length) return [reply];
+    setPending(this.d.store, user.phone, { ...made, agents: made.agents.filter((a) => a.consent === "pending") });
+    return [reply, ...(await runRecruit(this, user.phone, { ...made, agents: ready })).out];
+  }
+
+  // Does bringing this agent in mean adding them to its own Photon project first?
+  needsAdd(id: PersonaId, user: UserProfile): boolean {
+    const { own, project } = photonProjectFor(id);
+    return Boolean(this.d.addUser && own && !user.poolLines?.[project!]);
+  }
+
+  // The Photon add for this person and agent: the one already in flight (started when it was offered), or a new one.
+  addFor(id: PersonaId, user: UserProfile): Promise<AddResult> {
+    const key = `${user.phone}|${id}`;
+    let p = this.adds.get(key);
+    if (!p) {
+      p = this.d.addUser!(user.phone, user.name ?? "", id).catch((err): AddResult => ({ ok: false, error: err instanceof Error ? err.message : String(err) }));
+      this.adds.set(key, p);
+    }
+    // A successful add stays here, so the "yes" that follows the offer reuses it instead of running the CLI again;
+    // a failed one is dropped so the next offer can retry.
+    void p.then((r) => {
+      if (!r.ok) this.adds.delete(key);
+    });
+    return p;
   }
 
   // Who answers a DM. A dedicated line (or a user who never signed up on the web) → that line's persona. On the
@@ -102,57 +145,6 @@ export class Engine {
       .filter((h) => h.at >= 0)
       .sort((a, b) => a.at - b.at);
     return hits[0]?.id;
-  }
-
-  private async group(ev: Inbound): Promise<Outbound[]> {
-    const now = this.now();
-    for (const [k, b] of this.batches) if (now - b.at >= DEDUPE_TTL_MS) this.batches.delete(k);
-    const key = `${ev.sender}|${(ev.text ?? `image:${ev.image?.bytes.length}`).trim().toLowerCase()}`;
-
-    const existing = this.batches.get(key);
-    if (existing) {
-      existing.handles.set(ev.persona, ev.handle);
-      existing.messageIds.push(`${ev.persona}:${ev.messageId}`);
-      if (existing.handles.size >= this.d.personas.size) existing.release();
-      return [];
-    }
-    let release!: () => void;
-    const ready = new Promise<void>((r) => (release = r));
-    const batch: Batch = { at: now, handles: new Map([[ev.persona, ev.handle]]), messageIds: [`${ev.persona}:${ev.messageId}`], release };
-    this.batches.set(key, batch);
-    if (batch.handles.size < this.d.personas.size) {
-      await Promise.race([ready, new Promise((r) => setTimeout(r, this.d.config.GROUP_SETTLE_MS))]);
-    }
-    this.log(`group copies: ${batch.messageIds.join(", ")}`);
-
-    const user = this.d.store.user(ev.sender);
-    const chosen = await route({
-      text: ev.text ?? "(sent a photo)",
-      personas: this.d.personas,
-      names: this.d.config.names,
-      llm: this.d.llm,
-      routerPrompt: this.d.routerPrompt,
-      fakeRoute: this.d.config.fakeRoute,
-      log: this.log,
-    });
-    this.log(`router → [${chosen.join(", ")}]`);
-
-    // In router order, one at a time: each persona sees what the earlier ones just said, so Dean can answer
-    // Sunny's plan with the deadline it collides with instead of talking past it.
-    const texts: string[] = [];
-    for (const id of chosen) {
-      const earlier = texts.map((t, i) => `${this.d.config.names[chosen[i]]}: "${t}"`).join(" ");
-      const text = (ev.text ?? "") + (earlier ? `\n\n(Already said in this chat just now: ${earlier})` : "");
-      texts.push(await this.reply(id, user, text, ev.image, "group"));
-    }
-    return chosen.map((id, i): Outbound => {
-      const handle = batch.handles.get(id);
-      if (handle) return { persona: id, handle, text: texts[i] };
-      // That persona's line never got a copy: speak through a line that did, with a name tag.
-      const [via, h] = [...batch.handles][0];
-      this.log(`WARN ${id} has no handle in this group; sending via ${via}`);
-      return { persona: via, handle: h, text: `${this.d.config.names[id]}: ${texts[i]}` };
-    });
   }
 
   // Run each watcher once as soon as a user is onboarded, so its first poll (the baseline that
@@ -200,7 +192,9 @@ export class Engine {
           this.log(`ERROR ${personaId} proactive text failed, sending plain facts: ${err instanceof Error ? err.message : err}`);
           text = ev.facts.replace(/\s*Tone: [^.]*\./g, "").trim();
         }
-        out.push({ persona: personaId, handle: `dm:${ev.userPhone}`, text });
+        // An agent not on their phone under its own number speaks through the one they text (UserProfile.via).
+        const via = target.via?.[personaId];
+        out.push({ persona: personaId, handle: `dm:${ev.userPhone}`, text, ...(via ? { via } : {}) });
       }
     }
     return out;
@@ -216,7 +210,7 @@ export class Engine {
     };
   }
 
-  private async reply(id: PersonaId, user: UserProfile, text: string, image: Inbound["image"], setting: Setting): Promise<string> {
+  async reply(id: PersonaId, user: UserProfile, text: string, image: Inbound["image"], setting: Setting): Promise<string> {
     try {
       return await this.replyOrThrow(id, user, text, image, setting);
     } catch (err) {
@@ -244,8 +238,29 @@ export class Engine {
     return lines.filter(Boolean);
   }
 
-  private async replyOrThrow(id: PersonaId, user: UserProfile, text: string, image: Inbound["image"], setting: Setting): Promise<string> {
-    const persona = withMemory(this.d.personas.get(id)!, { store: this.d.store, user, names: this.d.config.names, text });
+  async replyOrThrow(id: PersonaId, user: UserProfile, text: string, image: Inbound["image"], setting: Setting): Promise<string> {
+    const remembered = withMemory(this.d.personas.get(id)!, { store: this.d.store, user, names: this.d.config.names, text });
+    // In their own DMs every agent can bring another one in (core/recruit.ts).
+    const persona =
+      setting === "dm"
+        ? {
+            ...remembered,
+            // Before `remember`, which stays last (memory.ts: the keyless model prefers the persona's own tools).
+            tools: [
+              ...remembered.tools.slice(0, -1),
+              recruitTool({
+                store: this.d.store,
+                names: this.d.config.names,
+                from: id,
+                text,
+                now: this.now,
+                needsAdd: (a, u) => this.needsAdd(a, u),
+                startAdd: (a, u) => void this.addFor(a, u),
+              }),
+              ...remembered.tools.slice(-1),
+            ],
+          }
+        : remembered;
     const shared = setting === "proactive" ? [] : await this.shared(id, user);
     const out = await respond({
       shared,
@@ -259,7 +274,7 @@ export class Engine {
       product: this.d.config.PRODUCT_NAME,
       names: this.d.config.names,
     });
-    const said = setting === "proactive" ? [] : [{ role: "user" as const, text: setting === "group" ? `(group chat) ${text}` : text }];
+    const said = setting === "proactive" || setting === "recruit" ? [] : [{ role: "user" as const, text }];
     this.d.store.pushHistory(id, user.phone, ...said, { role: "model", text: out });
     return out;
   }

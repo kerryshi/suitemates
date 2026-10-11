@@ -45,8 +45,7 @@ async function server(token?: string, addUser: AddUser = async () => ({ ok: fals
     personas: loadPersonas(),
     store,
     llm: new FakeLlm(),
-    config: { names: { academic: "Dean", financial: "Penny", social: "Sunny" }, PRODUCT_NAME: "Suitemates", mock: true, fakeRoute: undefined, GROUP_SETTLE_MS: 10 },
-    routerPrompt: "",
+    config: { names: { academic: "Dean", financial: "Penny", social: "Sunny" }, PRODUCT_NAME: "Suitemates", mock: true },
     log: () => {},
   });
   const transport = { start: async () => {}, send: async (o: Outbound) => void sent.push(o) };
@@ -162,14 +161,14 @@ test("QR flow: sign up → added to Photon → page gets the number → their 'h
     assert.deepEqual(calls, [["+19195550123", "Sam"]]);
     assert.equal(s.sent.length, 0); // we wait for their "hey"
 
-    const hey = await s.engine.handle({ persona: "academic", kind: "dm", sender: "+19195550123", text: "hey", handle: "space-1", messageId: "m1" });
+    const hey = await s.engine.handle({ persona: "academic", sender: "+19195550123", text: "hey", handle: "space-1", messageId: "m1" });
     assert.deepEqual(hey.map((o) => [o.persona, o.card ? "card" : "text"]), [
       ["academic", "text"], ["academic", "card"], ["academic", "text"], ["financial", "text"], ["financial", "card"], ["financial", "text"], ["social", "text"], ["social", "card"],
     ]);
     assert.ok(hey.every((o) => o.handle === "space-1")); // answered in the conversation they started
     assert.equal(s.store.user("+19195550123").signupStatus, "invited");
 
-    const next = await s.engine.handle({ persona: "academic", kind: "dm", sender: "+19195550123", text: "what's due?", handle: "space-1", messageId: "m2" });
+    const next = await s.engine.handle({ persona: "academic", sender: "+19195550123", text: "what's due?", handle: "space-1", messageId: "m2" });
     assert.equal(next.length, 1); // after the intros, a normal reply
     assert.equal((await s.post("/signup", { name: "Sam", phone: "9195550123" }).then((r) => r.json())).status, "invited");
     assert.equal(calls.length, 1); // signing up again doesn't re-add
@@ -240,7 +239,8 @@ test("one Photon project per agent: each agent's QR adds them to that agent's pr
     const s = await server(undefined, async (phone, _name, agent) => (calls.push([phone, agent]), { ok: true, line: lines[agent!] }));
     try {
       const dean = (await (await s.post("/signup", { agent: "academic", name: "Sam", phone: "9195550123" })).json()) as Record<string, unknown>;
-      assert.deepEqual([dean.status, dean.textTo], ["added", "+16465550001"]);
+      // Own number per agent: the agent texts first right after sign-up (plan v4, core/http.ts), so "invited".
+      assert.deepEqual([dean.status, dean.textTo], ["invited", "+16465550001"]);
       // Later, Penny's QR: already "added", but Penny's project doesn't know them yet → added there too.
       const penny = (await (await s.post("/signup", { agent: "financial", name: "Sam", phone: "9195550123", budget: "600" })).json()) as Record<string, unknown>;
       assert.equal(penny.textTo, "+16465550002");

@@ -70,11 +70,10 @@ test("a DM from a new user gets onboarding, not the LLM", async () => {
     personas: loadPersonas(),
     store: new Store(null),
     llm: { name: "spy", chat: async () => (llmCalls++, { text: "llm" }), json: async () => "{}" },
-    config: { names: { academic: "Oak", financial: "Clover", social: "Breeze" }, PRODUCT_NAME: "Canopy", mock: true, fakeRoute: undefined, GROUP_SETTLE_MS: 10 },
-    routerPrompt: "",
+    config: { names: { academic: "Oak", financial: "Clover", social: "Breeze" }, PRODUCT_NAME: "Canopy", mock: true },
     log: () => {},
   });
-  const out = await engine.handle({ persona: "financial", kind: "dm", sender: "+2", text: "hi", handle: "h", messageId: "1" });
+  const out = await engine.handle({ persona: "financial", sender: "+2", text: "hi", handle: "h", messageId: "1" });
   assert.equal(llmCalls, 0);
   assert.match(out[0].text, /i'm Clover from Canopy/);
 });
@@ -117,11 +116,10 @@ test("a DM to Sunny's line from a new user gets Sunny's setup, not the LLM", asy
     personas: loadPersonas(),
     store: new Store(null),
     llm: { name: "spy", chat: async () => (llmCalls++, { text: "llm" }), json: async () => "{}" },
-    config: { names: { academic: "Oak", financial: "Clover", social: "Breeze" }, PRODUCT_NAME: "Canopy", mock: true, fakeRoute: undefined, GROUP_SETTLE_MS: 10 },
-    routerPrompt: "",
+    config: { names: { academic: "Oak", financial: "Clover", social: "Breeze" }, PRODUCT_NAME: "Canopy", mock: true },
     log: () => {},
   });
-  const out = await engine.handle({ persona: "social", kind: "dm", sender: "+3", text: "hi", handle: "h", messageId: "1" });
+  const out = await engine.handle({ persona: "social", sender: "+3", text: "hi", handle: "h", messageId: "1" });
   assert.equal(llmCalls, 0);
   assert.match(out[0].text, /i'm Breeze from Canopy 👋 i'm the plans person/);
 });

@@ -1,0 +1,15 @@
+# fail-first for the Fable review findings (S1-S6, consent nit), 2026-10-11 00:36, before the fixes
+✖ S1: 'yes' after the background add settled reuses it (no second Photon CLI run, no wait) (1576.788375ms)
+✖ S2: two texts in flight before the first hello is out → one hello and card, not two (7.219875ms)
+✖ S3: bring_in takes a display name ('Penny'), and never recruits whoever else the text mentions (2.468583ms)
+✖ S4: asked=true only counts as consent when the student actually named that agent (0.567959ms)
+✖ S5: one failed send doesn't drop the rest of the batch (0.313208ms)
+✖ S6: someone who texted in (no web sign-up) keeps their first agent's proactive texts after a recruit (10.325291ms)
+✖ consent: 'no' wins over a polite yes-word, and a question isn't a yes (0.319833ms)
+ℹ pass 0
+ℹ fail 7
+✖ failing tests:
+✖ S8: with a deliver hook, 'yes' answers with the ack at once; each agent's texts go out as soon as that agent is ready (306.409ms)
+ℹ pass 7
+ℹ fail 1
+✖ S8: with a deliver hook, 'yes' answers with the ack at once; each agent's texts go out as soon as that agent is ready (306.409ms)

@@ -106,3 +106,12 @@ test("a persona with its own line or project never borrows another line's conver
   // and a shared-pool persona never speaks through a dedicated persona's conversation
   assert.deepEqual(await viaLine(dedicated, "academic", { persona: "financial", handle: "space-abc", text: "Penny: hi" }), []);
 });
+
+test("no group chat: a text in an iMessage group is ignored (never answered into a chat with strangers); DMs still come through", async () => {
+  const { toInbound } = await import("../core/transport.ts");
+  const msg = (chatType: string) => ({ persona: "social" as const, lineKnown: true, chatType, sender: "+19195550001", handle: "space-1", messageId: "m1", content: { type: "text", text: "beach trip saturday?" } });
+  assert.equal(await toInbound(msg("group")), null);
+  const dm = await toInbound(msg("dm"));
+  assert.equal(dm?.text, "beach trip saturday?");
+  assert.equal(dm?.persona, "social");
+});

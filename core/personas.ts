@@ -1,6 +1,5 @@
 // Loads and checks the three persona folders. The ONLY core file that imports personas by name.
 import type { Persona, PersonaId } from "./types.ts";
-import { loadText } from "./kit.ts";
 import academic from "../personas/academic/index.ts";
 import financial from "../personas/financial/index.ts";
 import social from "../personas/social/index.ts";
@@ -12,11 +11,6 @@ export function loadPersonas(): Map<PersonaId, Persona> {
     ["social", social],
   ];
   return new Map(all.map(([id, p]) => [id, validatePersona(p, id)]));
-}
-
-// The group chat router prompt is owned by Social; core fills in {{ROUTER_LINES}}.
-export function loadRouterPrompt(): string {
-  return loadText(import.meta.url, "../personas/social/router-prompt.md");
 }
 
 // Throws a message the folder's owner can act on. Called at startup, so a broken persona fails loudly.

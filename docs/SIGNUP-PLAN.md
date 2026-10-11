@@ -1,3 +1,5 @@
+> Historical. The group chat (and the per-agent QR as the front door) were superseded on Sun Oct 11 by agents recruiting each other: see core/recruit.ts and #24 (e8bdad8).
+
 # Sign-up → we text you first
 
 Goal: a student enters their phone number (and a few answers) on a web page, and Dean / Penny / Sunny text them first.

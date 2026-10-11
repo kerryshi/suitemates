@@ -28,8 +28,11 @@ function file(res: ServerResponse, path: string, type: string) {
   res.end(readFileSync(path));
 }
 
-export function startHttp(opts: { engine: Engine; transport: Transport; port: number; token?: string; addUser?: AddUser }) {
+export function startHttp(opts: { engine: Engine; transport: Transport; port: number; token?: string; addUser?: AddUser; addCap?: number }) {
   const addUser = opts.addUser ?? photonCliAddUser;
+  // /signup is open (judges sign up on their own phones), so it can't add unlimited strangers to our Photon plans.
+  const addCap = opts.addCap ?? Number(process.env.PHOTON_ADD_CAP || 100);
+  let addsDone = 0;
   const { engine, transport } = opts;
   const store = engine.d.store;
   const server = createServer(async (req, res) => {
@@ -113,7 +116,9 @@ export function startHttp(opts: { engine: Engine; transport: Transport; port: nu
         const { own: perAgent, project } = photonProjectFor(agent);
         const known = perAgent ? r.user.poolLines?.[project!] : r.user.poolLine;
         const fresh = r.user.signupStatus === "pending";
-        const added = fresh || !known ? await addUser(phone, r.user.name ?? "", agent) : { ok: true };
+        const capped = addsDone >= addCap;
+        const added = !(fresh || !known) ? { ok: true } : capped ? { ok: false, error: `PHOTON_ADD_CAP (${addCap}) reached` } : await addUser(phone, r.user.name ?? "", agent);
+        if ((fresh || !known) && !capped && added.ok) addsDone++;
         const line = "line" in added ? added.line : undefined;
         const user = {
           ...r.user,
@@ -124,9 +129,21 @@ export function startHttp(opts: { engine: Engine; transport: Transport; port: nu
         // Per-agent projects: only that project's own number for them, never the global POOL_NUMBER (another
         // project's number gets "this number didn't recognize you"); without one, this agent is still pending.
         const textTo = perAgent ? user.poolLines?.[project!] : user.poolLine || process.env.POOL_NUMBER || undefined;
-        const status = perAgent && !textTo ? ("pending" as const) : user.signupStatus;
+        let status = perAgent && !textTo ? ("pending" as const) : user.signupStatus;
         const why = "error" in added && added.error ? `; photon: ${added.error}` : "";
-        console.log(`[signup] ${user.name} ${phone} (${user.signupStatus}${why})`);
+        // Own number per agent: that agent texts them first (hello + card), so they don't have to start the chat.
+        // If Photon won't take it yet, they stay "added" and their own first text gets the hello instead.
+        if (perAgent && agent && textTo && !user.greeted?.includes(agent)) {
+          try {
+            for (const o of await introTexts(engine, phone, [agent])) await transport.send(o);
+            const now = store.user(phone);
+            store.saveUser({ ...now, signupStatus: "invited", greeted: [...new Set([...(now.greeted ?? []), agent])], lastAgent: agent });
+            status = "invited";
+          } catch (err) {
+            console.warn(`[signup] first text from ${agent} to ${phone} failed (${err instanceof Error ? err.message : err}); their own text will get the hello`);
+          }
+        }
+        console.log(`[signup] ${user.name} ${phone} (${status}${why})`);
         return reply(200, { ok: true, name: user.name, status, textTo, calendar: calUrl(phone), agents: user.agents, ...(own.note ? { note: own.note } : {}) });
       }
 

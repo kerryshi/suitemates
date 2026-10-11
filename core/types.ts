@@ -26,6 +26,9 @@ export interface UserProfile {
   // With one Photon project per agent (<AGENT>_PROJECT_ID), each project gives them its own number: Photon project
   // id → number (keyed by project, so a changed project id means "not added there yet").
   poolLines?: Record<string, string>;
+  // An agent that couldn't be added to its own Photon project (full, token expired) speaks through the agent they
+  // were already texting instead: agent → the agent whose conversation it borrows (core/recruit.ts).
+  via?: Partial<Record<PersonaId, PersonaId>>;
   canvasToken?: string; // their own Canvas access token (Dean's sign-up). Server-side only: never logged or listed.
 }
 
@@ -64,7 +67,7 @@ export interface WatchEvent {
 export interface Persona {
   id: PersonaId;
   prompt: string; // contents of prompt.md: voice + rules
-  routerLine: string; // one sentence: when should this persona speak in the group chat?
+  routerLine: string; // one sentence: what this agent handles (picks who answers a DM on a shared number)
   tools: Tool[];
   // Polled every WATCH_MS for each onboarded user. Optional.
   watch?(ctx: Ctx): Promise<WatchEvent[]>;
@@ -96,7 +99,6 @@ export interface CalendarItem {
 
 export interface Inbound {
   persona: PersonaId; // whose number received it
-  kind: "dm" | "group";
   sender: string; // user phone/handle
   text?: string;
   image?: { bytes: Uint8Array; mimeType: string };
@@ -113,4 +115,7 @@ export interface Outbound {
   text: string;
   // A contact card (vCard: name, photo, the persona's own number if it has one) sent after `text` (which may be "").
   card?: { name: string; photo: string; phone?: string; note?: string }; // photo: repo-relative path
+  // Send through THIS persona's conversation instead (its number, its project), name-tagged as `persona`: for an
+  // agent that isn't on the user's phone under its own number (UserProfile.via).
+  via?: PersonaId;
 }

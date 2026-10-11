@@ -15,8 +15,7 @@ function engineWith(watched: Persona, llm: LlmClient, store = new Store(null)) {
     personas,
     store,
     llm,
-    config: { names, PRODUCT_NAME: "Suitemates", mock: true, fakeRoute: undefined, GROUP_SETTLE_MS: 10, watchList: ["financial"] },
-    routerPrompt: "",
+    config: { names, PRODUCT_NAME: "Suitemates", mock: true, watchList: ["financial"] },
     log: () => {},
   });
 }
@@ -27,10 +26,10 @@ test("finishing onboarding baselines the watchers right away (a buy made just af
   const watched: Persona = { id: "financial", prompt: "p", routerLine: "r", tools: [], watch: async (ctx) => (calls.push(ctx.user.phone), []) };
   const engine = engineWith(watched, okLlm);
   for (const text of ["hi", "800"]) {
-    await engine.handle({ persona: "financial", kind: "dm", sender: "+5", text, handle: "h", messageId: text });
+    await engine.handle({ persona: "financial", sender: "+5", text, handle: "h", messageId: text });
   }
   assert.equal(calls.length, 0, "no baseline before onboarding is done");
-  await engine.handle({ persona: "financial", kind: "dm", sender: "+5", text: "spring break, $400", handle: "h", messageId: "3" });
+  await engine.handle({ persona: "financial", sender: "+5", text: "spring break, $400", handle: "h", messageId: "3" });
   assert.deepEqual(calls, ["+5"]);
 });
 

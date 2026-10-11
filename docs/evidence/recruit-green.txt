@@ -1,0 +1,26 @@
+# green: recruit + own numbers (2026-10-11 00:24)
+✔ Photon add uses that agent's project and token; a full project says so without trying to add (1.446792ms)
+✔ sign up with Sunny: added to Sunny's project, Sunny texts first from her own number, page shows that number (31.428334ms)
+✔ if the first text can't go out yet, the sign-up stays 'added' and their own 'hey' gets the hello (4.544084ms)
+✔ PHOTON_ADD_CAP: past the cap, sign-ups are saved as pending instead of added to Photon (1.761041ms)
+✔ own numbers: texting one agent's number greets only that agent, in that thread (0.51975ms)
+✔ an agent's own intro failing (live Canvas down) still sends a hello, and the greeting isn't lost (0.249917ms)
+✔ transport: an Outbound with via goes out on that agent's conversation, tagged with who's really talking (2.124625ms)
+✔ the offer: Sunny asks once, Penny and Dean are added to their projects in the background, nothing waits on the CLI (16.448708ms)
+✔ 'yes' on Sunny's thread: Sunny acks, then Penny and Dean each text first from their own number with hello, card, answer (4.992542ms)
+✔ 'no' drops the offer; anything that isn't yes or no also drops it (one-shot) and gets a normal reply (2.278542ms)
+✔ naming an agent is consent: no question, Penny texts first in the same turn (1.981417ms)
+✔ an agent they already have answers from its own thread right away: no question, no second hello (1.275083ms)
+✔ a 'yes' texted to a different agent's number doesn't accept Sunny's offer (2.513ms)
+✔ if Penny can't be added (full project, dead token), she still answers: through Sunny's thread, name-tagged by transport (5.097542ms)
+✔ bring_in refuses to recruit yourself and needs a known agent (keyless: the name in their text) (0.301667ms)
+✔ keyless model: an ordinary message with the word 'in' doesn't call bring_in (0.208666ms)
+ℹ tests 16
+ℹ pass 16
+ℹ fail 0
+
+# full suite
+ℹ tests 206
+ℹ pass 206
+ℹ fail 0
+typecheck clean

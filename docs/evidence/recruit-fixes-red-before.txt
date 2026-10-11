@@ -1,0 +1,6 @@
+# red before fix
+✖ the 'on it' line only promises own numbers for agents that have one (single shared project: they jump in here) (1.709625ms)
+✖ a handoff answer that comes back empty is retried once; if it fails again the new agent sends no glitch text (3.367667ms)
+ℹ pass 9
+ℹ fail 2
+✖ failing tests:

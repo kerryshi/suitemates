@@ -1,0 +1,80 @@
+# recruit evidence bundle  2026-10-11 00:39 EDT  HEAD=c9e61dfa64d15edcd4f7980743a187d92b14c3c9
+### 1 git
+$ git status --short && git log --oneline -9 && git rev-parse HEAD
+c9e61df [core] recruit: the ack goes out at once; each recruited agent's texts are sent as soon as that agent is ready (review S8)
+7116974 [core] recruit review fixes: reuse settled adds, greet once, display-name agents, real consent, per-send isolation, text-in users keep their agent; no card through a borrowed thread
+ad63958 [social][academic] Sunny and Dean bring the others in with bring_in (Kerry-approved cross-folder edit; proven with real Gemini)
+693fe71 [core] recruit: handoff answer retried once, never a glitch text; 'on it' only promises own numbers that exist
+245b970 [financial] Penny brings Dean/Sunny in with bring_in; answers handoffs straight away
+5b9b1b6 [core] npm run check-photon: each agent's Photon project + token answers, else FAIL
+b7e735a [core] agents recruit each other: bring_in, own-number text-first, via fallback
+014de27 [social] prompt: voice example no longer says "I told Ismail and Omar" (#23)
+87cab8a [academic] merge academic/canvas: duplicate sign-up returns your number
+c9e61dfa64d15edcd4f7980743a187d92b14c3c9
+exit 0
+
+### 2 npm test
+$ npm test 2>&1 | tail -15
+✔ replies in the user's own DM or the group are left as they are (proactive only) (0.078833ms)
+[imessage] shared: reconnected
+[imessage] shared: reconnected
+✔ a dropped Photon connection reconnects instead of going deaf (2050.015542ms)
+✔ on one shared number, a reply from another persona goes out in the conversation the user texted (0.935167ms)
+✔ a persona with its own line or project never borrows another line's conversation (0.636333ms)
+✔ a cue with a real phone but no SERVER_URL says on stderr that it only printed (280.737583ms)
+ℹ tests 218
+ℹ suites 0
+ℹ pass 218
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 3641.117833
+npm_test_exit=0
+
+### 3 tsc
+$ npx tsc --noEmit -p . ; echo tsc_exit=$?
+tsc_exit=0
+
+### 4 targeted
+$ npx tsx --test tests/recruit.test.ts tests/recruit-review.test.ts tests/own-numbers.test.ts 2>&1 | grep -E '^(✔|✖)|ℹ (tests|pass|fail)'
+✔ Photon add uses that agent's project and token; a full project says so without trying to add (1.616042ms)
+✔ sign up with Sunny: added to Sunny's project, Sunny texts first from her own number, page shows that number (34.117125ms)
+✔ if the first text can't go out yet, the sign-up stays 'added' and their own 'hey' gets the hello (4.633667ms)
+✔ PHOTON_ADD_CAP: past the cap, sign-ups are saved as pending instead of added to Photon (1.809166ms)
+✔ own numbers: texting one agent's number greets only that agent, in that thread (0.541ms)
+✔ an agent's own intro failing (live Canvas down) still sends a hello, and the greeting isn't lost (0.252209ms)
+✔ transport: an Outbound with via goes out on that agent's conversation, tagged with who's really talking (2.086584ms)
+✔ check-photon: each agent's project answers with its own token, or says FAIL (unknown health = unhealthy) (1.089125ms)
+✔ S1: 'yes' after the background add settled reuses it (no second Photon CLI run, no wait) (69.086084ms)
+✔ S2: two texts in flight before the first hello is out → one hello and card, not two (1.624041ms)
+✔ S3: bring_in takes a display name ('Penny'), and never recruits whoever else the text mentions (0.561709ms)
+✔ S4: asked=true only counts as consent when the student actually named that agent (0.130333ms)
+✔ S5: one failed send doesn't drop the rest of the batch (0.142917ms)
+✔ S6: someone who texted in (no web sign-up) keeps their first agent's proactive texts after a recruit (2.261875ms)
+✔ consent: 'no' wins over a polite yes-word, and a question isn't a yes (0.074875ms)
+✔ S8: with a deliver hook, 'yes' answers with the ack at once; each agent's texts go out as soon as that agent is ready (703.4535ms)
+✔ the offer: Sunny asks once, Penny and Dean are added to their projects in the background, nothing waits on the CLI (18.011917ms)
+✔ 'yes' on Sunny's thread: Sunny acks, then Penny and Dean each text first from their own number with hello, card, answer (5.21175ms)
+✔ 'no' drops the offer; anything that isn't yes or no also drops it (one-shot) and gets a normal reply (2.138959ms)
+✔ naming an agent is consent: no question, Penny texts first in the same turn (3.769167ms)
+✔ an agent they already have answers from its own thread right away: no question, no second hello (2.9485ms)
+✔ a 'yes' texted to a different agent's number doesn't accept Sunny's offer (2.598125ms)
+✔ if Penny can't be added (full project, dead token), she still answers: through Sunny's thread, name-tagged by transport (7.329166ms)
+✔ bring_in refuses to recruit yourself and needs a known agent (keyless: the name in their text) (0.261083ms)
+✔ keyless model: an ordinary message with the word 'in' doesn't call bring_in (0.20475ms)
+✔ the 'on it' line only promises own numbers for agents that have one (single shared project: they jump in here) (1.61025ms)
+✔ a handoff answer that comes back empty is retried once; if it fails again the new agent sends no glitch text (6.739917ms)
+ℹ tests 27
+ℹ pass 27
+ℹ fail 0
+
+### 5 fail-first at 693fe71
+SyntaxError: The requested module '../core/transport.ts' does not provide an export named 'sendAll'
+✖ tests/recruit-review.test.ts (218.076333ms)
+ℹ pass 0
+ℹ fail 1
+✖ failing tests:
+✖ tests/recruit-review.test.ts (218.076333ms)
+cleanup:
+exit 0

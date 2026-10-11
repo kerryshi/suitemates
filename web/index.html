@@ -4,208 +4,261 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Suitemates</title>
-<meta name="description" content="Balance your life: three friends in your texts for school, money and plans.">
+<meta name="description" content="Three AI agents that text you on iMessage: Dean for class, Penny for money, Sunny for plans that get you out. HackNC 2026, for UNC students.">
+<meta property="og:title" content="Suitemates">
+<meta property="og:description" content="Three AI agents that text you on iMessage: Dean for class, Penny for money, Sunny for plans that get you out. HackNC 2026, for UNC students.">
+<meta name="theme-color" content="#4fa9f3">
+<link rel="icon" href="/avatars/sunny-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Ubuntu:wght@400;500;700&display=swap">
 <style>
+  /* Frutiger Aero, after hacknc.com: sky, glossy hills, glass, bubbles. Agent colors are "R G B" triplets. */
   :root {
-    --bg: #2a2b2f; --bg-2: #232427; --card: #313237; --line: #3c3d43;
-    --text: #f2f3f5; --muted: #a3a6ae; --ink: #111214; --paper: #f4f4f2;
-    --dean: 59 130 246; --penny: 236 72 153; --sunny: 249 115 22;
+    --navy: #173771; --blue: #1554c9; --green: #147842; --ink: #0f2a5a; --muted: #3f5a84; --hi: #ffffffbf;
+    --dean: 21 84 201; --penny: 20 120 66; --sunny: 194 65 12; --go: 20 120 66;
+    --mint: #f1fbee;
   }
   * { box-sizing: border-box; }
   html { scroll-behavior: smooth; }
   html, body { margin: 0; }
-  body { color: var(--text); background: var(--bg); font: 16px/1.55 "Segoe UI", "Helvetica Neue", Arial, sans-serif; }
+  body { color: var(--ink); background: #eef8ff; font: 16px/1.55 "Ubuntu", "Trebuchet MS", "Segoe UI", sans-serif; }
   a { color: inherit; }
+  img { max-width: 100%; }
 
-  /* ---------- hero: balance ---------- */
-  .hero { position: relative; min-height: 100svh; display: grid; place-items: center; padding: 40px 16px 90px; overflow: hidden;
-    background: radial-gradient(900px 500px at 50% 35%, #34353a 0%, transparent 65%), linear-gradient(180deg, var(--bg), var(--bg-2)); }
-  .hero-inner { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr); gap: 48px; align-items: center; max-width: 1100px; width: 100%; }
-  @media (max-width: 860px) { .hero-inner { grid-template-columns: 1fr; text-align: center; gap: 28px; } }
-  .eyebrow { letter-spacing: .2em; text-transform: uppercase; font-size: .8rem; color: var(--muted); }
-  .hero h1 { font-size: clamp(2.6rem, 7vw, 4.6rem); line-height: 1.02; margin: 10px 0 14px; letter-spacing: -.03em; }
-  .hero h1 em { font-style: normal; color: #8d9097; } /* the black-and-white split: Balance / your life */
-  .hero p.lead { color: #c9cbd1; font-size: 1.15rem; max-width: 520px; margin: 0 0 26px; }
-  @media (max-width: 860px) { .hero p.lead { margin-inline: auto; } }
+  /* ---------- shared pieces ---------- */
+  .glass { background: linear-gradient(180deg, rgba(255,255,255,.8), rgba(255,255,255,.52)); border: 1px solid rgba(255,255,255,.9);
+    box-shadow: inset 0 1px 0 #fff, 0 10px 30px rgba(23,55,113,.18); -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px); border-radius: 22px; }
+  @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) { .glass { background: rgba(255,255,255,.92); } }
+  .btn { --c: var(--go); display: inline-block; padding: 13px 24px; border-radius: 999px; font-weight: 700; text-decoration: none; letter-spacing: .01em; }
+  .btn.gloss, .get, .sticky a { color: #fff; text-shadow: 0 1px 0 rgba(0,0,0,.25);
+    background: linear-gradient(180deg, rgba(255,255,255,.38), rgba(255,255,255,0) 50%, rgba(0,0,0,.12)), rgb(var(--c));
+    box-shadow: inset 0 1px 0 var(--hi), inset 0 -6px 10px rgba(0,0,0,.15), 0 6px 16px rgb(var(--c) / .35); transition: transform .15s, box-shadow .15s; }
+  .btn.gloss:hover, .get:hover { transform: translateY(-1px); box-shadow: inset 0 1px 0 var(--hi), inset 0 -6px 10px rgba(0,0,0,.15), 0 10px 24px rgb(var(--c) / .45); }
+  .btn.glass { color: var(--navy); }
+  .orb { display: inline-block; width: 22px; height: 22px; border-radius: 50%; overflow: hidden; background: #fff; vertical-align: -6px; flex: none;
+    box-shadow: 0 1px 3px rgba(23,55,113,.25); }
+  .orb img { display: block; width: 160%; height: 160%; max-width: none; margin: -30%; }
+
+  /* ---------- hero: sky, hills, bubbles ---------- */
+  .hero { position: relative; min-height: 100svh; display: grid; place-items: center; padding: 48px 16px 150px; overflow: hidden; isolation: isolate;
+    background: radial-gradient(520px 360px at 84% 6%, rgba(255,255,255,.75), rgba(255,255,255,0) 70%),
+                linear-gradient(180deg, #1f6fd9 0%, #3b93ec 38%, #8fd0fa 72%, #d6f0ff 100%); }
+  .hill { position: absolute; z-index: -1; bottom: -1px; border-radius: 50% 50% 0 0 / 100% 100% 0 0; }
+  .hill.back { left: -20%; width: 90%; height: 210px; background: radial-gradient(ellipse at 50% 0, #c4f28f, #6cc24a 55%, #3f9d3a); opacity: .9; }
+  .hill.front { right: -25%; width: 115%; height: 170px; background: radial-gradient(ellipse at 45% 0, #a4ea6e, #2f9e44 60%, #1f7a35);
+    box-shadow: inset 0 2px 0 rgba(255,255,255,.6); }
+  .hero::after { content: ""; position: absolute; z-index: -1; left: 0; right: 0; bottom: 0; height: 90px; background: linear-gradient(180deg, rgba(241,251,238,0), var(--mint)); }
+  .bubble { position: absolute; z-index: -1; left: var(--x); top: var(--y); width: var(--s); aspect-ratio: 1; border-radius: 50%;
+    background: radial-gradient(circle at 32% 28%, #fff 0 7%, rgba(255,255,255,.55) 11%, rgba(255,255,255,.1) 52%, rgba(255,255,255,.4) 100%);
+    border: 1px solid rgba(255,255,255,.75); box-shadow: inset -4px -6px 14px rgba(21,84,201,.18);
+    animation: rise var(--d) ease-in-out infinite alternate; animation-delay: var(--t); }
+  @keyframes rise { to { transform: translate(20px, -120px); } }
+  @media (max-width: 980px) { .bubble:nth-of-type(n+7) { display: none; } }
+
+  .hero-inner { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr); gap: 48px; align-items: center; max-width: 1160px; width: 100%; }
+  @media (max-width: 860px) { .hero-inner { grid-template-columns: 1fr; text-align: center; gap: 30px; } }
+  .eyebrow { display: inline-block; padding: 6px 14px; border-radius: 999px; font-size: .82rem; font-weight: 500; letter-spacing: .04em; color: var(--navy); }
+  .hero h1 { color: #fff; font-size: clamp(2.6rem, 6.6vw, 4.4rem); line-height: 1.04; margin: 16px 0 16px; letter-spacing: -.02em; font-weight: 700;
+    text-shadow: 0 1px 0 rgba(255,255,255,.35), 0 2px 0 rgba(15,42,90,.28), 0 4px 18px rgba(15,42,90,.5); }
+  .lead { color: var(--ink); font-size: 1.12rem; max-width: 520px; margin: 0 0 26px; padding: 16px 20px; }
+  @media (max-width: 860px) { .lead { margin-inline: auto; } }
   .cta { display: inline-flex; gap: 12px; flex-wrap: wrap; }
   @media (max-width: 860px) { .cta { justify-content: center; } }
-  .btn { display: inline-block; padding: 13px 22px; border-radius: 999px; font-weight: 700; text-decoration: none; }
-  .btn.solid { background: var(--paper); color: var(--ink); }
-  .btn.ghost { border: 1px solid var(--line); color: var(--text); }
 
-  .yy-wrap { position: relative; width: min(420px, 78vw); aspect-ratio: 1; margin: 0 auto; }
-  .yy-wrap .light { position: absolute; width: 46%; aspect-ratio: 1; border-radius: 50%; filter: blur(38px); opacity: .55; }
-  .yy-wrap .light.dean { background: rgb(var(--dean)); top: -6%; left: 27%; }
-  .yy-wrap .light.penny { background: rgb(var(--penny)); bottom: 2%; left: -6%; }
-  .yy-wrap .light.sunny { background: rgb(var(--sunny)); bottom: 2%; right: -6%; }
-  .yy { position: relative; width: 100%; height: 100%; animation: spin 40s linear infinite; filter: drop-shadow(0 20px 50px rgba(0,0,0,.5)); }
-  @keyframes spin { to { transform: rotate(360deg); } }
-  @media (prefers-reduced-motion: reduce) { .yy { animation: none; } }
-  .orbit { position: absolute; inset: 0; animation: spin 40s linear infinite reverse; }
-  .orbit img { position: absolute; width: 21%; aspect-ratio: 1; border-radius: 50%; object-fit: cover; border: 3px solid; background: #fff; }
-  .orbit .dean { top: -4%; left: 39.5%; border-color: rgb(var(--dean)); box-shadow: 0 0 22px rgb(var(--dean) / .7); }
-  .orbit .penny { bottom: 8%; left: -2%; border-color: rgb(var(--penny)); box-shadow: 0 0 22px rgb(var(--penny) / .7); }
-  .orbit .sunny { bottom: 8%; right: -2%; border-color: rgb(var(--sunny)); box-shadow: 0 0 22px rgb(var(--sunny) / .7); }
-  .orbit img { animation: spin 40s linear infinite; } /* cancel the orbit's turn so faces stay upright */
-  .scroll { position: absolute; bottom: 22px; left: 50%; transform: translateX(-50%); color: var(--muted); font-size: .85rem; text-decoration: none; text-align: center; }
-  .scroll span { display: block; font-size: 1.3rem; animation: bob 1.8s ease-in-out infinite; }
-  @keyframes bob { 50% { transform: translateY(6px); } }
-
-  /* ---------- the balance strip ---------- */
-  .balance { max-width: 1100px; margin: 0 auto; padding: 70px 16px 30px; text-align: center; }
-  .balance h2 { font-size: clamp(1.7rem, 4vw, 2.4rem); margin: 0 0 10px; letter-spacing: -.02em; }
-  .balance > p { color: var(--muted); max-width: 640px; margin: 0 auto 34px; }
-  .pillars { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
-  @media (max-width: 760px) { .pillars { grid-template-columns: 1fr; } }
-  .pillar { --c: var(--dean); text-align: left; background: var(--card); border: 1px solid var(--line); border-top: 3px solid rgb(var(--c)); border-radius: 18px; padding: 20px; }
-  .pillar.penny { --c: var(--penny); } .pillar.sunny { --c: var(--sunny); }
-  .pillar b { display: block; font-size: 1.1rem; margin-bottom: 4px; }
-  .pillar span { color: var(--muted); }
-
-  /* ---------- one big row per agent ---------- */
-  .pick { text-align: center; padding: 60px 16px 10px; }
-  .pick h2 { font-size: clamp(1.7rem, 4vw, 2.4rem); margin: 0; letter-spacing: -.02em; }
-  .pick p { color: var(--muted); margin: 8px 0 0; }
-  .agent { --c: var(--dean); position: relative; padding: 70px 16px; overflow: hidden; }
-  .agent.penny { --c: var(--penny); } .agent.sunny { --c: var(--sunny); }
-  .agent::before { content: ""; position: absolute; inset: 0; background: radial-gradient(700px 420px at var(--glow-x, 20%) 50%, rgb(var(--c) / .16), transparent 70%); pointer-events: none; }
-  .agent:nth-of-type(even) { --glow-x: 80%; }
-  .row { position: relative; max-width: 1100px; margin: 0 auto; display: grid; grid-template-columns: 300px minmax(0, 1fr) 260px; gap: 44px; align-items: center; }
-  .agent.flip .row { grid-template-columns: 260px minmax(0, 1fr) 300px; }
-  .agent.flip .face { order: 3; } .agent.flip .qr { order: 1; } .agent.flip .story { order: 2; }
-  @media (max-width: 980px) {
-    .row, .agent.flip .row { grid-template-columns: 1fr; gap: 26px; text-align: center; }
-    .agent.flip .face, .agent.flip .qr, .agent.flip .story { order: initial; }
+  .trio { position: relative; display: flex; justify-content: center; align-items: flex-end; gap: 0; padding-top: 40px; }
+  .trio::before { content: ""; position: absolute; z-index: -1; width: min(500px, 92%); aspect-ratio: 1; left: 50%; top: 50%; transform: translate(-50%, -54%); border-radius: 50%;
+    background: radial-gradient(circle at 34% 26%, rgba(255,255,255,.85) 0 6%, rgba(255,255,255,.28) 16%, rgba(255,255,255,.08) 55%, rgba(255,255,255,.32) 100%);
+    border: 1px solid rgba(255,255,255,.6); }
+  .ring { --c: var(--dean); position: relative; display: block; width: 168px; margin: 0 -10px; text-align: center; text-decoration: none; transition: transform .2s; }
+  .ring:hover { transform: translateY(-4px); }
+  .ring.penny { --c: var(--penny); } .ring.sunny { --c: var(--sunny); width: 204px; margin-bottom: 40px; z-index: 1; }
+  .ring .pic { position: relative; display: block; border-radius: 50%; }
+  .ring .pic img { display: block; width: 100%; aspect-ratio: 1; border-radius: 50%; object-fit: cover; object-position: 50% 40%;
+    border: 4px solid rgba(255,255,255,.9); box-shadow: inset 0 1px 0 #fff, 0 0 0 2px rgb(var(--c) / .4), 0 12px 30px rgba(23,55,113,.3); }
+  .ring .pic::after { content: ""; position: absolute; inset: 4px 4px 50% 4px; border-radius: 50% 50% 0 0 / 100% 100% 0 0;
+    background: linear-gradient(180deg, rgba(255,255,255,.42), rgba(255,255,255,0)); pointer-events: none; }
+  .ring .tag { display: inline-flex; align-items: center; gap: 6px; margin-top: 10px; padding: 5px 12px 5px 6px; border-radius: 999px; font-weight: 700; font-size: .92rem; color: var(--navy); }
+  .ring .tag small { font-weight: 500; color: rgb(var(--c)); }
+  @media (max-width: 860px) {
+    .hero-inner > .trio { order: 2; padding-top: 6px; }
+    .trio::before { width: 290px; transform: translate(-50%, -50%); }
+    .lead { font-size: 1.02rem; padding: 12px 16px; margin-bottom: 20px; }
+    .cta .btn { padding: 12px 18px; font-size: .95rem; }
+    .ring { width: 96px; margin: 0 -4px; } .ring.sunny { width: 112px; margin-bottom: 18px; }
+    .ring .tag { font-size: .8rem; padding: 3px 9px 3px 4px; } .ring .tag small { display: none; } .ring .tag .orb { width: 18px; height: 18px; }
   }
-  .face { position: relative; width: 280px; aspect-ratio: 1; margin: 0 auto; }
-  .face::before { content: ""; position: absolute; inset: -22px; border-radius: 50%; filter: blur(10px); opacity: .75;
-    background: radial-gradient(circle, rgb(var(--c) / .6) 0%, rgb(var(--c) / .2) 45%, transparent 70%); transition: opacity .3s, transform .3s; }
-  .agent:hover .face::before { opacity: 1; transform: scale(1.08); }
-  .face img { position: relative; width: 100%; height: 100%; border-radius: 50%; object-fit: cover; border: 4px solid rgb(var(--c)); box-shadow: 0 0 0 8px rgb(var(--c) / .14), 0 18px 40px rgba(0,0,0,.45); }
-  .role { color: rgb(var(--c)); font-weight: 800; letter-spacing: .16em; text-transform: uppercase; font-size: .8rem; }
-  .story h3 { font-size: clamp(2.2rem, 5vw, 3.2rem); margin: 4px 0 6px; letter-spacing: -.02em; }
-  .story .vibe { color: #c9cbd1; font-size: 1.08rem; margin: 0 0 18px; }
-  .chat { display: flex; flex-direction: column; gap: 8px; max-width: 460px; }
-  @media (max-width: 980px) { .chat { margin: 0 auto; } }
-  .msg { max-width: 85%; padding: 9px 14px; border-radius: 18px; line-height: 1.35; font-size: .98rem; text-align: left; }
-  .msg.me { align-self: flex-end; background: #0a84ff; color: #fff; border-bottom-right-radius: 6px; }
-  .msg.them { align-self: flex-start; background: #3a3b40; border-bottom-left-radius: 6px; box-shadow: inset 0 0 0 1px rgb(var(--c) / .35); }
-  .does { color: var(--muted); font-size: .92rem; margin: 16px 0 0; }
-  .qr { background: var(--card); border: 1px solid rgb(var(--c) / .45); border-radius: 22px; padding: 18px; text-align: center; box-shadow: 0 16px 44px rgb(var(--c) / .16); }
-  .qr .code { width: 200px; height: 200px; margin: 0 auto; padding: 10px; background: #fff; border-radius: 14px; }
+
+  /* ---------- outside: the hand-off ---------- */
+  .band { padding: 70px 16px; }
+  #outside { background: linear-gradient(180deg, var(--mint), #e2f5da); text-align: center; }
+  .band h2 { color: var(--navy); font-size: clamp(1.8rem, 4.2vw, 2.6rem); margin: 0 0 10px; letter-spacing: -.02em; }
+  .band .sub { color: var(--muted); max-width: 640px; margin: 0 auto 30px; font-size: 1.05rem; }
+  .story { max-width: 560px; margin: 0 auto; padding: 22px; text-align: left; }
+  .chat { display: flex; flex-direction: column; gap: 8px; }
+  .msg { max-width: 86%; padding: 9px 14px; border-radius: 18px; line-height: 1.38; font-size: .97rem; }
+  .msg.me { align-self: flex-end; color: #fff; background: linear-gradient(180deg, #3d9bff, #0a84ff); border-bottom-right-radius: 6px;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.45); }
+  .msg.them { --c: var(--dean); align-self: flex-start; color: var(--ink); background: rgba(255,255,255,.88); border: 1px solid #fff; border-bottom-left-radius: 6px;
+    box-shadow: 0 2px 8px rgba(23,55,113,.08); }
+  .msg.them.penny, .thread.penny { --c: var(--penny); } .msg.them.sunny, .thread.sunny { --c: var(--sunny); } .thread.dean { --c: var(--dean); }
+  .from { display: flex; align-items: center; gap: 6px; margin-bottom: 3px; font-size: .75rem; font-weight: 700; color: rgb(var(--c)); }
+  .thread { display: flex; align-items: center; gap: 10px; margin: 10px 0 2px; font-size: .78rem; font-weight: 700; color: rgb(var(--c)); }
+  .thread::before, .thread::after { content: ""; flex: 1; height: 1px; background: rgb(var(--c) / .25); }
+  .caption { color: var(--muted); font-size: .85rem; margin: 14px 0 0; text-align: center; }
+  .chips { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; max-width: 900px; margin: 26px auto 0; }
+  .chip { padding: 10px 16px; border-radius: 16px; font-size: .92rem; color: var(--navy); max-width: 290px; text-align: left; }
+
+  /* ---------- pick your agent ---------- */
+  #agents { background: linear-gradient(180deg, #e2f5da, #cdeec4); text-align: center; }
+  .agents { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; max-width: 1180px; margin: 0 auto; text-align: left; }
+  @media (max-width: 980px) { .agents { grid-template-columns: 1fr; max-width: 520px; } }
+  .agent { --c: var(--dean); display: flex; flex-direction: column; padding: 22px; }
+  .agent.penny { --c: var(--penny); } .agent.sunny { --c: var(--sunny); }
+  .agent .head { display: flex; align-items: center; gap: 14px; margin-bottom: 12px; }
+  .agent .head img { width: 96px; height: 96px; flex: none; border-radius: 50%; object-fit: cover; border: 3px solid rgba(255,255,255,.95);
+    box-shadow: 0 0 0 2px rgb(var(--c) / .45), 0 8px 20px rgba(23,55,113,.22); }
+  .role { color: rgb(var(--c)); font-weight: 700; letter-spacing: .12em; text-transform: uppercase; font-size: .74rem; }
+  .agent h3 { color: var(--navy); font-size: 2rem; margin: 2px 0 0; letter-spacing: -.02em; line-height: 1.1; }
+  .vibe { color: var(--muted); margin: 0 0 14px; font-size: .97rem; }
+  .agent .chat { margin-bottom: 14px; }
+  .agent .msg { font-size: .93rem; }
+  .agent .msg.them { box-shadow: inset 0 0 0 1px rgb(var(--c) / .25); }
+  .does { color: var(--muted); font-size: .9rem; margin: 0 0 16px; }
+  .qr { margin-top: auto; text-align: center; }
+  .qr .code { width: 200px; height: 200px; margin: 0 auto; padding: 10px; background: #fff; border-radius: 14px; box-shadow: 0 0 0 1px rgb(var(--c) / .3), 0 8px 22px rgba(23,55,113,.14); }
   .qr .code img, .qr .code canvas { width: 100% !important; height: 100% !important; }
   .qr p { color: var(--muted); font-size: .85rem; margin: 10px 0 12px; }
-  .get { display: block; padding: 12px; border-radius: 14px; background: rgb(var(--c)); color: #fff; font-weight: 800; text-decoration: none; box-shadow: 0 8px 22px rgb(var(--c) / .35); }
-  @media (pointer: coarse) and (max-width: 980px) { .qr .code, .qr p.scan { display: none; } } /* on a phone, just the button */
+  .get { display: block; padding: 13px; border-radius: 999px; font-weight: 700; text-align: center; text-decoration: none; }
+  .tap-only, .sticky { display: none; }
+  @media (pointer: coarse) and (max-width: 980px) {
+    .qr .code, .qr p.scan, .scan-only { display: none; } /* on a phone, just the button */
+    .tap-only { display: inline; }
+    .sticky { display: block; position: fixed; left: 12px; right: 12px; bottom: calc(12px + env(safe-area-inset-bottom, 0px)); z-index: 10; transition: opacity .2s, transform .2s; }
+    .sticky.away { opacity: 0; transform: translateY(20px); pointer-events: none; }
+    .sticky a { --c: var(--go); display: block; padding: 15px; border-radius: 999px; text-align: center; font-weight: 700; text-decoration: none; }
+    body { padding-bottom: 84px; }
+  }
+  @media (max-width: 980px) {
+    .band { padding: 52px 16px; }
+    .agent .head img { width: 72px; height: 72px; }
+    .agent h3 { font-size: 1.6rem; }
+  }
+  @media (max-width: 760px) {
+    .vibe { display: none; } /* the chat already shows the voice */
+    .hero { padding-bottom: 120px; }
+    .chip { font-size: .86rem; padding: 8px 12px; }
+  }
 
-  footer { text-align: center; color: var(--muted); padding: 50px 16px 70px; font-size: .92rem; border-top: 1px solid var(--line); }
-  footer b { color: var(--text); }
+  .built { max-width: 640px; margin: 28px auto 0; padding: 12px 18px; color: var(--muted); font-size: .9rem; text-align: center; }
+  footer { text-align: center; color: #dbe7ff; background: var(--navy); padding: 40px 16px 50px; font-size: .92rem; }
+  footer b { color: #fff; }
+
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    *, *::before, *::after { animation: none !important; transition: none !important; }
+  }
 </style>
 </head>
 <body>
 
 <section class="hero">
+  <i class="bubble" style="--x:6%;--y:18%;--s:54px;--d:9s;--t:-2s"></i>
+  <i class="bubble" style="--x:14%;--y:70%;--s:26px;--d:7s;--t:-5s"></i>
+  <i class="bubble" style="--x:44%;--y:12%;--s:18px;--d:8s;--t:-1s"></i>
+  <i class="bubble" style="--x:52%;--y:78%;--s:40px;--d:10s;--t:-6s"></i>
+  <i class="bubble" style="--x:90%;--y:46%;--s:62px;--d:11s;--t:-3s"></i>
+  <i class="bubble" style="--x:78%;--y:84%;--s:22px;--d:7.5s;--t:-4s"></i>
+  <i class="bubble" style="--x:30%;--y:40%;--s:14px;--d:6.5s;--t:-2.5s"></i>
+  <i class="bubble" style="--x:66%;--y:8%;--s:30px;--d:9.5s;--t:-7s"></i>
+  <div class="hill back"></div><div class="hill front"></div>
+
   <div class="hero-inner">
     <div>
-      <div class="eyebrow">Suitemates · for UNC students</div>
-      <h1>Balance <em>your life.</em></h1>
-      <p class="lead">School, money, friends. College pulls you three ways at once. Three friends in your texts keep it in balance: one keeps you on top of class, one keeps you from going broke, one makes sure you actually have a life.</p>
-      <div class="cta"><a class="btn solid" href="#agents">Meet your agents</a><a class="btn ghost" href="#balance">How it works</a></div>
+      <span class="eyebrow glass">Suitemates · HackNC 2026 · for UNC students</span>
+      <h1>Three agents in your texts.</h1>
+      <p class="lead glass">Dean handles class, Penny handles money, Sunny gets you out of your room. Each one texts you on iMessage like a friend would, and they bring each other in when a plan needs it.</p>
+      <div class="cta"><a class="btn gloss" href="#agents">Pick your agent</a><a class="btn glass" href="#outside">See them team up</a></div>
     </div>
-    <div class="yy-wrap" aria-hidden="true">
-      <div class="light dean"></div><div class="light penny"></div><div class="light sunny"></div>
-      <svg class="yy" viewBox="-100 -100 200 200">
-        <circle r="98" fill="#f4f4f2"/>
-        <path d="M0,-98 A98,98 0 0,1 0,98 A49,49 0 0,1 0,0 A49,49 0 0,0 0,-98 Z" fill="#111214"/>
-        <circle cy="-49" r="14" fill="#111214"/>
-        <circle cy="49" r="14" fill="#f4f4f2"/>
-        <circle r="98" fill="none" stroke="rgba(255,255,255,.25)" stroke-width="1.5"/>
-      </svg>
-      <div class="orbit">
-        <img class="dean" src="/avatars/dean.png" alt="">
-        <img class="penny" src="/avatars/penny.png" alt="">
-        <img class="sunny" src="/avatars/sunny.png" alt="">
-      </div>
+    <div class="trio">
+      <a class="ring dean" href="/join/academic"><span class="pic"><img src="/avatars/dean.png" alt="Dean"></span><span class="tag glass"><span class="orb"><img src="/avatars/dean-icon.png" alt=""></span>Dean <small>school</small></span></a>
+      <a class="ring sunny" href="/join/social"><span class="pic"><img src="/avatars/sunny.png" alt="Sunny"></span><span class="tag glass"><span class="orb"><img src="/avatars/sunny-icon.png" alt=""></span>Sunny <small>plans</small></span></a>
+      <a class="ring penny" href="/join/financial"><span class="pic"><img src="/avatars/penny.png" alt="Penny"></span><span class="tag glass"><span class="orb"><img src="/avatars/penny-icon.png" alt=""></span>Penny <small>money</small></span></a>
     </div>
-  </div>
-  <a class="scroll" href="#balance">scroll<span>↓</span></a>
-</section>
-
-<section class="balance" id="balance">
-  <h2>Too much of one thing is how semesters fall apart.</h2>
-  <p>All-nighters and no friends. A great weekend and a failed midterm. Fun until the bank app opens. Your agents talk to each other (never your grades or balance), so a plan from one fits around the others.</p>
-  <div class="pillars">
-    <div class="pillar"><b>Grades, without burnout</b><span>Deadlines before they sneak up, and how a skipped assignment really moves your grade.</span></div>
-    <div class="pillar penny"><b>Fun, without going broke</b><span>Can you afford it? An honest answer, and a roast for the 3 AM DoorDash.</span></div>
-    <div class="pillar sunny"><b>Friends, without falling behind</b><span>Plans with people who like what you like, timed around what's due.</span></div>
   </div>
 </section>
 
-<section class="pick" id="agents">
+<section class="band" id="outside">
+  <h2>Tech that gets you outside.</h2>
+  <p class="sub">Sunny's board is plans that get you out of your room: the beach, pickup soccer, a boba run. Join one, say yes when Sunny offers, and Penny prices it while Dean checks your week.</p>
+  <div class="story glass">
+    <div class="chat">
+      <div class="thread sunny">Sunny</div>
+      <div class="msg me">i'm in for the beach trip saturday</div>
+      <div class="msg them sunny"><div class="from"><span class="orb"><img src="/avatars/sunny-icon.png" alt=""></span>Sunny</div>you're in. ismail, omar, and priya are going too, wrightsville isn't ready for you four. want penny and dean to check the cost and your deadlines?</div>
+      <div class="msg me">yes</div>
+      <div class="thread penny">Penny texts you</div>
+      <div class="msg them penny"><div class="from"><span class="orb"><img src="/avatars/penny-icon.png" alt=""></span>Penny</div>beach trip's around $45 a person, which takes 10% of your $453.45 left this month. totally doable if we don't go wild on doordash this week.</div>
+      <div class="thread dean">Dean texts you</div>
+      <div class="msg them dean"><div class="from"><span class="orb"><img src="/avatars/dean-icon.png" alt=""></span>Dean</div>stor 435 midterm 2 is saturday at 9:30am. option 1: study this week, take it saturday morning, then hit the beach (grade stays ~85-91%). option 2: blow it off, stor 435 drops to 61%. your call.</div>
+    </div>
+    <p class="caption">One real test run on real Gemini, cut from eight texts to three. Nothing is reworded.</p>
+  </div>
+  <div class="chips">
+    <span class="chip glass">Pick outdoors at sign-up and Sunny pitches beach, hike, park and camping plans first</span>
+    <span class="chip glass">Join a plan and Sunny texts you when someone else joins it</span>
+    <span class="chip glass">Deadlines and plans land in one calendar feed, Google or Apple</span>
+  </div>
+</section>
+
+<section class="band" id="agents">
   <h2>Pick your agent</h2>
-  <p>Scan a code with your iPhone camera. Get one, or all three.</p>
-</section>
+  <p class="sub"><span class="scan-only">Scan a code with your iPhone camera.</span><span class="tap-only">Tap one.</span> Get one, or all three. They share one profile, so you don't repeat yourself.</p>
+  <div class="agents">
 
-<section class="agent dean" data-agent="academic">
-  <div class="row">
-    <div class="face"><img src="/avatars/dean.png" alt="Dean"></div>
-    <div class="story">
-      <div class="role">school · the strict one</div>
-      <h3>Dean</h3>
-      <p class="vibe">Already survived every class you're in and refuses to watch you fumble. Tough love, zero excuses, secretly proud of you.</p>
+    <section class="agent dean glass" data-agent="academic">
+      <div class="head"><img src="/avatars/dean.png" alt="Dean"><div><div class="role">school · the strict one</div><h3>Dean</h3></div></div>
+      <p class="vibe">Already survived every class you're in and refuses to watch you fumble. Deadpan, one line, on your side.</p>
       <div class="chat">
-        <div class="msg me">ugh i don't feel like studying</div>
-        <div class="msg them">midterm's tuesday and skipping it takes your 91 to a 74 📉 30 minutes. now. 📚</div>
-        <div class="msg me">ok ok</div>
-        <div class="msg them">i'll check on you at 9 😤</div>
+        <div class="msg me">what's due this week</div>
+        <div class="msg them">you've got STOR 435 PS6 at 5 and COMP 421 Project 1 at 11:59 today. lock in on Project 1 tonight, then we'll deal with your STOR midterm saturday.</div>
       </div>
-      <p class="does">Reads your Canvas: deadlines, quizzes, exams, grades, announcements. Morning "due today", a week's notice before exams.</p>
-    </div>
-    <div class="qr"><div class="code" data-qr></div><p class="scan">Scan to text Dean</p><a class="get" href="/join/academic">Get Dean</a></div>
-  </div>
-</section>
+      <p class="does">Reads your Canvas: deadlines, quizzes, exams, grades, announcements. Texts what's due each morning, checks any plan against your schoolwork, and shows the grade math if you'd skip.</p>
+      <div class="qr"><div class="code" data-qr></div><p class="scan">Scan to text Dean</p><a class="get" href="/join/academic">Get Dean</a></div>
+    </section>
 
-<section class="agent penny flip" data-agent="financial">
-  <div class="row">
-    <div class="face"><img src="/avatars/penny.png" alt="Penny"></div>
-    <div class="story">
-      <div class="role">money · the dramatic one</div>
-      <h3>Penny</h3>
-      <p class="vibe">Your funny best friend who happens to be good with money. Takes your 3 AM DoorDash personally, and celebrates every win like a championship.</p>
+    <section class="agent penny glass" data-agent="financial">
+      <div class="head"><img src="/avatars/penny.png" alt="Penny"><div><div class="role">money · the dramatic one</div><h3>Penny</h3></div></div>
+      <p class="vibe">Your funny best friend who happens to be good with money. Roasts the 3 AM DoorDash and hypes the groceries, in one line.</p>
       <div class="chat">
-        <div class="msg them">a 3 am cosmic cantina order. on a tuesday. 💀 that's $23 of your $476 left this month</div>
-        <div class="msg me">can i afford a $60 concert ticket?</div>
-        <div class="msg them">yes, you still get ~$20 a day after 💸 go have fun (and eat at home this week 🙃)</div>
+        <div class="msg me">can i afford a $60 hoodie</div>
+        <div class="msg them penny">yeah, you can. drops you to ~$19.85 a day for the next 21 days, but that's 15% of your spring break goal on a sweatshirt.</div>
       </div>
-      <p class="does">Watches your spending, answers "can I afford it?", tracks your budget and savings goal, weekly money recap.</p>
-    </div>
-    <div class="qr"><div class="code" data-qr></div><p class="scan">Scan to text Penny</p><a class="get" href="/join/financial">Get Penny</a></div>
-  </div>
-</section>
+      <p class="does">Built on Capital One's Nessie API (a demo bank for everyone but us today). Reacts to purchases, answers can-I-afford, tracks your budget and goal, spots repeat spending and the cheaper swap.</p>
+      <div class="qr"><div class="code" data-qr></div><p class="scan">Scan to text Penny</p><a class="get" href="/join/financial">Get Penny</a></div>
+    </section>
 
-<section class="agent sunny" data-agent="social">
-  <div class="row">
-    <div class="face"><img src="/avatars/sunny.png" alt="Sunny"></div>
-    <div class="story">
-      <div class="role">plans · the fun one</div>
-      <h3>Sunny</h3>
-      <p class="vibe">Knows everyone on campus, always has a plan, can't go three texts without a joke. Never guilts you, just makes it too fun to miss.</p>
+    <section class="agent sunny glass" data-agent="social">
+      <div class="head"><img src="/avatars/sunny.png" alt="Sunny"><div><div class="role">plans · the fun one</div><h3>Sunny</h3></div></div>
+      <p class="vibe">Knows everyone on campus and always has a plan. Makes every plan sound too fun to miss.</p>
       <div class="chat">
-        <div class="msg me">i'm so tired of homework</div>
-        <div class="msg them">close the laptop before your brain short-circuits 😂 pickup soccer sunday 4pm with omar and priya ⚽🌞</div>
-        <div class="msg me">i'm in</div>
-        <div class="msg them">LET'S GO 🙌 told them you're coming</div>
+        <div class="msg me">anyone down for soccer this weekend</div>
+        <div class="msg them sunny">omar, priya, and sam are in for pickup soccer sunday 4 pm at hooker fields. want in?</div>
       </div>
-      <p class="does">Finds people who want to do what you want: pickup games, boba runs, beach trips, Heel Life events.</p>
-    </div>
-    <div class="qr"><div class="code" data-qr></div><p class="scan">Scan to text Sunny</p><a class="get" href="/join/social">Get Sunny</a></div>
+      <p class="does">Finds people who want what you want: a shared board of plans, real UNC events from Heel Life, and a text when someone joins yours.</p>
+      <div class="qr"><div class="code" data-qr></div><p class="scan">Scan to text Sunny</p><a class="get" href="/join/social">Get Sunny</a></div>
+    </section>
+
   </div>
+  <p class="built glass">Built with Photon Spectrum (iMessage), Google Gemini, Capital One Nessie, Canvas and Heel Life.</p>
 </section>
 
 <footer>
-  <b>Suitemates</b> · HackNC 2026 · Your week in one calendar: your agents add deadlines and plans to Google Calendar.<br>
-  Demo bank data for Penny; Dean reads Canvas only if you connect it.
+  <b>Suitemates</b> · HackNC 2026 · Dean, Penny and Sunny only text. Penny never moves money; Dean only reads Canvas.<br>
+  Penny runs on a demo bank for everyone but our own Nessie account. Dean uses demo Canvas data unless you connect yours.
 </footer>
+
+<div class="sticky" id="sticky"><a href="#agents">Pick your agent ↓</a></div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script>
@@ -216,6 +269,19 @@
     if (window.QRCode) new QRCode(box, { text: `${base}/join/${row.dataset.agent}`, width: 200, height: 200, colorDark: "#111214", colorLight: "#ffffff", correctLevel: QRCode.CorrectLevel.M });
   });
   fetch("/config.json").then((r) => r.json()).then((c) => draw(c.publicUrl || location.origin)).catch(() => draw(location.origin));
+</script>
+<script>
+  // The phone's sticky "Get a Suitemate" bar shows only while neither the hero buttons nor the agent cards are on screen.
+  const sticky = document.getElementById("sticky");
+  if ("IntersectionObserver" in window) {
+    const seen = new Map();
+    const io = new IntersectionObserver((es) => {
+      es.forEach((e) => seen.set(e.target, e.isIntersecting));
+      sticky.classList.toggle("away", [...seen.values()].some(Boolean));
+    }, { threshold: 0.05 });
+    io.observe(document.querySelector(".hero .cta"));
+    io.observe(document.getElementById("agents"));
+  }
 </script>
 </body>
 </html>

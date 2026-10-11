@@ -10,6 +10,7 @@ import {
   decide,
   flapping,
   loadState,
+  loginState,
   maskPhone,
   parsePower,
   pendingSignups,
@@ -94,6 +95,13 @@ test("redact: every phone number in an alert is masked, wherever it came from", 
   assert.equal(redact("[imessage] handler error Error: no space for financial dm:+19195550123"), "[imessage] handler error Error: no space for financial dm:***0123");
   assert.equal(redact("call 919-555-0123 or (919) 555 0124"), "call ***0123 or ***0124");
   assert.equal(redact("pid 69736 port 3000 at 04:53:15"), "pid 69736 port 3000 at 04:53:15");
+});
+
+test("photon whoami: only 'not authenticated' means logged out; a network failure is not a logout (seen live 05:03Z)", () => {
+  assert.equal(loginState(0, "Kerry Shi <k@example.com>\nbackend: production"), "ok");
+  assert.equal(loginState(1, '✗ Not authenticated for backend "production".\n  Hint: Run `photon login`.'), "logged-out");
+  assert.equal(loginState(1, "✗ Failed to fetch profile: TypeError: fetch failed"), "unknown"); // photon-api covers the network
+  assert.equal(loginState(-1, "spawn photon ENOENT"), "unknown");
 });
 
 test("pmset: AC is fine, battery is a failure with the percent and time left, junk is unknown", () => {

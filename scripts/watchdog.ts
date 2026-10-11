@@ -100,6 +100,13 @@ export function classifyLine(line: string): { kind: string; detail: string } | u
   return undefined;
 }
 
+// `photon whoami`: only an explicit "not authenticated" is a logout. A network failure ("fetch failed") is not, and
+// alerting "logged out" for it sent Kerry to `photon login` for nothing (05:03Z); photon-api covers the network.
+export function loginState(code: number, out: string): "ok" | "logged-out" | "unknown" {
+  if (/not authenticated|not logged in/i.test(out)) return "logged-out";
+  return code === 0 ? "ok" : "unknown";
+}
+
 export const flapping = (times: number[], now: number, windowMs: number) => times.filter((t) => now - t <= windowMs).length >= 2;
 
 // Sign-ups not on the agent's Photon allowlist yet. fresh = pending in the last 15 min (alert); pending = every number
@@ -301,7 +308,8 @@ async function tick(all = false): Promise<Result[]> {
       run: async () => {
         if (!slow) return skip(C.photonLogin);
         const r = await sh("photon", ["whoami"], 15_000);
-        return r.code === 0 && !/not authenticated/i.test(r.out) ? ok(C.photonLogin) : fail(C.photonLogin, r.out.trim().split("\n")[0].slice(0, 160));
+        const s = loginState(r.code, r.out);
+        return s === "ok" ? ok(C.photonLogin) : s === "logged-out" ? fail(C.photonLogin, r.out.trim().split("\n")[0].slice(0, 160)) : skip(C.photonLogin);
       },
     },
     {

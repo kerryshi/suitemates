@@ -37,9 +37,10 @@ function onboardFor(user: UserProfile, text: string, n: OnboardNames): { reply: 
       return {
         user: u,
         reply:
-          `hey, i'm ${n[n.me]} from ${n.product}. i've got ${ROLE[n.me]}, ` +
-          (["academic", "financial", "social"] as const).filter((p) => p !== n.me).map((p) => `${n[p]} has ${ROLE[p]}`).join(", ") +
-          `. quick setup: what's your monthly budget? (just a number, like 600)`,
+          `hey, i'm ${n[n.me]} from ${n.product}. i'm your money person: i keep an eye on your spending, ` +
+          `tell you if you can actually afford something before you buy it, and text you when a purchase looks off. ` +
+          others(n) +
+          `to do that i need two quick things. first: what's your monthly budget? (just a number, like 600)`,
       };
     case 1: {
       const budget = parseBudget(text);
@@ -50,7 +51,7 @@ function onboardFor(user: UserProfile, text: string, n: OnboardNames): { reply: 
       u.budgetMonthly = budget ?? DEFAULT_BUDGET;
       u.onboardingStep = 2;
       const note = budget === undefined ? `i'll start you at $${DEFAULT_BUDGET}/month, change it anytime. ` : "";
-      return { user: u, reply: `${note}got it. what's one thing you're saving for? (e.g. "spring break, $400")` };
+      return { user: u, reply: `${note}got it, i'll pace your spending against that. last one: what's one thing you're saving for? (e.g. "spring break, $400")` };
     }
     case 2:
       u.savingsGoal = text.trim().slice(0, 120) || "an emergency fund";
@@ -58,7 +59,7 @@ function onboardFor(user: UserProfile, text: string, n: OnboardNames): { reply: 
       u.onboardingStep = "done";
       return {
         user: u,
-        reply: `saving for: ${u.savingsGoal}. your Canvas is linked, you're all set. ask "what's due this week?" anytime.`,
+        reply: `saving for: ${u.savingsGoal}. you're all set. try "can i afford a $40 dinner?" or "how's my month?" anytime.`,
       };
     default:
       return { user: u, reply: "" };
@@ -73,17 +74,23 @@ function onboardAcademic(user: UserProfile, n: OnboardNames): { reply: string; u
     return {
       user: u,
       reply:
-        `hey, i'm ${n.academic} from ${n.product}. i keep track of your classes, deadlines and grades. ` +
-        `to get set up, what's your UNC email or Canvas login? (for the demo, anything works)`,
+        `hey, i'm ${n.academic} from ${n.product}. i keep track of your classes, deadlines and grades, ` +
+        `and i'll give you a heads-up before anything's due. ` +
+        others(n) +
+        `to do that i need one quick thing: to read your Canvas, what's your UNC email or Canvas login? (for the demo, anything works)`,
     };
   }
   u.canvasLinked = true; // demo: whatever they send links the mock Canvas
   u.onboardingStep = "done";
   return {
     user: u,
-    reply: `got it, your Canvas is linked. try "what's due this week?" or "how are my grades?"`,
+    reply: `got it, your Canvas is linked, so i can see what's due and how you're doing. you're all set. try "what's due this week?" or "how are my grades?"`,
   };
 }
+
+// "(Penny has money, Sunny has plans.)": who the user's other agents are, for every persona's opener.
+const others = (n: OnboardNames) =>
+  `(` + (["academic", "financial", "social"] as const).filter((p) => p !== n.me).map((p) => `${n[p]} has ${ROLE[p]}`).join(", ") + `.) `;
 
 // Social asks only about plans: first name, then what they're into. Interests are saved as the user's own
 // words ("soccer, boba"); personas/social maps them onto plans.
@@ -94,7 +101,10 @@ function onboardSocial(user: UserProfile, text: string, n: OnboardNames): { repl
       u.onboardingStep = 1;
       return {
         user: u,
-        reply: `hey, i'm ${n.social} from ${n.product}. i'm the plans person: i find people who want to do the same stuff you do. what's your first name?`,
+        reply: `hey, i'm ${n.social} from ${n.product}. i'm the plans person: i find people who want to do the same stuff you do ` +
+          `and text you when there's a plan worth joining. ` +
+          others(n) +
+          `to do that i need two quick things. first: what's your first name?`,
       };
     case 1: {
       const name = parseFirstName(text, [n.academic, n.financial, n.social]);
@@ -106,13 +116,13 @@ function onboardSocial(user: UserProfile, text: string, n: OnboardNames): { repl
       u.onboardingStep = 2;
       return {
         user: u,
-        reply: `nice to meet you${name ? `, ${name}` : ""}! what are you into? (sports, food, outdoors, gaming, concerts, parties…)`,
+        reply: `nice to meet you${name ? `, ${name}` : ""}! last one, so i can match you with the right people: what are you into? (sports, food, outdoors, gaming, concerts, parties…)`,
       };
     }
     case 2:
       u.interests = parseInterests(text);
       u.onboardingStep = "done";
-      return { user: u, reply: `love it. text me "what's happening this weekend?" and i'll find your people.` };
+      return { user: u, reply: `love it, you're all set. text me "what's happening this weekend?" and i'll find your people.` };
     default:
       return { user: u, reply: "" };
   }

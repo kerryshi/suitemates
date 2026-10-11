@@ -27,6 +27,39 @@ test("hi → budget → goal finishes onboarding with Canvas linked", () => {
   assert.equal(u.onboardingStep, "done");
 });
 
+test("every persona says what it does before its first setup question", () => {
+  for (const [me, does] of [
+    ["financial", /keep an eye on your spending.*afford/],
+    ["academic", /deadlines and grades.*heads-up/],
+    ["social", /find people.*plan worth joining/],
+  ] as const) {
+    const [first] = runAs(me, "hi").replies;
+    const ask = first.indexOf("?");
+    assert.ok(ask > 0, `${me}: asks a question`);
+    assert.match(first.slice(0, ask), does, `${me}: explains itself before asking`);
+  }
+});
+
+test("every persona names the other two, says why it's asking, and says when setup is done", () => {
+  for (const [me, msgs, mates] of [
+    ["financial", ["hi", "800", "spring break"], /Oak has school, Breeze has plans/],
+    ["academic", ["hi", "x"], /Clover has money, Breeze has plans/],
+    ["social", ["hi", "kerry", "boba"], /Oak has school, Clover has money/],
+  ] as const) {
+    const { replies } = runAs(me, ...msgs);
+    assert.match(replies[0], mates, `${me}: names the others`);
+    assert.match(replies[0], /to do that i need (one|two) quick thing/, `${me}: says why`);
+    assert.match(replies.at(-1)!, /you're all set/, `${me}: says done`);
+  }
+});
+
+test("Penny says why she needs the budget, and her finish points at money, not Canvas", () => {
+  const { replies } = run("hi", "800", "spring break, $400");
+  assert.match(replies[0], /need two quick things.*monthly budget/);
+  assert.match(replies[2], /afford/);
+  assert.doesNotMatch(replies[2], /Canvas|what's due/);
+});
+
 test("a non-number budget is re-asked once, then defaults to 500", () => {
   const once = run("hi", "lots");
   assert.equal(once.u.onboardingStep, 1);
@@ -81,7 +114,7 @@ test("a DM from a new user gets onboarding, not the LLM", async () => {
 test("Sunny asks only about plans: first name, then what they're into, never money or Canvas", () => {
   const { u, replies } = runAs("social", "hi", "I'm kerry!", "soccer, boba and hiking");
   assert.match(replies[0], /^hey, i'm Breeze from Canopy\. i'm the plans person.*what's your first name\?$/);
-  assert.match(replies[1], /^nice to meet you, Kerry! what are you into\?/);
+  assert.match(replies[1], /^nice to meet you, Kerry! last one, so i can match you with the right people: what are you into\?/);
   assert.match(replies[2], /what's happening this weekend/);
   assert.doesNotMatch(replies.join(" "), /budget|saving|Canvas/);
   assert.equal(u.name, "Kerry");
@@ -93,7 +126,7 @@ test("Sunny asks only about plans: first name, then what they're into, never mon
 test("Sunny re-asks a name once, then moves on without one", () => {
   const { u, replies } = runAs("social", "hi", "what is this?", "??", "gaming");
   assert.match(replies[1], /what should i call you/);
-  assert.match(replies[2], /^nice to meet you! what are you into/);
+  assert.match(replies[2], /^nice to meet you! last one, so i can match you with the right people: what are you into/);
   assert.equal(u.name, undefined);
   assert.deepEqual(u.interests, ["gaming"]);
   assert.equal(u.onboardingStep, "done");

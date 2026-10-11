@@ -4,6 +4,8 @@ import type { Engine } from "./engine.ts";
 import type { Outbound, PersonaId, UserProfile } from "./types.ts";
 import { parseBudget } from "./onboarding.ts";
 
+const FOCUS = ["school", "money", "social", "balance"] as const;
+
 export const INTERESTS = ["pickup sports", "gym", "food", "study groups", "concerts", "parties", "outdoors", "gaming", "art", "volunteering"];
 
 // "919-555-0177", "(919) 555 0177", "+1 919..." → "+19195550177". US numbers only (Photon pool is US iMessage).
@@ -30,11 +32,15 @@ export function parseSignup(
     .map((i) => String(i).trim().toLowerCase().slice(0, 30))
     .filter(Boolean)
     .slice(0, 10);
+  const focus = FOCUS.find((f) => f === body.focus);
+  const win = String(body.win ?? "").trim().slice(0, 160);
   return {
     user: {
       ...existing,
       phone,
       name,
+      ...(focus ? { focus } : {}),
+      ...(win ? { win } : {}),
       budgetMonthly: budget ?? existing.budgetMonthly ?? 500,
       savingsGoal: goal || existing.savingsGoal || "an emergency fund",
       interests,

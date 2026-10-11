@@ -118,3 +118,27 @@ test("a Photon refusal leaves the sign-up pending", async () => {
     s.close();
   }
 });
+
+test("focus and 'a win' are saved (unknown focus dropped) and reach every persona's prompt", async () => {
+  const blank = { phone: "+19195550123", canvasLinked: false, onboardingStep: 0 as const };
+  const r = parseSignup({ phone: "9195550123", name: "Sam", focus: "social", win: " 3.5 GPA and a beach trip " }, blank);
+  assert.ok("user" in r);
+  assert.equal(r.user.focus, "social");
+  assert.equal(r.user.win, "3.5 GPA and a beach trip");
+  const junk = parseSignup({ phone: "9195550123", name: "Sam", focus: "chaos" }, blank);
+  assert.ok("user" in junk && junk.user.focus === undefined);
+
+  const { respond } = await import("../core/agent.ts");
+  let system = "";
+  await respond({
+    persona: loadPersonas().get("academic")!,
+    ctx: { user: r.user, mock: true, now: new Date(), kv: { get: () => undefined, set: () => {} }, log: () => {} },
+    llm: { name: "spy", chat: async (req) => ((system = req.system), { text: "ok" }), json: async () => "{}" },
+    history: [],
+    text: "hi",
+    setting: "dm",
+    product: "Suitemates",
+    names: { academic: "Dean", financial: "Penny", social: "Sunny" },
+  });
+  assert.match(system, /mostly trying to: meet people; a win would be: "3\.5 GPA and a beach trip"\./);
+});

@@ -8,6 +8,8 @@ const TOOL_TIMEOUT_MS = 10_000;
 
 export type Setting = "dm" | "group" | "proactive";
 
+const FOCUS = { school: "ace their classes", money: "save money", social: "meet people", balance: "keep school, money and social life balanced" };
+
 export interface RespondArgs {
   persona: Persona;
   ctx: Ctx;
@@ -74,6 +76,9 @@ function contextBlock(a: RespondArgs): string {
     `- Setting: ${setting}`,
     `- Now: ${a.ctx.now.toLocaleString("en-US", { weekday: "long", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}.`,
     `- User: ${u.name ?? "unknown name"}; monthly budget ${u.budgetMonthly ? `$${u.budgetMonthly}` : "unknown"}; saving for: ${u.savingsGoal ?? "unknown"}.`,
+    ...(u.focus || u.win
+      ? [`- This semester they're mostly trying to: ${FOCUS[u.focus ?? "balance"]}${u.win ? `; a win would be: "${u.win}"` : ""}. Lean your advice that way.`]
+      : []),
     ...(a.shared?.length ? [`- What the others know (use it to plan together; don't recite it): ${a.shared.join(" | ")}`] : []),
     "- Write like a text message: 1–3 short sentences, lowercase is fine, no markdown, no headings.",
     "- Get facts from your tools. Never invent numbers, dates, or names.",

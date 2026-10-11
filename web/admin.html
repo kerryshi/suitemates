@@ -34,8 +34,8 @@
   </ol>
   <p class="msg" id="msg"></p>
   <table>
-    <thead><tr><th>Name</th><th>Phone</th><th class="hide-sm">Interests</th><th class="hide-sm">Budget</th><th>Status</th><th></th></tr></thead>
-    <tbody id="rows"><tr><td colspan="6" class="empty">Loading…</td></tr></tbody>
+    <thead><tr><th>Name</th><th>Phone</th><th class="hide-sm">Focus</th><th class="hide-sm">Interests</th><th class="hide-sm">Budget</th><th>Status</th><th></th></tr></thead>
+    <tbody id="rows"><tr><td colspan="7" class="empty">Loading…</td></tr></tbody>
   </table>
 </main>
 <script>
@@ -48,12 +48,13 @@
   async function load() {
     const res = await fetch(`/admin/signups${q}`);
     const out = await res.json();
-    if (!res.ok) { rows.innerHTML = `<tr><td colspan="6" class="empty">${esc(out.error)}</td></tr>`; return; }
-    if (!out.users.length) { rows.innerHTML = `<tr><td colspan="6" class="empty">No sign-ups yet. Share the page: ${esc(location.origin)}/</td></tr>`; return; }
+    if (!res.ok) { rows.innerHTML = `<tr><td colspan="7" class="empty">${esc(out.error)}</td></tr>`; return; }
+    if (!out.users.length) { rows.innerHTML = `<tr><td colspan="7" class="empty">No sign-ups yet. Share the page: ${esc(location.origin)}/</td></tr>`; return; }
     rows.innerHTML = out.users.map((u) => `
       <tr>
         <td>${esc(u.name)}</td>
         <td>${esc(u.phone)} <button class="copy" data-copy="${esc(u.phone)}">copy</button></td>
+        <td class="hide-sm">${esc(u.focus ?? "")}${u.win ? `<br><small>${esc(u.win)}</small>` : ""}</td>
         <td class="hide-sm">${esc((u.interests || []).join(", "))}</td>
         <td class="hide-sm">${u.budgetMonthly ? "$" + esc(u.budgetMonthly) : ""}</td>
         <td><span class="pill ${esc(u.signupStatus)}">${esc(u.signupStatus)}</span></td>

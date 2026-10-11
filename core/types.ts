@@ -14,6 +14,8 @@ export interface UserProfile {
   onboardingRetries?: number;
   // Web sign-up (core/signup.ts): pending until we add them in Photon and send the intro texts.
   interests?: string[];
+  focus?: "school" | "money" | "social" | "balance"; // "this semester I'm mostly trying to…"
+  win?: string; // "what would make this semester a win?" (free text)
   signupStatus?: "pending" | "invited";
   signedUpAt?: string; // ISO
 }

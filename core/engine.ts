@@ -87,7 +87,7 @@ export class Engine {
       const accepts = !side || (answer === "yes" && PLAIN_YES.test(ev.text ?? "") && !ownQuestion);
       if (waiting.length && accepts) {
         setPending(this.d.store, user.phone, { ...offer, agents: offer.agents.filter((a) => a.consent !== "pending") }); // one shot
-        if (answer === "no") return [{ persona, handle: ev.handle, text: "no worries 👍" }];
+        if (answer === "no") return [{ persona, handle: ev.handle, text: "no worries" }];
         if (answer === "yes") {
           const r = await runRecruit(this, user.phone, { ...offer, agents: waiting });
           const ids = waiting.map((a) => a.id);
@@ -225,7 +225,7 @@ export class Engine {
       return await this.replyOrThrow(id, user, text, image, setting);
     } catch (err) {
       this.log(`ERROR ${id} reply failed: ${err instanceof Error ? err.message : err}`);
-      return "one sec, my brain glitched 😵 try that again?";
+      return "one sec, my brain glitched. try that again?";
     }
   }
 

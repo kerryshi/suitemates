@@ -224,7 +224,7 @@ export function ackText(
   const here = ids.filter((id) => (viaFrom.includes(id) && !viaThread) || (!viaFrom.includes(id) && !ownNumber(id))).map((id) => names[id]);
   const and = (xs: string[]) => xs.join(" and ");
   const parts = [
-    own.length ? `${and(own)} ${own.length > 1 ? "are" : "is"} texting you now from ${own.length > 1 ? "their own numbers" : "their own number"} 📲` : "",
+    own.length ? `${and(own)} ${own.length > 1 ? "are" : "is"} texting you now from ${own.length > 1 ? "their own numbers" : "their own number"}` : "",
     here.length ? `${and(here)} ${here.length > 1 ? "are" : "is"} jumping in right here` : "",
     there.length ? `${and(there)} ${there.length > 1 ? "are" : "is"} jumping in over in ${names[viaThread!]}'s thread` : "",
   ].filter(Boolean);

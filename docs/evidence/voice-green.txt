@@ -468,3 +468,132 @@ exit=0
 tsc exit=0
 
 # Live Gemini probes: docs/evidence/voice-probe.txt rounds 2 (45 calls) and 3 (10 calls), MOCK=1 terminal path, no 429s
+
+# ====================================================================================================
+# Review fixes round 2 (second review, 10 findings), 2026-10-11 03:29 EDT, HEAD 35bdaa9 (kerry/voice)
+# Everything below was run by the executor. It is NOT independent evidence (review finding 10): an evidence agent
+# still has to re-run it before /ship.
+#
+# Base. Main merged this branch at fbdd31b as b5a0d73 (03:14 EDT). kerry/voice was fast-forwarded to b5a0d73; a
+# merge commit made first (9a9635e, tree 5b7ce1e = b5a0d73's tree, no content) was dropped with git reset --keep.
+# Main then moved again to bc11879 at 03:27 EDT (aero web PRs #35, #37, #38: web/, deploy/, .gitignore only). Review with
+# three dots: origin/main...HEAD is exactly this round. Two dots also lists main's newer web work, reversed (stale-base
+# artifact, review finding 1).
+
+$ git log --oneline b5a0d73..HEAD
+35bdaa9 [social] voice: review fixes: Sunny's bare-hey reply ends on the beat, not on "want in?"
+cc029ba [social] voice: review fixes: Sunny's prompt describes the beat instead of quoting seeded-plan jokes; no invented habits for other students
+a8198aa [core] voice: review fixes: the cap counts a pictograph with or without VS16; only (c), (r), TM stay text
+c209360 [core] voice: review fixes: bare pictographs (U+2764 heart, sun, plane) count toward the cap (test, red first)
+$ git diff --stat origin/main...HEAD
+ core/voice.ts                                     |   6 +-
+ docs/evidence/voice-cap-pictograph-green.txt      |  39 +++++++++
+ docs/evidence/voice-cap-pictograph-red-before.txt |  62 +++++++++++++
+ docs/evidence/voice-probe-r4.txt                  | 102 ++++++++++++++++++++++
+ personas/social/prompt.md                         |  14 +--
+ tests/voice.test.ts                               |  14 ++-
+ 6 files changed, 228 insertions(+), 9 deletions(-)
+
+$ npm test   (HEAD 35bdaa9)
+ℹ tests 271
+ℹ suites 0
+ℹ pass 271
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+exit=0
+$ npm run typecheck
+exit=0
+
+# Trial merge with origin/main bc11879 (no working tree touched; git archive of the merged tree into scratch, node_modules symlinked)
+$ git merge-tree --write-tree HEAD origin/main  → exit 0 (clean), tree ea1d95782471f947dc4ccfbd44bf9937e642af87
+suite + tsc on that tree:
+ℹ tests 271
+ℹ pass 271
+ℹ fail 0
+exit=0
+tsc exit=0
+
+# Scope (review finding 5), against the branch's base b5a0d73
+$ git diff --name-only b5a0d73..HEAD | grep -E 'core/(engine|recruit)\.ts|tests/recruit|^data/|\.env'
+grep exit=1 (1 = no match)
+$ git ls-files data .env '.env.*'
+.env.example
+(.env.example is the committed template; no data/ or .env tracked)
+$ git status --porcelain   (before this evidence commit; voice-probe-r2.txt is the previous round's transcript, committed here)
+ M docs/evidence/voice-green.txt
+?? docs/evidence/voice-probe-r2.txt
+
+# Finding 5's checks as written, run at fbdd31b BEFORE this round (base c14a554). The post-e827ff5 diff was evidence-only,
+# so the 254/254 + tsc recorded at e827ff5 above did hold for fbdd31b.
+  $ git rev-parse --short HEAD
+  fbdd31b
+  $ git diff --name-only c14a554..HEAD | grep -E 'core/(engine|recruit)\.ts|tests/recruit|^data/|\.env'
+  exit=1 (1 = no match)
+  $ git status --porcelain
+  ?? docs/evidence/voice-probe-r2.txt
+  $ git ls-files data .env '.env.*'
+  .env.example
+  (end ls-files)
+  $ git log --oneline c14a554..HEAD
+  fbdd31b [core] voice: review fixes evidence (254/254, tsc clean, trial merge with origin/main 270/270, probe rounds 1-3)
+  e827ff5 [core] voice: review fixes: Sunny writes a new beat instead of recycling the prompt's lines
+  37f3a25 [core] voice: review fixes: Sunny's energy back in words, Penny's own bare-hey example
+  29fe85a [core] voice: evidence (254/254, tsc clean, keyless previews 0 emoji, clean trial merge with kerry/yes-any-thread)
+  f6e5660 [core] voice: cap replies at respond()'s boundary, clear of kerry/yes-any-thread's agent.ts hunk
+  eb8e9fc [core] voice: student register in all three prompts, no emoji in examples
+  c8aab40 [core] voice: fixed lines without emoji or filler
+  af82171 [core] voice: cap every outbound text at one emoji
+  d756de0 [core] voice: 1-emoji cap test (red first)
+  $ git diff --stat e827ff5..HEAD -- . ':!docs/evidence'
+  (end diff)
+  $ git diff --stat e827ff5..HEAD
+   docs/evidence/voice-green.txt |  69 ++++++++
+   docs/evidence/voice-probe.txt | 389 ++++++++++++++++++++++++++++++++++++++++++
+   2 files changed, 458 insertions(+)
+
+# Cap (review finding 3): a pictograph counts with or without VS16; only (c) (r) TM stay text.
+# red before: docs/evidence/voice-cap-pictograph-red-before.txt (countEmoji('love that ❤ 🔥') = 1, cap left it unchanged)
+# green:      docs/evidence/voice-cap-pictograph-green.txt. Edge probe (finding 10's informational cases) after the fix:
+  "love that ❤ 🔥" count=2 cap="love that ❤"
+  "❤ 💸" count=2 cap="❤"
+  "⚽︎ 🌞" count=2 cap="⚽︎"
+  "🏳️‍🌈 🏳️‍⚧️" count=2 cap="🏳️‍🌈"
+  "👨‍👩‍👧‍👦 👍🏽" count=2 cap="👨‍👩‍👧‍👦"
+  "hey 🌞\n😂 ok" count=2 cap="hey 🌞\nok"
+  "😭😭😭" count=3 cap="😭"
+  "© 2026 ™ ★ → ok" count=0 cap="© 2026 ™ ★ → ok"
+
+# Emoji the cap counts in non-test source (core/ personas/ scripts/), after this round:
+  core/console.ts:58  📇
+  core/engine.ts:90  👍
+  core/engine.ts:228  😵
+  core/recruit.ts:227  📲
+  core/voice.ts:3  😮‍💨 👍🏽 🇺🇸
+  core/voice.ts:4  1️⃣
+  core/voice.ts:5  ❤ ☀ ✈
+  core/voice.ts:25  💸 😭 💸 🙄 😤 🙄 🎉 🙌 🎉
+  core/voice.ts:40  🎉 😂
+# voice.ts hits are comments. console.ts:58 is the terminal-only contact-card marker. engine.ts:90 "no worries 👍",
+# engine.ts:228 "one sec, my brain glitched 😵 try that again?" and recruit.ts:227 "... from their own numbers 📲" are in
+# sibling-owned files this branch must not edit (findings 7, 8): hand-off below.
+
+# Sunny prompt (review findings 2, 6): docs/evidence/voice-probe-r4.txt. Committed prompt: 0 recycled tails, 0 emoji,
+# 0 greetings ending in "?" (2/2), a beat on 4/4 tool answers; residual: a sand joke in 3 of 4 v2/v3 greetings, one invented
+# trait in 8 v2/v3 texts. Dean's and Penny's prompts are unchanged this round.
+
+# Plan D acceptance bar 5 (blind in-character judgement, review finding 4): NOT RUN.
+# Why: the plan gives it to the reviewer subagent; the executor reading its own output is not that judgement, and this
+# executor cannot spawn one. Until it runs, this branch has met bars 1-4 (numeric) only, not the plan's acceptance bar.
+# Ready for the judge: scratchpad voice-judge-blind-r4.txt (29 AFTER texts: Dean 10, Penny 13 from rounds 1-3, Sunny 6 from
+# round 4 on the committed prompt; plus the 15 BEFORE lines, shuffled, unlabeled), key in voice-judge-key-r4.txt. The older
+# voice-judge-blind.txt holds Sunny texts from prompts that no longer ship.
+
+# Not done on this branch (hand-offs):
+# - core/recruit.ts:227 drop the trailing " 📲" (fires on every yes to a bring_in offer when agents have own numbers, the live
+#   config) and pin it in tests/recruit.test.ts. Sibling-owned file.
+# - core/engine.ts:90 "no worries 👍" -> "no worries"; engine.ts:228 -> "one sec, that didn't go through. say it again?". Sibling-owned.
+# - web/index.html: main's landing (bc11879, aero session) already has 0 emoji, but its Sunny bubbles show the two lines this
+#   round trained out: line 198 "wrightsville isn't ready for you four" and line 246 the plain roster readout ending "want in?".
+#   Owner: the aero/web session; swap in two lines from voice-probe-r4.txt (e.g. D S3, D S2).

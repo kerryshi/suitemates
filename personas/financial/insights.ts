@@ -1,7 +1,7 @@
 // Penny noticing habits: two tools (spending_patterns, habit_swap) and two proactive texts (ask about a habit she
 // spotted, a weekly heads-up when spending speeds up). All numbers from patterns.ts; Penny only words them.
 import type { Ctx, Tool, WatchEvent } from "../../core/types.ts";
-import { getPurchases } from "./nessie.ts";
+import { getPurchases, realBank } from "./nessie.ts";
 import { categoryShifts, findHabits, patternReport, swapSavings, trend, weeklyTotals } from "./patterns.ts";
 
 const ASKED_KEY = "askedHabits";
@@ -39,7 +39,9 @@ export const habitSwap: Tool = {
     const habits = findHabits(await getPurchases(ctx), ctx.now);
     if (habits.length === 0) return "No repeat habits in their last 4 weeks of spending.";
     const place = String(args.place ?? "").toLowerCase().replace(/\s+/g, "");
-    const h = (place && habits.find((x) => x.key.replace(/\s+/g, "").includes(place) || place.includes(x.key.replace(/\s+/g, "")))) || habits[0];
+    const h = place ? habits.find((x) => x.key.replace(/\s+/g, "").includes(place) || place.includes(x.key.replace(/\s+/g, ""))) : habits[0];
+    // Never answer about a different habit than the one they named.
+    if (!h) return `No repeat habit at ${String(args.place)} in their last 4 weeks. Their repeat places: ${habits.map((x) => x.key).join(", ")}.`;
     return swapSavings(h, String(args.item ?? ""), ctx.user.savingsGoal);
   },
 };
@@ -47,6 +49,9 @@ export const habitSwap: Tool = {
 // Proactive: ask about the most frequent habit once (Penny doesn't know what they buy at a gas station), and a
 // weekly heads-up when spending is up 25%+ on the 2 weeks before.
 export async function insightEvents(ctx: Ctx): Promise<WatchEvent[]> {
+  // Habit texts run on the demo bank only: never on the owner's real account (one Nessie call fewer per poll, and its
+  // numbers are never presented to anyone as their own habits).
+  if (realBank(ctx)) return [];
   // One noticed-pattern text per 12 hours: a habit question and a trend alert back to back read like spam.
   const last = ctx.kv.get<number>(LAST_KEY);
   if (last && ctx.now.getTime() - last < INSIGHT_GAP_MS) return [];
@@ -70,7 +75,8 @@ export async function insightEvents(ctx: Ctx): Promise<WatchEvent[]> {
     return events;
   }
   const t = trend(weeklyTotals(all, ctx.now));
-  if (t.direction === "up" && t.change >= 0.25) {
+  // A real baseline first: "+100%" from a fortnight with no spending is noise, not a trend.
+  if (t.direction === "up" && t.change >= 0.25 && t.prior2 >= 50) {
     ctx.kv.set(LAST_KEY, ctx.now.getTime());
     const shift = categoryShifts(all, ctx.now)[0];
     const week = Math.floor(ctx.now.getTime() / (7 * 86_400_000));

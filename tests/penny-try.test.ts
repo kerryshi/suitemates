@@ -15,6 +15,7 @@ const { FakeLlm } = await import("../core/llm/fake.ts");
 const { startHttp } = await import("../core/http.ts");
 
 const SAM = "+19195550123";
+const FIXED_NOW = new Date(2026, 9, 11, 12, 0).getTime();
 const ALEX = "+19195550124";
 
 async function setup() {
@@ -25,6 +26,8 @@ async function setup() {
     llm: new FakeLlm(),
     config: { names: { academic: "Dean", financial: "Penny", social: "Sunny" }, PRODUCT_NAME: "Suitemates", mock: true },
     log: () => {},
+    // A fixed day: sample history is drawn per calendar date, so "DoorDash is a habit" must not depend on today's date.
+    now: () => FIXED_NOW,
   });
   const http = startHttp({ engine, transport: { start: async () => {}, send: async () => {} }, port: 0, addUser: async () => ({ ok: true, line: "+16465550177" }) });
   await new Promise((r) => http.once("listening", r));

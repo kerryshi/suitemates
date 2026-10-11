@@ -1,7 +1,7 @@
 // Penny's intro, her line for the other agents, and the website's "try Penny" purchases (POST /try/financial).
 // Mock mode: each person gets their own demo ledger (nessie.ts readExtras(phone)), so every judge has a Penny.
 import type { Ctx, WatchEvent } from "../../core/types.ts";
-import { getBalance, getPurchases, readExtras, writeExtras } from "./nessie.ts";
+import { getBalance, getPurchases, readExtras, realBank, writeExtras } from "./nessie.ts";
 import { monthStats } from "./money.ts";
 
 const SEEN_KEY = "seenPurchaseIds"; // watch.ts's baseline key
@@ -29,7 +29,8 @@ export async function intro(ctx: Ctx): Promise<WatchEvent[]> {
     events.push({
       kind: "intro_budget",
       userPhone: ctx.user.phone,
-      facts: `this month: ${money(budget)} budget, ${money(left!)} left, about ${money(Math.max(0, perDay!))} a day.${goal}`,
+      // Honest about the numbers: anyone not on the owner's real account is on a demo bank (sample spending).
+      facts: `this month: ${money(budget)} budget, ${money(left!)} left, about ${money(Math.max(0, perDay!))} a day.${goal}${realBank(ctx) ? "" : " (demo bank: sample spending, not your real account)"}`,
       dedupeKey: `financial:intro-budget:${ctx.user.phone}`,
     });
   }
@@ -50,8 +51,8 @@ export async function moneyContext(ctx: Ctx): Promise<string> {
 export async function tryBuy(action: string, ctx: Ctx): Promise<{ error: string } | { note: string }> {
   const buy = DEMO_BUYS[action];
   if (!buy) return { error: "Unknown purchase." };
-  if (!ctx.mock) return { error: "Demo purchases only work with demo bank data (MOCK=1)." };
-  const mine = readExtras(ctx.user.phone).filter((e) => e.phone);
+  if (realBank(ctx)) return { error: "Demo purchases are for the demo bank; yours come from your real account." };
+  const mine = readExtras(ctx.user.phone, { ownOnly: true });
   if (mine.filter((e) => Date.now() - Date.parse(e.at) < 3_600_000).length >= MAX_DEMO_PER_HOUR) {
     return { error: "That's a lot of shopping for one hour 😭 try again later." };
   }

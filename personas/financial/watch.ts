@@ -1,7 +1,7 @@
 // Proactive texts for Financial (owner: Kerry).
 import type { Ctx, WatchEvent } from "../../core/types.ts";
 import { ymd } from "../../core/kit.ts";
-import { getBalance, getPurchases, type Purchase } from "./nessie.ts";
+import { getBalance, getPurchases, isOwner, type Purchase } from "./nessie.ts";
 import { breakdownLine, diffNew, purchaseFacts } from "./money.ts";
 
 const SEEN_KEY = "seenPurchaseIds";
@@ -14,14 +14,13 @@ export interface WatchDeps {
   owner?: string; // phone that owns the bank account; others get no purchase texts
 }
 
-const digits = (s?: string) => (s ?? "").replace(/\D/g, "").slice(-10);
-const isOwner = (phone: string, owner = process.env.NESSIE_OWNER_PHONE) => !owner || digits(owner) === digits(phone);
 
 // Polled every WATCH_MS (financial is in WATCH by default). One event per NEW purchase; core
 // texts the user in Penny's voice from `facts`. The first poll only records what's already there.
 export async function watchWith(ctx: Ctx, deps: WatchDeps): Promise<WatchEvent[]> {
-  // One demo bank account: without this, every onboarded user is texted about every purchase.
-  if (!isOwner(ctx.user.phone, deps.owner ?? "")) return [];
+  // One shared ledger in MOCK=1 (and the owner's real account in MOCK=0): only its owner hears about its purchases,
+  // or every onboarded user is texted about every purchase. On MOCK=0 everyone else has their own demo bank.
+  if (ctx.mock && !isOwner(ctx.user.phone, deps.owner ?? "")) return [];
   const all = await deps.getPurchases(ctx);
   const balance = await deps.getBalance(ctx);
   const { baselined, fresh, seen } = diffNew(ctx.kv.get<string[]>(SEEN_KEY), all);

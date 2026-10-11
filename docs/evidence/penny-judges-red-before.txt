@@ -1,0 +1,2 @@
+# PR #25 judge fixes: fail-first (2026-10-11 01:39) — all 7 new tests red on the PR head before the fix
+(captured during the run: MOCK=0 split, F1/F6, F3, F5, tryBuy, judge roast, demo-bank note: 0 pass / 7 fail)

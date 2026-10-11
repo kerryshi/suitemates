@@ -121,9 +121,9 @@ test("server log lines: connection drops, handler errors, stuck sign-ups, inboun
     detail: "Sam ***0123: Target not allowed for this project",
   });
   assert.equal(classifyLine("[signup] Sam +19195550123 (invited)"), undefined);
-  assert.equal(classifyLine("[imessage] financial line=+16465550177 dm +19195550123: hey (space s1, msg m1)")?.kind, "inbound");
+  assert.equal(classifyLine("[imessage] financial line=+16465550100 dm +19195550123: hey (space s1, msg m1)")?.kind, "inbound");
   // 86e0e93 dropped Inbound.kind (DMs only): the line has no "dm" any more, and group texts are logged as ignored.
-  assert.equal(classifyLine("[imessage] financial line=+16465550177 +19195550123: hey (space s1, msg m1)")?.kind, "inbound");
+  assert.equal(classifyLine("[imessage] financial line=+16465550100 +19195550123: hey (space s1, msg m1)")?.kind, "inbound");
   assert.equal(classifyLine("[imessage] ignored group message m9 from +19195550123")?.kind, "inbound"); // still proves we hear
   assert.equal(classifyLine("[imessage] lines: academic=? financial=? social=?"), undefined);
   assert.equal(classifyLine("Error: listen EADDRINUSE: address already in use :::3000")?.kind, "double-server");

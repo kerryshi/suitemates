@@ -14,8 +14,9 @@ export interface Note {
 export const MAX_NOTES = 15; // oldest dropped first
 export const NOTE_MAX_CHARS = 120;
 const ALREADY_KNOWN = "budget, savings goal, semester focus, what a win looks like, interests";
-// Backstop only; the tool description carries the rule. Mirrors Persona.context: no exact grades or balances.
-const PRIVATE = /\d\s*%|\b(balance|grade|gpa|score|scored)\b[^.]*\d|\d[^.]*\b(balance|grade|gpa)\b/i;
+// Backstop only; the tool description carries the rule. Mirrors Persona.context: no exact grades or balances,
+// and no phone numbers (Social keeps phone digits out of model-visible text too).
+const PRIVATE = /\d\s*%|\b(balance|grade|gpa|score|scored)\b[^.]*\d|\d[^.]*\b(balance|grade|gpa)\b|\+?\d[\d\s().-]{8,}\d/i;
 
 const norm = (t: string) => t.toLowerCase().replace(/\s+/g, " ").trim().replace(/[.!]+$/, "");
 
@@ -43,9 +44,10 @@ function rememberTool(store: Store, by: PersonaId, userText: string, all: string
       `chit-chat, questions, or what's already known (${ALREADY_KNOWN}).`,
     parameters: { properties: { note: { type: "string", description: `One sentence, under ${NOTE_MAX_CHARS} characters.` } }, required: ["note"] },
     async run(args, ctx) {
-      // The keyless stand-in model calls tools with no arguments: fall back to what the user typed ("remember: …").
-      const fromUser = userText.replace(/\n\n\(Already said[\s\S]*$/, "").replace(/^\s*remember(?: that)?:?\s*/i, "");
-      const note = typeof args.note === "string" && args.note.trim() ? args.note : fromUser;
+      // The keyless stand-in model calls tools with no arguments: then only an explicit "remember: …" counts, so an
+      // ordinary question that happened to match this tool's description is never saved.
+      const said = /^\s*remember(?: that)?:?\s*([\s\S]+)$/i.exec(userText.replace(/\n\n\(Already said[\s\S]*$/, ""));
+      const note = typeof args.note === "string" && args.note.trim() ? args.note : (said?.[1] ?? "");
       const result = addNote(store, ctx.user.phone, by, note, ctx.now);
       if (result === "saved") return `saved: ${listNotes(store, ctx.user.phone).at(-1)!.text}`;
       if (result === "duplicate") return "already noted";

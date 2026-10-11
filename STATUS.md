@@ -20,7 +20,6 @@ Plan of record: `docs/PLAN.md` (architect). Owners: Kerry = core + Financial, Is
   Academic (a00e502: check_plan_conflicts + tests), Financial (0de7113: Penny + Nessie), Penny wakes on "how much is…" (b60fc06).
 - Names: Suitemates, Dean (academic), Penny (financial), Sunny (social); defaults in core/config.ts and `.env.example`.
 - Avatar provenance for Devpost: `docs/avatars/generation/` (gen_avatars.py + prompts.json), linked from `docs/avatars/README.md`.
-- Checks on main: `npm run typecheck` clean, `npm test` 87/87 (now includes `personas/*/*.test.ts`).
 - Social watch() verified through the real scheduler, keyless (`WATCH=social WATCH_MS=1000`): one DM about 1 s after a join, no repeats.
 - PR #5 squash-merged (80d78eb: cue runbook, join-order test, leave and name-cut wording). `academic/canvas` fully merged.
   `social/matching` has the same social code as main but 6 pre-squash commits:

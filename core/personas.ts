@@ -34,6 +34,7 @@ export function validatePersona(p: Persona, expectedId: PersonaId): Persona {
   for (const t of p.tools) {
     if (!/^[a-z][a-z0-9_]*$/.test(t.name ?? "")) fail(`tool name "${t.name}" must be snake_case`);
     if (names.has(t.name)) fail(`two tools are named "${t.name}"`);
+    if (t.name === "remember") fail(`"remember" is core's shared-memory tool (core/memory.ts); pick another name`);
     names.add(t.name);
     if (!t.description?.trim()) fail(`tool "${t.name}" needs a description`);
     if (typeof t.run !== "function") fail(`tool "${t.name}" needs a run(args, ctx) function`);

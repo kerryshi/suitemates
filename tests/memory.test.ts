@@ -100,3 +100,25 @@ test("keyless: 'remember: …' saves the note through the stand-in model", async
   assert.match(outs.map((o) => o.text).join(" "), /remember → saved: vegetarian, no car/);
   assert.deepEqual((await notes(s.store)).map((n) => [n.by, n.text]), [["financial", "vegetarian, no car"]]);
 });
+
+// Review follow-ups (PR #21).
+test("keyless: an ordinary question is never saved as a note; only an explicit 'remember: …' is", async () => {
+  const s = setup(new FakeLlm());
+  await s.dm("academic", "what should i focus on this semester");
+  assert.deepEqual(await notes(s.store), []);
+});
+
+test("phone numbers are refused like balances and grades", async () => {
+  const { addNote } = await import("../core/memory.ts");
+  const store = new Store(null);
+  assert.equal(addNote(store, "+1", "social", "call my roommate at 919 555 0123", new Date()), "private");
+  assert.equal(addNote(store, "+1", "social", "roommate's number is (919) 555-0123", new Date()), "private");
+  assert.equal(addNote(store, "+1", "social", "has class at 9 on tuesdays", new Date()), "saved");
+});
+
+test("a persona can't define its own 'remember' tool (core adds one to every persona)", async () => {
+  const { validatePersona } = await import("../core/personas.ts");
+  const fin = loadPersonas().get("financial")!;
+  const clash = { ...fin, tools: [...fin.tools, { ...fin.tools[0], name: "remember" }] };
+  assert.throws(() => validatePersona(clash, "financial"), /remember/);
+});

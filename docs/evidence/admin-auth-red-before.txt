@@ -1,0 +1,73 @@
+# fail-first: with no DEMO_TOKEN the tunnel made /admin/signups and /demo/trigger public — Sat Oct 10 23:13:46 EDT 2026
+[http] listening on :0 (GET / sign-up, /admin, POST /demo/trigger, GET /health)
+[http] listening on :0 (GET / sign-up, /admin, POST /demo/trigger, GET /health)
+✖ no DEMO_TOKEN: admin and the demo trigger refuse tunneled requests but still work locally (11.888917ms)
+✔ with DEMO_TOKEN: the right token works through the tunnel, a wrong or missing one doesn't (23.00225ms)
+✖ npm run tunnel refuses to start without DEMO_TOKEN (165.936125ms)
+ℹ tests 3
+ℹ suites 0
+ℹ pass 1
+ℹ fail 2
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 367.967667
+
+✖ failing tests:
+
+test at tests/admin-auth.test.ts:41:1
+✖ no DEMO_TOKEN: admin and the demo trigger refuse tunneled requests but still work locally (11.888917ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  200 !== 403
+  
+      at TestContext.<anonymous> (/private/tmp/claude-501/-Users-kerryshi/b0226024-20be-4e7f-a8a9-b4788532bbb9/scratchpad/wt-sec/tests/admin-auth.test.ts:44:12)
+      at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+      at async Test.run (node:internal/test_runner/test:1069:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:332:3) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 200,
+    expected: 403,
+    operator: 'strictEqual'
+  }
+
+test at tests/admin-auth.test.ts:66:1
+✖ npm run tunnel refuses to start without DEMO_TOKEN (165.936125ms)
+  AssertionError [ERR_ASSERTION]: The input did not match the regular expression /DEMO_TOKEN/. Input:
+  
+  'node:events:485\n' +
+    "      throw er; // Unhandled 'error' event\n" +
+    '      ^\n' +
+    '\n' +
+    'Error: spawn cloudflared ENOENT\n' +
+    '    at ChildProcess._handle.onexit (node:internal/child_process:286:19)\n' +
+    '    at onErrorNT (node:internal/child_process:484:16)\n' +
+    '    at process.processTicksAndRejections (node:internal/process/task_queues:90:21)\n' +
+    "Emitted 'error' event on ChildProcess instance at:\n" +
+    '    at ChildProcess._handle.onexit (node:internal/child_process:292:12)\n' +
+    '    at onErrorNT (node:internal/child_process:484:16)\n' +
+    '    at process.processTicksAndRejections (node:internal/process/task_queues:90:21) {\n' +
+    '  errno: -2,\n' +
+    "  code: 'ENOENT',\n" +
+    "  syscall: 'spawn cloudflared',\n" +
+    "  path: 'cloudflared',\n" +
+    "  spawnargs: [ 'tunnel', '--url', 'http://localhost:3000' ]\n" +
+    '}\n' +
+    '\n' +
+    'Node.js v24.3.0\n'
+  
+      at TestContext.<anonymous> (/private/tmp/claude-501/-Users-kerryshi/b0226024-20be-4e7f-a8a9-b4788532bbb9/scratchpad/wt-sec/tests/admin-auth.test.ts:75:10)
+      at Test.runInAsyncScope (node:async_hooks:214:14)
+      at Test.run (node:internal/test_runner/test:1062:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:752:18)
+      at Test.postRun (node:internal/test_runner/test:1191:19)
+      at Test.run (node:internal/test_runner/test:1119:12)
+      at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:752:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: "node:events:485\n      throw er; // Unhandled 'error' event\n      ^\n\nError: spawn cloudflared ENOENT\n    at ChildProcess._handle.onexit (node:internal/child_process:286:19)\n    at onErrorNT (node:internal/child_process:484:16)\n    at process.processTicksAndRejections (node:internal/process/task_queues:90:21)\nEmitted 'error' event on ChildProcess instance at:\n    at ChildProcess._handle.onexit (node:internal/child_process:292:12)\n    at onErrorNT (node:internal/child_process:484:16)\n    at process.processTicksAndRejections (node:internal/process/task_queues:90:21) {\n  errno: -2,\n  code: 'ENOENT',\n  syscall: 'spawn cloudflared',\n  path: 'cloudflared',\n  spawnargs: [ 'tunnel', '--url', 'http://localhost:3000' ]\n}\n\nNode.js v24.3.0\n",
+    expected: /DEMO_TOKEN/,
+    operator: 'match'
+  }

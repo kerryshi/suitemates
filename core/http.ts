@@ -5,7 +5,8 @@
 //   curl -X POST localhost:3000/demo/trigger -H 'content-type: application/json' \
 //        -d '{"persona":"academic","name":"morning_due","phone":"+19195550001"}'
 //   or from a phone browser: GET /demo/trigger?persona=academic&name=morning_due&phone=%2B19195550001
-// If DEMO_TOKEN is set, /admin* and /demo/trigger need "token" (JSON or query). /signup is open.
+// If DEMO_TOKEN is set, /admin* and /demo/trigger need "token" (JSON or query). Without it they answer local requests
+// only, never ones that came through the tunnel (Cloudflare adds cf-connecting-ip / x-forwarded-for). /signup is open.
 import { createServer, type ServerResponse } from "node:http";
 import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
@@ -91,7 +92,8 @@ export function startHttp(opts: { engine: Engine; transport: Transport; port: nu
         return reply(200, { ok: true, name: user.name, status: user.signupStatus, textTo, calendar: calUrl(phone), agents: user.agents, ...(own.note ? { note: own.note } : {}) });
       }
 
-      const authed = !opts.token || params.token === opts.token;
+      const viaTunnel = Boolean(req.headers["cf-connecting-ip"] || req.headers["cf-ray"] || req.headers["x-forwarded-for"]);
+      const authed = opts.token ? params.token === opts.token : !viaTunnel;
       if (path === "/admin/signups") {
         if (!authed) return reply(403, { error: "bad token" });
         const users = store

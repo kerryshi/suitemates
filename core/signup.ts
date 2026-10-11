@@ -46,7 +46,7 @@ export function parseSignup(
       interests,
       canvasLinked: body.canvas !== false, // demo: mock Canvas unless they opt out
       onboardingStep: "done",
-      signupStatus: existing.signupStatus === "invited" ? "invited" : "pending",
+      signupStatus: existing.signupStatus ?? "pending",
       signedUpAt: existing.signedUpAt ?? now.toISOString(),
     },
   };
@@ -66,7 +66,7 @@ const DEFAULT_INTRO: Record<PersonaId, (name: string) => string> = {
 // invited (a Photon refusal must leave them pending).
 export async function introTexts(engine: Engine, phone: string, order: PersonaId[] = ["academic", "financial", "social"]): Promise<Outbound[]> {
   const out: Outbound[] = [];
-  const { names, PRODUCT_NAME } = engine.d.config;
+  const { names } = engine.d.config;
   for (const id of order) {
     if (!engine.d.personas.has(id)) continue;
     const own = engine.d.personas.get(id)!.triggers?.intro;
@@ -74,17 +74,23 @@ export async function introTexts(engine: Engine, phone: string, order: PersonaId
       ? await engine.trigger(id, "intro", { phone, force: true })
       : [{ persona: id, handle: `dm:${phone}`, text: DEFAULT_INTRO[id](names[id]) }];
     out.push(...said);
-    out.push({
-      persona: id,
-      handle: `dm:${phone}`,
-      text: "",
-      card: {
-        name: `${names[id]} ${PRODUCT_NAME}`,
-        photo: `docs/avatars/${AVATAR[id]}.png`,
-        phone: process.env[`${id.toUpperCase()}_LINE`] || undefined,
-        note: `${names[id]} handles ${ROLE[id]} in ${PRODUCT_NAME}.`,
-      },
-    });
+    out.push(cardFor(engine, id, phone));
   }
   return out;
+}
+
+// A persona's contact card as its own message: name, avatar, and its number if it has a dedicated line.
+export function cardFor(engine: Engine, id: PersonaId, phone: string): Outbound {
+  const { names, PRODUCT_NAME } = engine.d.config;
+  return {
+    persona: id,
+    handle: `dm:${phone}`,
+    text: "",
+    card: {
+      name: `${names[id]} ${PRODUCT_NAME}`,
+      photo: `docs/avatars/${AVATAR[id]}.png`,
+      phone: process.env[`${id.toUpperCase()}_LINE`] || undefined,
+      note: `${names[id]} handles ${ROLE[id]} in ${PRODUCT_NAME}.`,
+    },
+  };
 }

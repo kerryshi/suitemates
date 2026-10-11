@@ -9,6 +9,7 @@ import { FakeLlm } from "../core/llm/fake.ts";
 import { startHttp } from "../core/http.ts";
 import { normalizePhone, parseSignup } from "../core/signup.ts";
 import type { Outbound } from "../core/types.ts";
+import { lineFor, safeName, type AddUser } from "../core/photon-users.ts";
 
 test("normalizePhone accepts US formats only", () => {
   assert.equal(normalizePhone("919-555-0177"), "+19195550177");
@@ -32,7 +33,7 @@ test("parseSignup fills the profile, skips text onboarding, and needs a name", (
   assert.deepEqual(parseSignup({ phone: "9195550123", name: "" }, blank), { error: "Tell us your first name." });
 });
 
-async function server(token?: string) {
+async function server(token?: string, addUser: AddUser = async () => ({ ok: false, error: "off in tests" })) {
   const store = new Store(null);
   const sent: Outbound[] = [];
   const engine = new Engine({
@@ -44,12 +45,12 @@ async function server(token?: string) {
     log: () => {},
   });
   const transport = { start: async () => {}, send: async (o: Outbound) => void sent.push(o) };
-  const http = startHttp({ engine, transport, port: 0, token });
+  const http = startHttp({ engine, transport, port: 0, token, addUser });
   await new Promise((r) => http.once("listening", r));
   const base = `http://127.0.0.1:${(http.address() as AddressInfo).port}`;
   const post = (path: string, body: unknown) =>
     fetch(base + path, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
-  return { store, sent, base, post, close: () => http.close() };
+  return { store, sent, base, post, engine, close: () => http.close() };
 }
 
 test("sign up → pending → admin sends Dean's intro first → invited", async () => {
@@ -141,4 +142,54 @@ test("focus and 'a win' are saved (unknown focus dropped) and reach every person
     names: { academic: "Dean", financial: "Penny", social: "Sunny" },
   });
   assert.match(system, /mostly trying to: meet people; a win would be: "3\.5 GPA and a beach trip"\./);
+});
+
+test("QR flow: sign up → added to Photon → page gets the number → their 'hey' gets every intro + card", async () => {
+  const calls: [string, string][] = [];
+  const s = await server(undefined, async (phone, name) => (calls.push([phone, name]), { ok: true, line: "+16465550177" }));
+  try {
+    assert.equal((await fetch(s.base + "/qr")).status, 200);
+    const res = await s.post("/signup", { name: "Sam", phone: "(919) 555-0123" });
+    assert.deepEqual(await res.json(), { ok: true, name: "Sam", status: "added", textTo: "+16465550177" });
+    assert.deepEqual(calls, [["+19195550123", "Sam"]]);
+    assert.equal(s.sent.length, 0); // we wait for their "hey"
+
+    const hey = await s.engine.handle({ persona: "academic", kind: "dm", sender: "+19195550123", text: "hey", handle: "space-1", messageId: "m1" });
+    assert.deepEqual(hey.map((o) => [o.persona, o.card ? "card" : "text"]), [
+      ["academic", "text"], ["academic", "card"], ["financial", "text"], ["financial", "card"], ["social", "text"], ["social", "card"],
+    ]);
+    assert.ok(hey.every((o) => o.handle === "space-1")); // answered in the conversation they started
+    assert.equal(s.store.user("+19195550123").signupStatus, "invited");
+
+    const next = await s.engine.handle({ persona: "academic", kind: "dm", sender: "+19195550123", text: "what's due?", handle: "space-1", messageId: "m2" });
+    assert.equal(next.length, 1); // after the intros, a normal reply
+    assert.equal((await s.post("/signup", { name: "Sam", phone: "9195550123" }).then((r) => r.json())).status, "invited");
+    assert.equal(calls.length, 1); // signing up again doesn't re-add
+  } finally {
+    s.close();
+  }
+});
+
+test("if Photon can't add them, the sign-up stays pending for /admin", async () => {
+  const s = await server(undefined, async () => ({ ok: false, error: "photon: not logged in" }));
+  try {
+    const out = (await (await s.post("/signup", { name: "Sam", phone: "9195550123" })).json()) as { status: string };
+    assert.equal(out.status, "pending");
+    assert.equal(s.store.user("+19195550123").signupStatus, "pending");
+  } finally {
+    s.close();
+  }
+});
+
+test("Photon helpers: pool line from the users list, CLI-safe names", () => {
+  const list = JSON.stringify({ data: [
+    { id: "u1", phone: "+19195550000", line: { phone: "+16465550000" } },
+    { id: "u2", firstName: "Sam", phoneNumber: "+19195550123", textsOn: "+16465550177" },
+  ] });
+  assert.equal(lineFor(list, "+19195550123"), "+16465550177");
+  assert.equal(lineFor(list, "+19195559999"), undefined);
+  assert.equal(lineFor("not json", "+19195550123"), undefined);
+  assert.equal(safeName("Sam"), "Sam");
+  assert.equal(safeName("Zoë O'Neil"), "Zoë O'Neil");
+  assert.equal(safeName('Sam"; rm -rf /'), "Friend");
 });

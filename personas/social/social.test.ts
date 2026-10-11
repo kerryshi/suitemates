@@ -418,3 +418,25 @@ test("review: a bare 'I'm in' after the intro joins the plan Sunny pitched, even
   // Without an intro, a bare join still asks which plan.
   assert.match(await run("join_activity", {}, ctx(THIRD)), /^Which plan\?/);
 });
+
+test("free-text interests from Sunny's text setup fit plans through their category", async () => {
+  const { fits } = await import("./interests.ts");
+  const plan = (name: string) => ({ id: "x", name, when: "", signups: [] });
+  assert.deepEqual(fits(plan("Pickup basketball at Fetzer"), ["soccer"]), ["soccer"]);
+  assert.deepEqual(fits(plan("Pickup soccer at Hooker Fields"), ["sports"]), ["sports"]);
+  assert.deepEqual(fits(plan("Boba run on Franklin St"), ["eating", "hiking"]), ["eating"]);
+  assert.deepEqual(fits(plan("Game night"), ["games"]), ["games"]);
+  assert.deepEqual(fits(plan("Beach trip to Wrightsville"), ["hiking"]), ["hiking"]);
+  assert.deepEqual(fits(plan("Boba run on Franklin St"), ["idk lol"]), []);
+  // ...and the intro picks them up: someone who said "sports" hears about soccer.
+  const [ev] = await triggers.intro(withInterests(["sports"], NEW, "Kerry"));
+  assert.match(ev.facts, /You said you're into sports: Pickup soccer at Hooker Fields/);
+});
+
+test("review: watching sports as an interest doesn't fit pickup games", async () => {
+  const { fits } = await import("./interests.ts");
+  const soccer = { id: "x", name: "Pickup soccer at Hooker Fields", when: "", signups: [] };
+  assert.deepEqual(fits(soccer, ["watching football"]), []);
+  assert.deepEqual(fits(soccer, ["football fan"]), []);
+  assert.deepEqual(fits(soccer, ["football"]), ["football"]);
+});

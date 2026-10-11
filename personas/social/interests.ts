@@ -1,6 +1,7 @@
 // Sign-up interests → which board plans fit them (owner: Abdullah). The web form's categories live in
 // core/signup.ts (INTERESTS); plans are free-text names, so each category has keywords matched against a
-// plan's id + name. An interest that isn't a category (free text, e.g. "soccer") matches as plain words.
+// plan's id + name. Free-text interests (Sunny's text setup saves the user's own words: "soccer", "sports")
+// count through their category too, so "soccer" also fits pickup basketball.
 import type { Activity } from "./board.ts";
 
 // Keywords are matched as whole words after plural/hyphen folding ("board-games" = "board game"). Multi-word
@@ -19,7 +20,7 @@ const KEYWORDS: Record<string, string[]> = {
   volunteering: ["volunteer", "volunteering", "cleanup", "food bank", "habitat", "community service"],
 };
 // Watching a game isn't playing one: these words keep a plan out of "pickup sports" unless it says pickup/play.
-const SPECTATOR = ["watch", "vs", "versus", "tickets"];
+const SPECTATOR = ["watch", "watching", "vs", "versus", "tickets", "fan", "fans"];
 
 export const INTEREST_CATEGORIES = Object.keys(KEYWORDS);
 
@@ -59,15 +60,35 @@ export function categoriesOf(a: Activity): string[] {
   return INTEREST_CATEGORIES.filter((c) => found.has(c));
 }
 
+// Everyday words people text back that name a category without using a keyword.
+const ALIASES: Record<string, string> = {
+  sport: "pickup sports", sports: "pickup sports", ball: "pickup sports",
+  game: "gaming", games: "gaming", gamer: "gaming", "video games": "gaming", "board games": "gaming",
+  "working out": "gym", "work out": "gym", fitness: "gym", lifting: "gym",
+  eating: "food", foodie: "food", restaurants: "food", eat: "food",
+  shows: "concerts", "live music": "concerts",
+  party: "parties", partying: "parties", "going out": "parties",
+  nature: "outdoors", outside: "outdoors",
+  studying: "study groups", "studying together": "study groups",
+  arts: "art", "community service": "volunteering",
+};
+
+// The categories a free-text interest points at: itself if it is one, an alias, or whatever its words hit.
+function categoriesOfInterest(i: string): string[] {
+  if (isCategory(i)) return [i];
+  if (ALIASES[i]) return [ALIASES[i]];
+  return categoriesOf({ id: "", name: i, when: "", signups: [] });
+}
+
 // Which of the user's interests this plan fits (empty when none, or when the user gave none).
 export function fits(a: Activity, interests: string[] | undefined): string[] {
   if (!interests?.length) return [];
   const cats = new Set(categoriesOf(a));
   const words = new Set(tokens(`${a.id} ${a.name}`));
   return [...new Set(interests.map(norm).filter(Boolean))].filter((i) => {
-    if (isCategory(i)) return cats.has(i);
     const want = tokens(i);
-    return want.length > 0 && want.every((w) => words.has(w));
+    if (!isCategory(i) && want.length > 0 && want.every((w) => words.has(w))) return true;
+    return categoriesOfInterest(i).some((c) => cats.has(c));
   });
 }
 

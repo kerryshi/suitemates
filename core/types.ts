@@ -12,6 +12,7 @@ export interface UserProfile {
   canvasLinked: boolean;
   onboardingStep: 0 | 1 | 2 | "done";
   onboardingRetries?: number;
+  onboardingWith?: PersonaId; // whose setup is in progress: texting another persona mid-setup restarts with theirs
   // Web sign-up (core/signup.ts): pending until we add them in Photon and send the intro texts.
   interests?: string[];
   focus?: "school" | "money" | "social" | "balance"; // "this semester I'm mostly trying to…"

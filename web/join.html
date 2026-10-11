@@ -104,7 +104,7 @@
         <h2 id="doneTitle">You're in!</h2>
         <p class="ok" id="note" hidden></p>
         <div id="sayHey" hidden>
-          <p>Last step: say hey in iMessage and <span class="who"></span> will introduce themself.</p>
+          <p id="heyText">Last step: say hey in iMessage and <span class="who"></span> will introduce themself.</p>
           <a class="button" id="heyLink" href="#">Say hey to <span class="who"></span></a>
           <p class="fine" id="heyNumber"></p>
         </div>
@@ -201,7 +201,8 @@
       const res = await fetch("/signup", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
       const out = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(out.error || "Something went wrong. Try again.");
-      document.getElementById("doneTitle").textContent = `You're in, ${out.name}!`;
+      document.getElementById("doneTitle").textContent = out.already ? `You're already signed up with ${a.name}, ${out.name}!` : `You're in, ${out.name}!`;
+      if (out.already) document.getElementById("heyText").textContent = `Nothing new to set up. Here's the number you text ${a.name} on:`;
       if (out.note) Object.assign(document.getElementById("note"), { textContent: `✓ ${out.note}`, hidden: false });
       form.hidden = true;
       document.getElementById("done").hidden = false;

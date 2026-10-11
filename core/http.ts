@@ -74,7 +74,31 @@ export function startHttp(opts: { engine: Engine; transport: Transport; port: nu
         if (req.method !== "POST") return reply(405, { error: "POST only" });
         const phone = normalizePhone(params.phone);
         if (!phone) return reply(400, { error: "Enter a 10-digit US phone number." });
-        const r = parseSignup(params, store.user(phone));
+        // Already signed up with this agent: don't register again or touch the profile, just hand back the number
+        // they were assigned for it (looked up read-only if we never stored it).
+        const before = store.user(phone);
+        const again = typeof params.agent === "string" && engine.d.personas.has(params.agent as PersonaId) ? (params.agent as PersonaId) : undefined;
+        if (again && before.signedUpAt && before.agents?.includes(again)) {
+          const { own: perAgent, project } = photonProjectFor(again);
+          let assigned = perAgent ? before.poolLines?.[project!] : before.poolLine;
+          if (!assigned) {
+            const looked = await addUser(phone, before.name ?? "", again);
+            assigned = "line" in looked ? looked.line : undefined;
+            if (assigned) store.saveUser(perAgent ? { ...before, poolLines: { ...before.poolLines, [project!]: assigned } } : { ...before, poolLine: assigned });
+          }
+          const textTo = assigned || (perAgent ? undefined : process.env.POOL_NUMBER || undefined);
+          console.log(`[signup] ${before.name} ${phone} already has ${again}; sent their number again`);
+          return reply(200, {
+            ok: true,
+            already: true,
+            name: before.name,
+            status: perAgent && !textTo ? "pending" : before.signupStatus,
+            textTo,
+            calendar: calUrl(phone),
+            agents: before.agents,
+          });
+        }
+        const r = parseSignup(params, before);
         if ("error" in r) return reply(400, r);
         // The chosen agent checks its own fields (Dean: a Canvas token) before anything is saved.
         const persona = typeof params.agent === "string" ? engine.d.personas.get(params.agent as PersonaId) : undefined;

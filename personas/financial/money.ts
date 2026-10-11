@@ -104,8 +104,11 @@ export interface PlanCost {
 
 const words = (s: string) => new Set((s.toLowerCase().match(/[a-z]{3,}/g) ?? []).map((w) => w.replace(/s$/, "")));
 
+// Words every plan shares ("NYC trip" isn't the beach trip): matching on them priced any trip at $45 (2026-10-11).
+const GENERIC = new Set(["trip", "run", "plan", "outing", "event", "thing", "night", "day", "weekend", "going", "gonna", "want", "hang", "out", "for", "the", "and"]);
+
 export function matchActivity<T extends PlanCost>(plan: string, acts: T[]): T | undefined {
-  const want = words(plan);
+  const want = new Set([...words(plan)].filter((w) => !GENERIC.has(w)));
   const scored = acts
     .map((a) => ({ a, score: [...words(`${a.id} ${a.name}`)].filter((w) => want.has(w)).length }))
     .filter((s) => s.score > 0)

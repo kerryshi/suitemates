@@ -87,10 +87,10 @@ test("tonight skips what's already past and keeps what's still due", async () =>
   assert.match(out, /ENGL 105: Discussion post/);
 });
 
-test("an unreadable day falls back to the next 3 days instead of guessing", async () => {
+test("an unreadable day asks which day instead of checking 3 days and calling it clear (2026-10-11 'clear for fall break')", async () => {
   const out = await run("check_plan_conflicts", { day: "whenever" });
-  assert.match(out, /^Couldn't read "whenever", so checking the next 3 days\./);
-  assert.match(out, /Problem Set 6/);
+  assert.match(out, /^Couldn't read "whenever" as a day\. Ask which day/);
+  assert.doesNotMatch(out, /Clear/);
 });
 
 test("planWindow: weekend from a weekday is Sat through Mon; a weekday is that day plus the next", () => {

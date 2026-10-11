@@ -57,6 +57,8 @@ export const checkPlanConflicts: Tool = {
   },
   async run(args, ctx) {
     const asked = typeof args.day === "string" ? args.day : "";
+    // A day we can't read is never "clear" (Dean told a student "clear for fall break" on a 3-day fallback, 2026-10-11).
+    if (asked.trim() && !planWindow(asked, ctx.now)) return `Couldn't read "${asked}" as a day. Ask which day the plan is (a weekday, "this weekend", or YYYY-MM-DD). Don't tell them they're clear.`;
     const win = planWindow(asked, ctx.now) ?? { label: "the next 3 days", start: ctx.now, end: new Date(ctx.now.getTime() + 3 * DAY_MS) };
     const all = await getAssignments(ctx);
     const during = all.filter((a) => a.due >= win.start && a.due < win.end && a.due >= ctx.now);

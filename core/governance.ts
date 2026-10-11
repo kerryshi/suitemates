@@ -30,10 +30,19 @@ export interface Verdict {
 export const norm = (s: string) => s.replace(/[’‘]/g, "'");
 
 // G1: "<agent> is texting you" only if dispatched; no offering an agent that is already in.
+const CLAIM = /\b(?:is |'s |are )?(?:texting|gonna text|going to text|about to text|will text|'ll text)\b|\blooped\b.*\bin\b|\bon (?:the|its|his|her) way\b/i;
 export function g1HandoffClaims(text: string, f: TurnFacts, names: Record<PersonaId, string>): Verdict {
-  void f;
-  void names;
-  return { text, hits: [] }; // TODO
+  const hits: Verdict["hits"] = [];
+  const sentences = text.match(/[^.!?\n]+[.!?\n]*\s*/g) ?? [text];
+  const out = sentences.map((s) => {
+    const n = norm(s);
+    if (!CLAIM.test(n) || /\?/.test(n)) return s;
+    const other = (Object.keys(names) as PersonaId[]).find((id) => id !== f.persona && new RegExp(`\\b${names[id]}\\b`, "i").test(n));
+    if (!other || f.dispatched.includes(other)) return s;
+    hits.push({ rule: "G1", detail: `claimed ${names[other]} is texting; not dispatched` });
+    return `want ${names[other].toLowerCase()} to jump in? `;
+  });
+  return hits.length ? { text: out.join("").trim(), hits } : { text, hits };
 }
 
 // G2: $ amounts and % must appear in trace results, grounding or profile (whole-dollar rounding allowed).

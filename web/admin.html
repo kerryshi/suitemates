@@ -5,38 +5,47 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Suitemates Admin</title>
 <style>
-  :root { --ink: #0d3550; --soft: #3d6680; --line: #cfe3ee; --aqua: #1aa6e0; --green: #3fae2a; --bg: #f2f9fc; }
+  :root { --bg: #2a2b2f; --card: #313237; --line: #3c3d43; --text: #f2f3f5; --muted: #a3a6ae; }
   * { box-sizing: border-box; }
-  body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.45 "Segoe UI", "Helvetica Neue", Arial, sans-serif; }
-  main { max-width: 900px; margin: 0 auto; padding: 24px 16px; }
+  body { margin: 0; min-height: 100vh; background: var(--bg); color: var(--text); font: 15px/1.45 "Segoe UI", "Helvetica Neue", Arial, sans-serif; }
+  main { max-width: 1040px; margin: 0 auto; padding: 28px 16px; }
   h1 { margin: 0 0 4px; }
-  .steps { color: var(--soft); margin: 0 0 18px; padding-left: 20px; }
-  table { width: 100%; border-collapse: collapse; background: #fff; border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
-  th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
-  th { font-size: .8rem; text-transform: uppercase; letter-spacing: .05em; color: var(--soft); background: #f8fcfe; }
-  .pill { display: inline-block; padding: 2px 9px; border-radius: 999px; font-size: .8rem; font-weight: 600; }
-  .pending { background: #fff3cd; color: #7a5a00; }
-  .invited { background: #dff5d6; color: #22651a; }
-  button { font: inherit; padding: 7px 12px; border-radius: 9px; border: 1px solid #0b78b3; color: #fff; background: var(--aqua); cursor: pointer; }
+  .steps { color: var(--muted); margin: 0 0 18px; padding-left: 20px; }
+  code { color: var(--text); }
+  .table { overflow-x: auto; background: var(--card); border: 1px solid var(--line); border-radius: 16px; }
+  table { width: 100%; border-collapse: collapse; }
+  th, td { text-align: left; padding: 12px 14px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+  tr:last-child td { border-bottom: 0; }
+  th { font-size: .74rem; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
+  .pill { display: inline-block; padding: 3px 10px; border-radius: 999px; font-size: .8rem; font-weight: 700; }
+  .pending { background: rgb(250 204 21 / .15); color: rgb(250 204 21); }
+  .added { background: rgb(59 130 246 / .2); color: #93c5fd; }
+  .invited { background: rgb(126 226 168 / .15); color: rgb(126 226 168); }
+  .dot { display: inline-flex; align-items: center; gap: 6px; margin-right: 10px; white-space: nowrap; }
+  .dot::before { content: ""; width: 9px; height: 9px; border-radius: 50%; background: rgb(var(--c)); box-shadow: 0 0 8px rgb(var(--c) / .8); }
+  button { font: inherit; padding: 7px 12px; border-radius: 10px; border: 0; color: #fff; background: rgb(59 130 246); cursor: pointer; white-space: nowrap; }
   button:disabled { opacity: .6; cursor: wait; }
-  .copy { background: #fff; color: var(--ink); border-color: var(--line); padding: 4px 8px; font-size: .85rem; }
-  .msg { min-height: 1.4em; color: var(--soft); }
-  .empty { text-align: center; color: var(--soft); padding: 24px; }
-  @media (max-width: 640px) { .hide-sm { display: none; } }
+  .copy { background: transparent; color: var(--muted); border: 1px solid var(--line); padding: 3px 8px; font-size: .8rem; margin-left: 6px; }
+  .msg { min-height: 1.4em; color: var(--muted); }
+  .empty { text-align: center; color: var(--muted); padding: 28px; }
+  small { color: var(--muted); }
+  @media (max-width: 720px) { .hide-sm { display: none; } }
 </style>
 </head>
 <body>
 <main>
   <h1>Sign-ups</h1>
   <ol class="steps">
-    <li>Add the phone in the Photon dashboard → Spectrum → Users (they can't get texts until you do).</li>
-    <li>Press <b>Send intro</b>: Dean texts them first.</li>
+    <li>With <code>PHOTON_AUTO_ADD=1</code>, sign-ups are added to Photon automatically (<b>added</b>); their first text gets the intros (<b>greeted</b>).</li>
+    <li>Stuck on <b>pending</b>? Add the phone in the Photon dashboard → Spectrum → Users, then press <b>Send intro</b>.</li>
   </ol>
   <p class="msg" id="msg"></p>
-  <table>
-    <thead><tr><th>Name</th><th>Phone</th><th class="hide-sm">Focus</th><th class="hide-sm">Interests</th><th class="hide-sm">Budget</th><th>Status</th><th></th></tr></thead>
-    <tbody id="rows"><tr><td colspan="7" class="empty">Loading…</td></tr></tbody>
-  </table>
+  <div class="table">
+    <table>
+      <thead><tr><th>Name</th><th>Phone</th><th>Agents</th><th class="hide-sm">Interests</th><th class="hide-sm">Budget</th><th>Status</th><th></th></tr></thead>
+      <tbody id="rows"><tr><td colspan="7" class="empty">Loading…</td></tr></tbody>
+    </table>
+  </div>
 </main>
 <script>
   const token = new URLSearchParams(location.search).get("token") || "";
@@ -44,20 +53,26 @@
   const msg = document.getElementById("msg");
   const rows = document.getElementById("rows");
   const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  const AGENT = { academic: ["Dean", "59 130 246"], financial: ["Penny", "236 72 153"], social: ["Sunny", "249 115 22"] };
+  const LABEL = { pending: "pending", added: "added", invited: "greeted" };
+  const agents = (list) => list && list.length
+    ? list.filter((a) => AGENT[a]).map((a) => `<span class="dot" style="--c:${AGENT[a][1]}">${AGENT[a][0]}</span>`).join("")
+    : "<small>all three</small>";
 
   async function load() {
     const res = await fetch(`/admin/signups${q}`);
-    const out = await res.json();
+    const out = await res.json().catch(() => ({}));
+    if (res.status === 403) { rows.innerHTML = `<tr><td colspan="7" class="empty">Add <code>?token=…</code> (DEMO_TOKEN from .env) to this page's address.</td></tr>`; return; }
     if (!res.ok) { rows.innerHTML = `<tr><td colspan="7" class="empty">${esc(out.error)}</td></tr>`; return; }
-    if (!out.users.length) { rows.innerHTML = `<tr><td colspan="7" class="empty">No sign-ups yet. Share the page: ${esc(location.origin)}/</td></tr>`; return; }
+    if (!out.users.length) { rows.innerHTML = `<tr><td colspan="7" class="empty">No sign-ups yet.</td></tr>`; return; }
     rows.innerHTML = out.users.map((u) => `
       <tr>
-        <td>${esc(u.name)}</td>
-        <td>${esc(u.phone)} <button class="copy" data-copy="${esc(u.phone)}">copy</button></td>
-        <td class="hide-sm">${esc(u.focus ?? "")}${u.win ? `<br><small>${esc(u.win)}</small>` : ""}</td>
+        <td>${esc(u.name)}${u.win ? `<br><small>${esc(u.win)}</small>` : ""}</td>
+        <td>${esc(u.phone)}<button class="copy" data-copy="${esc(u.phone)}">copy</button></td>
+        <td>${agents(u.agents)}</td>
         <td class="hide-sm">${esc((u.interests || []).join(", "))}</td>
         <td class="hide-sm">${u.budgetMonthly ? "$" + esc(u.budgetMonthly) : ""}</td>
-        <td><span class="pill ${esc(u.signupStatus)}">${esc(u.signupStatus)}</span></td>
+        <td><span class="pill ${esc(u.signupStatus)}">${esc(LABEL[u.signupStatus] || u.signupStatus)}</span></td>
         <td><button data-phone="${esc(u.phone)}">${u.signupStatus === "invited" ? "Resend intro" : "Send intro"}</button></td>
       </tr>`).join("");
   }
@@ -72,7 +87,7 @@
       const res = await fetch(`/admin/intro${q}`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ phone: b.dataset.phone }) });
       const out = await res.json();
       if (!res.ok) throw new Error(out.error);
-      msg.textContent = `Sent ${out.sent} text${out.sent === 1 ? "" : "s"} to ${b.dataset.phone}.`;
+      msg.textContent = `Sent ${out.sent} message${out.sent === 1 ? "" : "s"} to ${b.dataset.phone}.`;
     } catch (err) {
       msg.textContent = /not allowed/i.test(err.message)
         ? `Photon refused: add ${b.dataset.phone} under Users in the Photon dashboard first.`

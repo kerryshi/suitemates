@@ -23,8 +23,9 @@ export interface UserProfile {
   lastAgent?: PersonaId; // who answered their last DM (shared pool: replies go back to them by default)
   signedUpAt?: string; // ISO
   poolLine?: string; // the Photon number they text (shared pool: differs per person), from the sign-up lookup
-  // With one Photon project per agent (<AGENT>_PROJECT_ID), each project gives them its own number: agent → number.
-  poolLines?: Partial<Record<PersonaId, string>>;
+  // With one Photon project per agent (<AGENT>_PROJECT_ID), each project gives them its own number: Photon project
+  // id → number (keyed by project, so a changed project id means "not added there yet").
+  poolLines?: Record<string, string>;
   canvasToken?: string; // their own Canvas access token (Dean's sign-up). Server-side only: never logged or listed.
 }
 

@@ -86,21 +86,24 @@ export function startHttp(opts: { engine: Engine; transport: Transport; port: nu
         // listens, and each project gives them its own number. Also for anyone whose number for this agent we
         // don't know yet (read-only for people already on the list).
         const agent = persona?.id;
-        const perAgent = photonProjectFor(agent).own;
-        const known = perAgent ? r.user.poolLines?.[agent!] : r.user.poolLine;
+        const { own: perAgent, project } = photonProjectFor(agent);
+        const known = perAgent ? r.user.poolLines?.[project!] : r.user.poolLine;
         const fresh = r.user.signupStatus === "pending";
         const added = fresh || !known ? await addUser(phone, r.user.name ?? "", agent) : { ok: true };
         const line = "line" in added ? added.line : undefined;
         const user = {
           ...r.user,
           ...(fresh && added.ok ? { signupStatus: "added" as const } : {}),
-          ...(line ? (perAgent ? { poolLines: { ...r.user.poolLines, [agent!]: line } } : { poolLine: line }) : {}),
+          ...(line ? (perAgent ? { poolLines: { ...r.user.poolLines, [project!]: line } } : { poolLine: line }) : {}),
         };
         store.saveUser(user);
-        const textTo = (perAgent ? user.poolLines?.[agent!] : user.poolLine) || process.env.POOL_NUMBER || undefined;
+        // Per-agent projects: only that project's own number for them, never the global POOL_NUMBER (another
+        // project's number gets "this number didn't recognize you"); without one, this agent is still pending.
+        const textTo = perAgent ? user.poolLines?.[project!] : user.poolLine || process.env.POOL_NUMBER || undefined;
+        const status = perAgent && !textTo ? ("pending" as const) : user.signupStatus;
         const why = "error" in added && added.error ? `; photon: ${added.error}` : "";
         console.log(`[signup] ${user.name} ${phone} (${user.signupStatus}${why})`);
-        return reply(200, { ok: true, name: user.name, status: user.signupStatus, textTo, calendar: calUrl(phone), agents: user.agents, ...(own.note ? { note: own.note } : {}) });
+        return reply(200, { ok: true, name: user.name, status, textTo, calendar: calUrl(phone), agents: user.agents, ...(own.note ? { note: own.note } : {}) });
       }
 
       const viaTunnel = Boolean(req.headers["cf-connecting-ip"] || req.headers["cf-ray"] || req.headers["x-forwarded-for"]);

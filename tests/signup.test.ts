@@ -216,6 +216,12 @@ test("onList: someone already in Photon is recognised (so we never re-add and ov
   assert.equal(onList("nope", "+19195550123"), false);
 });
 
+const PER_AGENT = {
+  ACADEMIC_PROJECT_ID: "proj-dean", ACADEMIC_PROJECT_SECRET: "s1",
+  FINANCIAL_PROJECT_ID: "proj-penny", FINANCIAL_PROJECT_SECRET: "s2",
+  SOCIAL_PROJECT_ID: "proj-sunny", SOCIAL_PROJECT_SECRET: "s3",
+};
+
 // Temporarily set env vars for one test (restored after, so other tests see the single-project setup).
 async function withEnv(vars: Record<string, string | undefined>, fn: () => Promise<void>) {
   const before = Object.fromEntries(Object.keys(vars).map((k) => [k, process.env[k]]));
@@ -228,7 +234,7 @@ async function withEnv(vars: Record<string, string | undefined>, fn: () => Promi
 }
 
 test("one Photon project per agent: each agent's QR adds them to that agent's project and texts that agent's number", async () => {
-  await withEnv({ ACADEMIC_PROJECT_ID: "proj-dean", FINANCIAL_PROJECT_ID: "proj-penny", SOCIAL_PROJECT_ID: "proj-sunny" }, async () => {
+  await withEnv(PER_AGENT, async () => {
     const calls: [string, string | undefined][] = [];
     const lines = { academic: "+16465550001", financial: "+16465550002", social: "+16465550003" } as const;
     const s = await server(undefined, async (phone, _name, agent) => (calls.push([phone, agent]), { ok: true, line: lines[agent!] }));
@@ -241,7 +247,7 @@ test("one Photon project per agent: each agent's QR adds them to that agent's pr
       const sunny = (await (await s.post("/signup", { agent: "social", name: "Sam", phone: "9195550123", interests: ["food"] })).json()) as Record<string, unknown>;
       assert.equal(sunny.textTo, "+16465550003");
       assert.deepEqual(calls, [["+19195550123", "academic"], ["+19195550123", "financial"], ["+19195550123", "social"]]);
-      assert.deepEqual(s.store.user("+19195550123").poolLines, lines);
+      assert.deepEqual(s.store.user("+19195550123").poolLines, { "proj-dean": lines.academic, "proj-penny": lines.financial, "proj-sunny": lines.social });
       // Signing up with Penny again doesn't call Photon again.
       await s.post("/signup", { agent: "financial", name: "Sam", phone: "9195550123", budget: "700" });
       assert.equal(calls.length, 3);
@@ -271,14 +277,15 @@ test("one shared project (no <AGENT>_PROJECT_ID): unchanged, one add and one num
 });
 
 test("photonProjectFor: an agent's own project and token, else the shared ones", async () => {
-  await withEnv({ SPECTRUM_PROJECT_ID: "shared", PHOTON_API_TOKEN: "shared-token", FINANCIAL_PROJECT_ID: "penny", FINANCIAL_PHOTON_API_TOKEN: "penny-token", SOCIAL_PROJECT_ID: undefined, SOCIAL_PHOTON_API_TOKEN: undefined }, async () => {
+  await withEnv({ SPECTRUM_PROJECT_ID: "shared", PHOTON_API_TOKEN: "shared-token", FINANCIAL_PROJECT_ID: "penny", FINANCIAL_PROJECT_SECRET: "x", FINANCIAL_PHOTON_API_TOKEN: "penny-token", SOCIAL_PROJECT_ID: "half", SOCIAL_PROJECT_SECRET: undefined, SOCIAL_PHOTON_API_TOKEN: undefined }, async () => {
     assert.deepEqual(photonProjectFor("financial"), { project: "penny", token: "penny-token", own: true });
+    // Only an ID, no secret: the transport serves Sunny on the shared app, so sign-ups go there too.
     assert.deepEqual(photonProjectFor("social"), { project: "shared", token: "shared-token", own: false });
     assert.deepEqual(photonProjectFor(), { project: "shared", token: "shared-token", own: false });
   });
 });
 
-test("the real CLI call goes to the chosen agent's project with that agent's token", async () => {
+test("the real CLI call goes to the chosen agent's project with that agent's token", { skip: process.platform === "win32" }, async () => {
   const dir = mkdtempSync(join(tmpdir(), "photon-"));
   const log = join(dir, "calls.txt");
   // A stand-in `photon` CLI: records its arguments; `users list` → nobody yet; `users add` → their assigned number.
@@ -287,11 +294,53 @@ test("the real CLI call goes to the chosen agent's project with that agent's tok
     `#!/bin/sh\necho "$@" >> "${log}"\ncase "$*" in *" list "*) echo '[]';; *) echo '{"phoneNumber":"+19195550123","assignedPhoneNumber":"+16465550002"}';; esac\n`,
   );
   chmodSync(join(dir, "photon"), 0o755);
-  await withEnv({ PATH: `${dir}:${process.env.PATH}`, PHOTON_AUTO_ADD: "1", SPECTRUM_PROJECT_ID: "shared", PHOTON_API_TOKEN: "shared-token", FINANCIAL_PROJECT_ID: "penny-proj", FINANCIAL_PHOTON_API_TOKEN: "penny-token" }, async () => {
+  await withEnv({ PATH: `${dir}:${process.env.PATH}`, PHOTON_AUTO_ADD: "1", SPECTRUM_PROJECT_ID: "shared", PHOTON_API_TOKEN: "shared-token", FINANCIAL_PROJECT_ID: "penny-proj", FINANCIAL_PROJECT_SECRET: "x", FINANCIAL_PHOTON_API_TOKEN: "penny-token" }, async () => {
     const out = await photonCliAddUser("+19195550123", "Sam", "financial");
     assert.deepEqual(out, { ok: true, line: "+16465550002" });
     const calls = readFileSync(log, "utf8").trim().split("\n");
     assert.match(calls[0], /^spectrum users list -p penny-proj --json -t penny-token$/);
     assert.match(calls[1], /^spectrum users add --phone \+19195550123 --first-name Sam .* -p penny-proj --json -t penny-token$/);
   });
+});
+
+test("review: if an agent's add fails, its sign-up is pending and never points at another project's number", async () => {
+  await withEnv({ ...PER_AGENT, POOL_NUMBER: "+16460000000" }, async () => {
+    const s = await server(undefined, async (_p, _n, agent) => (agent === "financial" ? { ok: false, error: "401" } : { ok: true, line: "+16465550001" }));
+    try {
+      await s.post("/signup", { agent: "academic", name: "Sam", phone: "9195550123" });
+      const penny = (await (await s.post("/signup", { agent: "financial", name: "Sam", phone: "9195550123" })).json()) as Record<string, unknown>;
+      assert.deepEqual([penny.status, penny.textTo], ["pending", undefined]); // the page shows "we'll add you", no dead number
+    } finally {
+      s.close();
+    }
+  });
+});
+
+test("review: a contact card never shows the old shared-project number for an agent on its own project", async () => {
+  await withEnv(PER_AGENT, async () => {
+    const s = await server(undefined, async (_p, _n, agent) => (agent === "academic" ? { ok: true, line: "+16465550001" } : { ok: false }));
+    try {
+      s.store.saveUser({ ...s.store.user("+19195550123"), poolLine: "+16469999999" }); // signed up before this fix
+      await s.post("/signup", { agent: "academic", name: "Sam", phone: "9195550123" });
+      const cards = (await introTexts(s.engine, "+19195550123")).filter((o) => o.card).map((o) => [o.persona, o.card!.phone]);
+      assert.deepEqual(cards, [["academic", "+16465550001"], ["financial", undefined], ["social", undefined]]);
+    } finally {
+      s.close();
+    }
+  });
+});
+
+test("review: a changed project id means not added there yet, so the next sign-up adds them again", async () => {
+  const calls: string[] = [];
+  const s = await server(undefined, async (_p, _n, agent) => (calls.push(process.env.FINANCIAL_PROJECT_ID!), { ok: true, line: agent === "financial" ? `+1646555${calls.length}000` : "+16465550001" }));
+  try {
+    await withEnv(PER_AGENT, async () => void (await s.post("/signup", { agent: "financial", name: "Sam", phone: "9195550123" })));
+    await withEnv({ ...PER_AGENT, FINANCIAL_PROJECT_ID: "proj-penny-2" }, async () => {
+      const out = (await (await s.post("/signup", { agent: "financial", name: "Sam", phone: "9195550123" })).json()) as Record<string, unknown>;
+      assert.deepEqual(calls, ["proj-penny", "proj-penny-2"]);
+      assert.equal(out.textTo, "+16465552000");
+    });
+  } finally {
+    s.close();
+  }
 });

@@ -20,7 +20,8 @@ export type AddUser = (phone: string, firstName: string, agent?: PersonaId) => P
 // is a different Photon account, so each needs its own token (<AGENT>_PHOTON_API_TOKEN) unless one login sees all.
 export function photonProjectFor(agent?: PersonaId): { project?: string; token?: string; own: boolean } {
   const A = agent?.toUpperCase();
-  const ownProject = A ? process.env[`${A}_PROJECT_ID`] : undefined;
+  // Same rule as the transport (core/config.ts projects): an agent has its own project only with both ID and SECRET.
+  const ownProject = A && process.env[`${A}_PROJECT_ID`] && process.env[`${A}_PROJECT_SECRET`] ? process.env[`${A}_PROJECT_ID`] : undefined;
   return {
     project: ownProject || process.env.SPECTRUM_PROJECT_ID,
     token: (A && process.env[`${A}_PHOTON_API_TOKEN`]) || process.env.PHOTON_API_TOKEN,

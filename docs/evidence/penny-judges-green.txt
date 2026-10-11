@@ -1,0 +1,20 @@
+# green 2026-10-11 01:39
+✔ MOCK=0: the owner is on the real bank; a judge is on a demo bank with sample history and never touches Nessie (11.288125ms)
+✔ F1/F6: Penny's habit texts never run on the real account; a judge gets them from sample history, with no Nessie call (0.793666ms)
+✔ F3: a spending-trend alert needs a real baseline, not 'up 100% from nothing' (0.580458ms)
+✔ F5: habit_swap for a place that isn't a habit says so, instead of answering about another one (0.506875ms)
+✔ try Penny works for a judge on MOCK=0 (their demo bank) and is refused for the owner's real account (0.62875ms)
+✔ a judge's own demo purchase is roasted on MOCK=0; nobody else's ledger is (13.864667ms)
+✔ a judge is told it's a demo bank (sample spending), the owner isn't (0.619375ms)
+✔ Penny's intro: hello, her card, then where the month stands (28.136917ms)
+✔ try Penny: only after her hello; a purchase lands in that person's ledger and she roasts it (10.761ms)
+✔ one person's demo purchases never show up for someone else (7.534375ms)
+✔ Penny tells the other agents how the month is going, never the balance (1.937958ms)
+✔ Penny's patterns: six weeks of habits per sign-up, never roasted, asked about once, with swap math (4.098208ms)
+ℹ pass 12
+ℹ fail 0
+# reviewer probe P2 (date flakiness): P2: dates (of 400) where DoorDash is NOT a habit for SAM: 0 []
+ℹ tests 236
+ℹ pass 236
+ℹ fail 0
+typecheck clean

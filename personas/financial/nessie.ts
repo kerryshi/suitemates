@@ -7,6 +7,7 @@ import { fileURLToPath } from "node:url";
 import type { Ctx } from "../../core/types.ts";
 import { loadMock, relativeDate, ymd } from "../../core/kit.ts";
 import { parsePurchaseDate } from "./money.ts";
+import { simulatedHistory } from "./history.ts";
 
 export interface Purchase {
   id: string;
@@ -15,6 +16,7 @@ export interface Purchase {
   at: Date;
   category?: string;
   dateOnly?: boolean; // Nessie only stores the day; watch() stamps today's with the time it first saw them
+  simulated?: boolean; // fake history (history.ts): counts for patterns, never roasted as a new purchase
 }
 
 export interface ExtraPurchase {
@@ -36,11 +38,20 @@ const DATA = join(dirname(fileURLToPath(import.meta.url)), "../../data");
 export const EXTRA_FILE = process.env.MOCK_PURCHASES_FILE || join(DATA, "mock-new-purchases.json"); // tests use a temp file
 export const NESSIE_IDS_FILE = join(DATA, "nessie.json");
 
-export function readExtras(phone?: string): ExtraPurchase[] {
+const digits = (s?: string) => (s ?? "").replace(/\D/g, "").slice(-10);
+
+// The phone that owns the real Nessie account (NESSIE_OWNER_PHONE); unset = everyone (a one-person demo).
+export const isOwner = (phone: string, owner = process.env.NESSIE_OWNER_PHONE) => !owner || digits(owner) === digits(phone);
+
+// Real bank data only for the account's owner, and only with MOCK=0. Everyone else (judges signing up at the table)
+// is on a demo bank: sample history (history.ts) + their own demo purchases, never the owner's account or a Nessie call.
+export const realBank = (ctx: Ctx) => !ctx.mock && isOwner(ctx.user.phone);
+
+// ownOnly: just this person's own demo purchases, not the shared ones `npm run buy` queues in MOCK=1.
+export function readExtras(phone?: string, opts: { ownOnly?: boolean } = {}): ExtraPurchase[] {
   const all = existsSync(EXTRA_FILE) ? (JSON.parse(readFileSync(EXTRA_FILE, "utf8")) as ExtraPurchase[]) : [];
   if (phone === undefined) return all;
-  const d = (s: string) => s.replace(/\D/g, "").slice(-10);
-  return all.filter((e) => !e.phone || d(e.phone) === d(phone)); // shared ones + only this person's own
+  return all.filter((e) => (e.phone ? digits(e.phone) === digits(phone) : !opts.ownOnly)); // shared ones + this person's own
 }
 
 export function writeExtras(list: ExtraPurchase[]) {
@@ -49,10 +60,12 @@ export function writeExtras(list: ExtraPurchase[]) {
 }
 
 export async function getPurchases(ctx: Ctx): Promise<Purchase[]> {
-  if (ctx.mock) {
+  if (!realBank(ctx)) {
     const base = loadMock<MockNessie>("nessie-purchases").purchases.map((p) => ({ ...p, at: relativeDate(ctx.now, p) }));
-    const extras = readExtras(ctx.user.phone).map((e) => ({ ...e, at: new Date(e.at) }));
-    return [...base, ...extras].sort((a, b) => +b.at - +a.at);
+    const extras = readExtras(ctx.user.phone, { ownOnly: !ctx.mock }).map((e) => ({ ...e, at: new Date(e.at) }));
+    // Web sign-ups get six weeks of their own habits to notice (history.ts); the plain demo user keeps just the mock file.
+    const history = ctx.user.signedUpAt ? simulatedHistory(ctx.user.phone, ctx.now) : [];
+    return [...base, ...history, ...extras].sort((a, b) => +b.at - +a.at);
   }
   type Row = { _id: string; description?: string; amount: number; purchase_date?: string; merchant_id?: string };
   let rows: Row[];
@@ -77,8 +90,8 @@ export async function getPurchases(ctx: Ctx): Promise<Purchase[]> {
 }
 
 export async function getBalance(ctx: Ctx): Promise<number> {
-  if (ctx.mock) {
-    const spentSince = readExtras(ctx.user.phone).reduce((s, e) => s + e.amount, 0);
+  if (!realBank(ctx)) {
+    const spentSince = readExtras(ctx.user.phone, { ownOnly: !ctx.mock }).reduce((s, e) => s + e.amount, 0);
     return Math.round((loadMock<MockNessie>("nessie-purchases").balance - spentSince) * 100) / 100;
   }
   return (await nessie<{ balance: number }>("GET", `/accounts/${accountId()}`)).balance;

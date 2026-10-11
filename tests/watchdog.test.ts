@@ -9,10 +9,13 @@ import {
   classifyLine,
   decide,
   flapping,
+  loadState,
   maskPhone,
   parsePower,
   pendingSignups,
   readNew,
+  redact,
+  saveState,
   type Check,
   type Result,
 } from "../scripts/watchdog.ts";
@@ -54,7 +57,47 @@ test("after: 1 alerts on the first tick; a skipped check keeps its state; a blip
   assert.equal(r.alerts.length, 0); // never went red, so no "recovered" either
 });
 
+test("realertOnChange: a NEW stuck sign-up alerts at once; same detail waits for the interval", () => {
+  const c = check({ id: "signup", after: 1, realertOnChange: true });
+  let r = decide([res(c, "fail", "Sam ***0123")], {}, 0);
+  assert.equal(r.alerts.length, 1);
+  r = decide([res(c, "fail", "Sam ***0123")], r.state, 60_000);
+  assert.equal(r.alerts.length, 0);
+  r = decide([res(c, "fail", "Sam ***0123; Ana ***0456")], r.state, 3 * MIN); // a second judge got stuck
+  assert.equal(r.alerts.length, 1);
+  assert.match(r.alerts[0].detail, /Ana/);
+});
+
+test("recoverSilently: an error burst that ages out doesn't send a 'fine again' nobody earned", () => {
+  const c = check({ id: "handler", after: 1, recoverSilently: true });
+  let r = decide([res(c, "fail", "boom")], {}, 0);
+  r = decide([res(c, "ok")], r.state, 3 * MIN);
+  assert.equal(r.alerts.length, 0);
+  r = decide([res(c, "fail", "boom")], r.state, 4 * MIN);
+  assert.equal(r.alerts.length, 1); // a fresh burst after the clear is news again
+});
+
+test("saved state: a restart doesn't re-send alerts already sent; a missing or broken file starts clean", () => {
+  const dir = mkdtempSync(join(tmpdir(), "wd-state-"));
+  const file = join(dir, "watchdog-state.json");
+  assert.deepEqual(loadState(file), { checks: {} });
+  const c = check({ id: "power", after: 1 });
+  const first = decide([res(c, "fail")], {}, 0);
+  saveState(file, { checks: first.state, bannerAt: 0 });
+  const again = decide([res(c, "fail")], loadState(file).checks, 60_000); // the watchdog restarted a minute later
+  assert.equal(again.alerts.length, 0);
+  writeFileSync(file, "{not json");
+  assert.deepEqual(loadState(file), { checks: {} });
+});
+
+test("redact: every phone number in an alert is masked, wherever it came from", () => {
+  assert.equal(redact("[imessage] handler error Error: no space for financial dm:+19195550123"), "[imessage] handler error Error: no space for financial dm:***0123");
+  assert.equal(redact("call 919-555-0123 or (919) 555 0124"), "call ***0123 or ***0124");
+  assert.equal(redact("pid 69736 port 3000 at 04:53:15"), "pid 69736 port 3000 at 04:53:15");
+});
+
 test("pmset: AC is fine, battery is a failure with the percent and time left, junk is unknown", () => {
+  assert.deepEqual(parsePower("Now drawing from 'AC Power'"), { ac: true, pct: -1, left: "?" }); // a Mac with no battery
   assert.deepEqual(parsePower("Now drawing from 'AC Power'\n -InternalBattery-0 (id=1)\t100%; charged; 0:00 remaining present: true"), { ac: true, pct: 100, left: "0:00" });
   assert.deepEqual(parsePower("Now drawing from 'Battery Power'\n -InternalBattery-0 (id=36372579)\t65%; discharging; 4:17 remaining present: true"), { ac: false, pct: 65, left: "4:17" });
   assert.equal(parsePower("pmset: command not found"), undefined);
@@ -76,7 +119,10 @@ test("server log lines: connection drops, handler errors, stuck sign-ups, inboun
   assert.equal(classifyLine("[imessage] ignored group message m9 from +19195550123")?.kind, "inbound"); // still proves we hear
   assert.equal(classifyLine("[imessage] lines: academic=? financial=? social=?"), undefined);
   assert.equal(classifyLine("Error: listen EADDRINUSE: address already in use :::3000")?.kind, "double-server");
-  assert.deepEqual(classifyLine("[core] ERROR financial reply failed: Gemini gemini-3.6-flash → 429: quota exceeded"), { kind: "gemini", detail: "financial: 429" });
+  assert.deepEqual(classifyLine("[core] ERROR financial reply failed: Gemini gemini-3.6-flash → 429: quota exceeded"), { kind: "reply-failed", detail: "financial: Gemini 429" });
+  // Any failed reply counts, not only Gemini HTTP errors: a timeout or a dropped fetch also leaves the user with nothing.
+  assert.deepEqual(classifyLine("[core] ERROR financial reply failed: The operation was aborted due to timeout"), { kind: "reply-failed", detail: "financial: The operation was aborted due to timeout" });
+  assert.deepEqual(classifyLine("[core] ERROR social proactive text failed, sending plain facts: Gemini gemini-3.6-flash returned no text"), { kind: "reply-failed", detail: "social: Gemini returned no text" });
   assert.equal(classifyLine("[http] listening on :3000"), undefined);
 });
 
@@ -95,7 +141,9 @@ test("stuck sign-ups: pending in the last 15 min, phones masked; unreadable stat
       "+19195550111": { phone: "+19195550111", name: "Ok", signupStatus: "invited", signedUpAt: "2026-10-11T04:58:00Z" },
     },
   });
-  assert.deepEqual(pendingSignups(state, now), ["Sam ***0123"]);
+  // fresh = alert-worthy now; pending = every number still waiting (an old one stays red instead of a false "fine");
+  // invited = greeted, so a "(pending…)" log line about them is stale.
+  assert.deepEqual(pendingSignups(state, now), { fresh: ["Sam ***0123"], pending: ["***0123", "***0199"], invited: ["***0111"] });
   assert.equal(pendingSignups('{"users": {"+1', now), undefined); // the server was mid-write: try next tick
   assert.equal(maskPhone("+19195550123"), "***0123");
 });

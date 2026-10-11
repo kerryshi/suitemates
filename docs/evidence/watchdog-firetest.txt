@@ -36,3 +36,21 @@
 04:50:33 p4 Gemini errors [FIRETEST]
 04:50:42 p4 Photon API unreachable [FIRETEST]
 04:50:57 p2 OK: Printed QR codes point at an old address [FIRETEST]
+
+# Re-run after the review fixes, 2026-10-11T05:07Z (same harness; the injected handler error now carries a phone number)
+05:06:25 INFO Watchdog up [FIRETEST]
+05:06:26 ALERT Mac on battery [FIRETEST] - 62%, 6:46 left
+05:06:26 ALERT Printed QR codes point at an old address [FIRETEST] - printed https://old-address.trycloudflare.com, live http://127.0.0.1:9
+05:06:26 ALERT Photon CLI logged out (auto-add is off) [FIRETEST] - ✗ Not authenticated for backend "production".
+05:06:26 ALERT Sign-up stuck pending [FIRETEST] - Judge Test ***0123
+05:06:31 ALERT Server :3000 down [FIRETEST] - GET :3999/health -> fetch failed
+05:06:32 ALERT Sign-up page unreachable (tunnel) [FIRETEST] - GET http://127.0.0.1:9/health -> fetch failed
+05:06:32 ALERT Mac offline [FIRETEST] - fetch failed
+05:06:32 ALERT No texts in 20 min during judging [FIRETEST] - last inbound text not seen since the watchdog started
+05:06:36 ALERT A second server crashed (EADDRINUSE) [FIRETEST] - Error: listen EADDRINUSE: address already in use :::3000
+05:06:37 ALERT iMessage connection flapping [FIRETEST] - 2 drops in 2 min; last: financial: fetch failed
+05:06:37 ALERT Server error while handling a text [FIRETEST] - [imessage] handler error Error: no space for financial dm:***0123
+05:06:37 ALERT Sign-up stuck pending [FIRETEST] - Judge Test ***0123: Target not allowed for this project
+05:06:37 ALERT Agent replies failing [FIRETEST] - 2 in 5 min; last social: Gemini 429
+05:06:46 ALERT Photon API unreachable [FIRETEST] - ✗ Not authenticated for backend "production".
+05:07:01 RECOVERED OK: Printed QR codes point at an old address [FIRETEST]

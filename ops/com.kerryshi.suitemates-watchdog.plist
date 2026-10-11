@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<!-- Template: ops/watchdog.sh install fills __CODE__ (this checkout) and __DATA__ (the checkout the server runs in). -->
+<!-- Template: ops/watchdog.sh install fills __NODE__, __CODE__ (this checkout) and __DATA__ (the checkout the server runs in). -->
 <plist version="1.0">
 <dict>
     <key>Label</key>
     <string>com.kerryshi.suitemates-watchdog</string>
     <key>ProgramArguments</key>
     <array>
-        <string>/opt/homebrew/bin/node</string>
+        <string>__NODE__</string>
         <string>__CODE__/node_modules/tsx/dist/cli.mjs</string>
         <string>scripts/watchdog.ts</string>
     </array>

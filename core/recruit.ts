@@ -48,14 +48,18 @@ export const setPending = (store: Store, phone: string, p: Pending | undefined) 
   store.kv("shared", phone).set("recruit", p?.agents.length ? p : undefined);
 
 const YES = /^\s*(y|ya|yes|yea|yeah|yep|yup|sure|ok|okay|k|please|pls|do it|go ahead|sounds good|bet|let'?s go|absolutely|of course)\b/i;
-const NO = /\b(n|no|nah|nope|not now|no thanks|nvm|never ?mind|don'?t)\b/i;
+const NO_START = /^\s*(n|no|nah|nope|not now|no thanks|nvm|never ?mind|don'?t)\b/i;
+const NO_WORD = /\b(no|nah|nope)\b/i; // "please no"; not "don't" ("sure, i don't mind" is a yes)
 // A short answer to the offer. "no" anywhere wins ("please no"); a question or a long message isn't an answer.
 // In another agent's thread (not the offerer's) only a plain yes accepts; "ok" / "k" / "bet" there are about that agent.
 export const PLAIN_YES = /^\s*(y|ya|yes|yea|yeah|yep|yup|sure)\b/i;
 
+// A natural short answer: "sure, i don't mind" and "yes that would be great" are yes; "please no" is no; a question
+// or a long message about something else is neither.
 export function consentFromText(text: string): "yes" | "no" | undefined {
-  if (NO.test(text) && text.trim().split(/\s+/).length <= 5) return "no";
-  if (text.includes("?") || text.trim().split(/\s+/).length > 4) return undefined;
+  const words = text.trim().split(/\s+/).length;
+  if (NO_START.test(text) || (NO_WORD.test(text) && words <= 5)) return "no";
+  if (text.includes("?") || words > 8) return undefined;
   return YES.test(text) ? "yes" : undefined;
 }
 
@@ -106,8 +110,11 @@ export function recruitTool(d: RecruitDeps): Tool {
       const consent = has(user, agent) ? "none" : asked ? "given" : "pending";
       const n0 = d.names[agent];
       const lastRun = handoffs(d.store, user.phone)[agent];
-      if (consent === "none" && lastRun !== undefined && d.now() - lastRun < HANDOFF_COOLDOWN_MS)
-        return `${n0} already answered this a moment ago in ${n0}'s own thread. Don't ask about ${n0} again; just point them there.`;
+      // Only a duplicate is stopped: a bare yes to a question that hand-off already answered. A new plan ("actually nyc
+      // instead") or naming the agent ("ask penny about the hotel") always goes through.
+      const bareYes = consentFromText(said(d.text)) === "yes";
+      if (consent === "none" && !asked && bareYes && lastRun !== undefined && d.now() - lastRun < HANDOFF_COOLDOWN_MS)
+        return `${n0} already answered this a moment ago ${user.via?.[agent] ? "right here" : `in ${n0}'s own thread`}. Don't ask about ${n0} again; just point them there.`;
       const p = getPending(d.store, user.phone);
       const sameTurn = p && p.from === d.from && p.text === said(d.text) && d.now() - p.offeredAt < OFFER_TTL_MS;
       const base: Pending = sameTurn ? p : { from: d.from, text: said(d.text), offeredAt: d.now(), agents: [] };
@@ -155,8 +162,6 @@ export async function runRecruit(engine: Engine, phone: string, p: Pending): Pro
   // Someone who texted in (no web sign-up) has no agents list yet: it starts with the agent they were texting, so
   // that agent's proactive texts keep coming (engine.trigger only sends to agents on the list).
   const ids = [...(u.agents ? [] : [p.from]), ...p.agents.map((a) => a.id)];
-  const ran = engine.time();
-  store.kv("shared", phone).set("handoffs", { ...handoffs(store, phone), ...Object.fromEntries(p.agents.map((a) => [a.id, ran])) });
   store.saveUser({
     ...u,
     agents: [...new Set([...(u.agents ?? []), ...ids])],
@@ -182,6 +187,8 @@ export async function runRecruit(engine: Engine, phone: string, p: Pending): Pro
         engine.log(`WARN ${a.id} handoff answer failed (try ${attempt}): ${err instanceof Error ? err.message : err}`);
       }
     }
+    // Recorded only once the agent actually answered: a failed answer must not read as "already answered".
+    if (answer) store.kv("shared", phone).set("handoffs", { ...handoffs(store, phone), [a.id]: engine.time() });
     const route = user.via?.[a.id];
     const said: Outbound[] = answer ? [{ persona: a.id, handle: `dm:${phone}`, text: answer }] : [];
     // Through another agent's thread: no contact card (it would carry that agent's number under this one's name,

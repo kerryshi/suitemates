@@ -44,14 +44,17 @@ export class GeminiClient implements LlmClient {
   // 02:25: it answered with invented tools, which core used to send as "(no reply)"), so the tool calls and results
   // are flattened to plain text, no tools are declared, the instruction is explicit, and any stray call is ignored.
   private async answerNow(system: string, messages: LlmMessage[]): Promise<LlmStep> {
-    const contents: { role: string; parts: { text: string }[] }[] = [];
-    const add = (role: string, text: string) => {
+    type P = { text?: string; inline_data?: { mime_type: string; data: string } };
+    const contents: { role: string; parts: P[] }[] = [];
+    const add = (role: string, text: string, image?: { bytes: Uint8Array; mimeType: string }) => {
+      const parts: P[] = [{ text }, ...(image ? [{ inline_data: { mime_type: image.mimeType, data: Buffer.from(image.bytes).toString("base64") } }] : [])];
       const prev = contents.at(-1);
-      if (prev?.role === role) prev.parts[0].text += `\n\n${text}`;
-      else contents.push({ role, parts: [{ text }] });
+      if (prev?.role === role) prev.parts.push(...parts);
+      else contents.push({ role, parts });
     };
     for (const m of messages) {
-      if (m.role === "user") add("user", m.text || "(sent a photo)");
+      // The student's photo stays in (a receipt is still visible after the tool rounds).
+      if (m.role === "user") add("user", m.text || "(sent a photo)", m.image);
       else if (m.role === "tool") add("user", `Tool results:\n${m.results.map((r) => `- ${r.name} → ${r.result}`).join("\n")}`);
       else if ("toolCalls" in m) add("model", `(looked up: ${m.toolCalls.map((c) => c.name).join(", ")})`);
       else add("model", m.text);

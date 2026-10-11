@@ -35,6 +35,27 @@ test("if the model still has nothing to say, respond throws (callers fall back) 
   );
 });
 
+test("Gemini noTools keeps the student's photo (a receipt after 3 tool rounds is still visible)", async () => {
+  let body: { contents?: { role: string; parts: Record<string, unknown>[] }[] } = {};
+  const real = globalThis.fetch;
+  globalThis.fetch = (async (_u: unknown, init: { body: string }) => {
+    body = JSON.parse(init.body);
+    return new Response(JSON.stringify({ candidates: [{ content: { parts: [{ text: "that's a $14 receipt" }] } }] }));
+  }) as unknown as typeof fetch;
+  try {
+    const g = new GeminiClient("k", "m");
+    const messages = [
+      { role: "user" as const, text: "", image: { bytes: new Uint8Array([1, 2, 3]), mimeType: "image/jpeg" } },
+      { role: "model" as const, toolCalls: [{ name: "get_recent_purchases", args: {} }] },
+      { role: "tool" as const, results: [{ name: "get_recent_purchases", result: "budget left $300" }] },
+    ];
+    await g.chat({ system: "s", messages, tools: loadPersonas().get("financial")!.tools, noTools: true });
+    assert.match(JSON.stringify(body.contents), /inline_data/, "the image reaches the answer-now request");
+  } finally {
+    globalThis.fetch = real;
+  }
+});
+
 test("Gemini noTools: no tool declarations, the tool calls and results flattened to text, and stray calls ignored", async () => {
   // Live 02:25: gemini-3.6-flash ignores functionCallingConfig NONE and answers with invented tools
   // (canvas__get_todo_items, google_calendar__list_events). Flattened history with no tools: 3/3 plain text.

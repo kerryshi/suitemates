@@ -242,3 +242,63 @@ test("an agent that just answered a hand-off isn't run again for the same plan a
   const again = await s.dm("Yes");
   assert.deepEqual(again.filter((o) => o.persona !== "social").map((o) => o.text), [], "no second round of answers");
 });
+
+test("consent reads natural answers: 'sure, i don't mind' and 'yes that would be great' are yes; 'please no' and 'nah im good' are no", () => {
+  for (const t of ["sure, i don't mind", "yes that would be great", "yes please, go ahead", "yeah do it", "yes!", "Yes", "sure thing"]) assert.equal(consentFromText(t), "yes", t);
+  for (const t of ["please no", "no thanks", "nah im good", "nope", "not now", "don't", "no, i'm good"]) assert.equal(consentFromText(t), "no", t);
+  for (const t of ["ok so what time?", "what's the cost?", "maybe later, what else is going on this weekend at unc"]) assert.equal(consentFromText(t), undefined, t);
+});
+
+// Review of cf08678 (workflow wf_63527478-ed9): the cooldown only stops a duplicate (a bare yes), never a new request.
+function allThree(extra?: (req: { system: string; messages: LlmMessage[] }) => ReturnType<LlmClient["chat"]> | undefined) {
+  const s = setup(0, { agents: ["social", "financial", "academic"], greeted: ["social", "financial", "academic"] });
+  (s.engine.d as { llm: LlmClient }).llm = {
+    ...spy,
+    chat: async (req) => {
+      const hit = extra?.(req);
+      if (hit) return hit;
+      const last = req.messages.at(-1) as LlmMessage;
+      if (/You are Sunny,/.test(req.system) && last.role === "user") {
+        if (/ask penny/i.test(last.text)) return { toolCalls: [{ name: "bring_in", args: { agent: "financial", ask: "the hotel", asked: true } }] };
+        if (/nyc|yes/i.test(last.text)) return { toolCalls: [{ name: "bring_in", args: { agent: "financial", ask: "price it" } }] };
+      }
+      return spy.chat(req);
+    },
+  };
+  return s;
+}
+const pennyAnswered = (out: Outbound[]) => out.some((o) => o.persona === "financial" && o.text === "Penny answer");
+
+test("review: a changed plan within 3 min still reaches Penny ('actually nyc instead…')", async () => {
+  const s = allThree();
+  assert.ok(pennyAnswered(await s.dm("I want to go to nyc for fall break")), "first plan priced");
+  assert.ok(pennyAnswered(await s.dm("actually nyc instead, how much is that")), "changed plan priced too");
+});
+
+test("review: naming Penny within 3 min still reaches her ('ask penny about the hotel too')", async () => {
+  const s = allThree();
+  await s.dm("I want to go to nyc for fall break");
+  assert.ok(pennyAnswered(await s.dm("ask penny about the hotel too")), "named request reaches Penny");
+});
+
+test("review: if Penny's hand-off answer failed, a yes a minute later runs her again (no false 'already answered')", async () => {
+  let failing = true;
+  const s = allThree((req) => {
+    const last = req.messages.at(-1) as LlmMessage;
+    if (failing && /You are Penny,/.test(req.system) && last.role === "user" && last.text.startsWith("[handoff")) throw new Error("model returned no text");
+    return undefined;
+  });
+  const first = await s.dm("I want to go to nyc for fall break");
+  assert.equal(pennyAnswered(first), false, "Penny's answer failed");
+  failing = false;
+  const again = await s.dm("yes");
+  assert.equal(pennyAnswered(again), true, "a yes runs Penny again");
+});
+
+test("review: the cooldown message points at the right thread when Penny speaks through Sunny's (via)", async () => {
+  const s = setup(0, { agents: ["social", "financial"], greeted: ["social", "financial"], via: { financial: "social" } });
+  s.store.kv("shared", PHONE).set("handoffs", { financial: Date.now() });
+  const out = await recruitTool({ store: s.store, names: NAMES, from: "social", text: "yes", now: () => Date.now(), needsAdd: () => false, startAdd: () => {} })
+    .run({ agent: "financial", ask: "price it" }, s.engine.ctx("social", s.store.user(PHONE)));
+  assert.match(out, /right here/);
+});

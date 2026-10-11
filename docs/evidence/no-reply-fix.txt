@@ -37,3 +37,33 @@ noTools call → toolCalls (BAD): canvas__get_todo_items ,canvas__list_courses ,
 typecheck clean
 ## live probe 3 (real Gemini, real tool loop, fixed code): Dean used 3 tool rounds (5 tools), answer-now step returned text
 LLM calls: 4; reply: 140 chars: you've got comp 421 project 1 due tonight at 11:59 and a stor midterm saturday 💀 clear project 1 today before you even think about packing.
+
+# review round 2 of cf08678 (workflow wf_63527478-ed9: SHIP WITH FIXES) + consent finding from the judge-demo red-team, 2026-10-11 02:27
+## red before
+✖ consent reads natural answers: 'sure, i don't mind' and 'yes that would be great' are yes; 'please no' and 'nah im good' are no (1.009666ms)
+ℹ fail 5
+✖ failing tests:
+ℹ pass 15
+✖ review: a changed plan within 3 min still reaches Penny ('actually nyc instead…') (2.961375ms)
+✖ review: if Penny's hand-off answer failed, a yes a minute later runs her again (no false 'already answered') (2.842209ms)
+✖ review: naming Penny within 3 min still reaches her ('ask penny about the hotel too') (2.239625ms)
+✖ review: the cooldown message points at the right thread when Penny speaks through Sunny's (via) (0.285583ms)
+(+ Gemini noTools keeps the student's photo: red)
+## green
+✔ Gemini noTools keeps the student's photo (a receipt after 3 tool rounds is still visible) (13.23ms)
+✔ review #1: a non-answer to Penny keeps Sunny's offer; a later yes to Sunny still brings Dean (2.734208ms)
+✔ review #2: 'ok option 1' to Dean (answering his own 'your call') goes to Dean, doesn't recruit Penny or drop her offer (3.130291ms)
+✔ review #2b: in another agent's thread only a real yes counts, not 'ok' / 'k' / 'bet' (2.449583ms)
+✔ review #4: the party window is ~3 minutes: a yes to Penny at 2.5 min still counts (1.930583ms)
+✔ consent reads natural answers: 'sure, i don't mind' and 'yes that would be great' are yes; 'please no' and 'nah im good' are no (0.071583ms)
+✔ review: a changed plan within 3 min still reaches Penny ('actually nyc instead…') (2.128334ms)
+✔ review: naming Penny within 3 min still reaches her ('ask penny about the hotel too') (1.956875ms)
+✔ review: if Penny's hand-off answer failed, a yes a minute later runs her again (no false 'already answered') (2.391083ms)
+✔ review: the cooldown message points at the right thread when Penny speaks through Sunny's (via) (0.116708ms)
+ℹ fail 0
+ℹ pass 252
+ℹ tests 252
+typecheck clean
+## live (real Gemini, fixed code): Dean, 3 tool rounds + answer-now
+LLM calls: 4; reply: 197 chars: you got comp 421 project 1 due tonight and stor 435 midterm saturday morning. option 1: crush those first and hit nyc with an 85% in stor. o…
+## note: a test run hung under node:test only when assert.ok(expr) failed with no message (node builds the message from the transpiled source); the tests now pass messages.

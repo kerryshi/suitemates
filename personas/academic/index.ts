@@ -5,6 +5,7 @@ import { tools } from "./tools.ts";
 import { watch, triggers } from "./watch.ts";
 import { schoolContext } from "./conflicts.ts";
 import { schoolCalendar } from "./calendar.ts";
+import { deanSignup } from "./canvas.ts";
 
 const academic: Persona = {
   id: "academic",
@@ -17,6 +18,7 @@ const academic: Persona = {
   triggers,
   context: schoolContext,
   calendar: schoolCalendar,
+  signup: deanSignup,
 };
 
 export default academic;

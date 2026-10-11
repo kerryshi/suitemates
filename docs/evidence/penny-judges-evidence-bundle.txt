@@ -1,0 +1,93 @@
+Evidence bundle: penny-judges
+Date: 2026-10-11  Time: 01:39 EDT   HEAD: bae014b (kerry/penny-habits)
+Worktree: /Users/kerryshi/Projects/hacknc-agents-recruit
+
+### 1. git state
+$ git log --oneline -3; git status --short
+exit 0
+bae014b [financial] Penny habits work for judges: per-user demo bank on MOCK=0, owner stays on real Nessie; review fixes F1/F3/F5/F6
+3878c3a Merge remote-tracking branch 'origin/main' into kerry/penny-habits
+e09f262 [core] merge kerry/watchdog: alert-only watchdog pushes what broke + the fix to Kerry's phone (#30)
+(git status --short: empty, clean tree)
+
+### 2a. npm test (tail -10)
+$ npm test 2>&1 | tail -10
+exit 0
+✔ stuck sign-ups: pending in the last 15 min, phones masked; unreadable state.json is skipped, not an alert (0.17325ms)
+✔ log tail: starts at the end, reads appended lines, keeps a partial line, restarts on a new or truncated file (2.747875ms)
+ℹ tests 236
+ℹ suites 0
+ℹ pass 236
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 3748.524875
+
+### 2b. typecheck
+$ npx tsc --noEmit -p . ; echo tsc_exit=$?
+tsc_exit=0   (no output)
+
+### 3. targeted tests
+$ npx tsx --test tests/penny-judges.test.ts tests/penny-try.test.ts tests/financial.test.ts 2>&1 | grep -E '^(✔|✖)|ℹ (pass|fail)'
+ℹ pass 30 / ℹ fail 0. All lines below passed:
+✔ first poll baselines existing purchases and roasts nothing
+✔ a new purchase is roasted exactly once
+✔ a burst after downtime roasts at most 3 but marks all seen
+✔ a date-only Nessie purchase from today is stamped with the time it was first seen
+✔ low balance warns once per day
+✔ Nessie YYYY-MM-DD dates parse as local days, not UTC
+✔ categories come from the merchant name unless given
+✔ afford verdict boundaries: over budget, half of what's left, small
+✔ purchase facts carry the numbers the roast needs
+✔ a 3 AM delivery order is flagged late night
+✔ a real (date-only) purchase from an earlier day is not called late night or given a fake time
+✔ a date-only purchase stamped with first-seen time is roasted with that time
+✔ purchase roasts go only to the account owner when NESSIE_OWNER_PHONE is set
+✔ the weekly check-in also goes only to the account owner when NESSIE_OWNER_PHONE is set
+✔ a fresh Nessie account (404 on the purchase list) reads as no purchases, other errors still throw
+✔ a real Nessie purchase is posted with a status, or Nessie can't list the account's purchases afterwards
+✔ the beach trip matches its cost estimate
+✔ keyword routing (keyless mode) wakes Financial for 'how much is the beach trip', nobody for small talk
+✔ MOCK=0: the owner is on the real bank; a judge is on a demo bank with sample history and never touches Nessie
+✔ F1/F6: Penny's habit texts never run on the real account; a judge gets them from sample history, with no Nessie call
+✔ F3: a spending-trend alert needs a real baseline, not 'up 100% from nothing'
+✔ F5: habit_swap for a place that isn't a habit says so, instead of answering about another one
+✔ try Penny works for a judge on MOCK=0 (their demo bank) and is refused for the owner's real account
+✔ a judge's own demo purchase is roasted on MOCK=0; nobody else's ledger is
+✔ a judge is told it's a demo bank (sample spending), the owner isn't
+✔ Penny's intro: hello, her card, then where the month stands
+✔ try Penny: only after her hello; a purchase lands in that person's ledger and she roasts it
+✔ one person's demo purchases never show up for someone else
+✔ Penny tells the other agents how the month is going, never the balance
+✔ Penny's patterns: six weeks of habits per sign-up, never roasted, asked about once, with swap math
+
+### 4. Fail-first at bae014b~1 (new tests/penny-judges.test.ts copied in; node_modules symlinked)
+$ git worktree add -q --detach /private/tmp/claude-501/penny-failfirst bae014b~1 && cp ...tests/penny-judges.test.ts ... && ln -s .../hacknc-agents/node_modules ... && cd ... && npx tsx --test tests/penny-judges.test.ts 2>&1 | grep -E '^(✔|✖)|ℹ (pass|fail)'
+(pipeline exit 0 is grep's; tsx exit not captured)
+✖ MOCK=0: the owner is on the real bank; a judge is on a demo bank with sample history and never touches Nessie
+✖ F1/F6: Penny's habit texts never run on the real account; a judge gets them from sample history, with no Nessie call
+✖ F3: a spending-trend alert needs a real baseline, not 'up 100% from nothing'
+✖ F5: habit_swap for a place that isn't a habit says so, instead of answering about another one
+✖ try Penny works for a judge on MOCK=0 (their demo bank) and is refused for the owner's real account
+✖ a judge's own demo purchase is roasted on MOCK=0; nobody else's ledger is
+✖ a judge is told it's a demo bank (sample spending), the owner isn't
+ℹ pass 0
+ℹ fail 7
+(failing-test summary repeated the same 7 names)
+NOTE: failure reasons were filtered out by the requested grep; 7/7 failing could be assertion failures or a shared cause (e.g. missing import/export at bae014b~1). Not distinguished here.
+$ git worktree remove --force /private/tmp/claude-501/penny-failfirst
+remove_exit=0
+
+### 5. Owner path under MOCK=0
+$ npx tsx /private/tmp/claude-501/owner-probe.mts   (script written verbatim as given)
+probe_exit=0
+baseline: [] fetches: 2
+after a real buy: [["purchase","purchase:+19195550002:buy1","New purchase: Sheetz $4.00 today 1:39 AM [energy drink], late night. Budget left"]] fetches: 2
+Matches expectation: baseline [] with 2 fetches; one purchase event for buy1, no habit_question/spending_trend, 2 fetches.
+
+### Checks that did NOT run
+- Lint: no lint script was looked for or run (not requested; not checked whether configured).
+- E2E / build: not requested, not run.
+- Full-suite exit code for the tail pipe: recorded via zsh pipestatus (0).
+- Failure reasons for fail-first run: suppressed by the requested grep.

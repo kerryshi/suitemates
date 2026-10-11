@@ -80,9 +80,16 @@ export async function introTexts(engine: Engine, phone: string, order: PersonaId
   for (const id of order) {
     if (!engine.d.personas.has(id)) continue;
     const own = engine.d.personas.get(id)!.triggers?.intro;
-    const said = own
-      ? await engine.trigger(id, "intro", { phone, force: true })
-      : [{ persona: id, handle: `dm:${phone}`, text: DEFAULT_INTRO[id](names[id]) }];
+    const plain: Outbound[] = [{ persona: id, handle: `dm:${phone}`, text: DEFAULT_INTRO[id](names[id]) }];
+    let said = plain;
+    // An agent's own intro can fail (Dean's reads live Canvas): then the plain hello, never no hello at all.
+    if (own) {
+      try {
+        said = await engine.trigger(id, "intro", { phone, force: true });
+      } catch (err) {
+        engine.log(`WARN ${id} intro failed, sending the plain hello: ${err instanceof Error ? err.message : err}`);
+      }
+    }
     // hello → contact card → anything else the intro says (Dean's "next up: …").
     out.push(...said.slice(0, 1), cardFor(engine, id, phone), ...said.slice(1));
   }

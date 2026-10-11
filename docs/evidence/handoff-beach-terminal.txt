@@ -1,0 +1,38 @@
+# terminal proof 2, real Gemini (gemini-3.6-flash), MOCK=1, single shared project, both recruit prompt rules, 2026-10-11 00:36
+Suitemates chat · LLM=gemini:gemini-3.6-flash · MOCK=1 · state=data/chat-state.json
+
+  <text>                   send as the current user
+
+(not onboarded yet: say "hi", or /skip)
++19195550001 → Sunny> /skip
+  onboarded: budget $600/month, saving for spring break, $400
++19195550001 → Sunny> hey i'm kerry
+[core] social: tool remember({"note":"User's name is Kerry."})
+  [Sunny] kerry!! so good to meet you 🥳 looking for something fun to do or just vibing today? 🌞
++19195550001 → Sunny> I'm going on the beach trip Saturday
+[core] social: tool join_activity({"my_name":"Kerry","activity":"beach trip"})
+[core] social: tool bring_in({"agent":"financial","ask":"price beach trip against their budget"})
+[core] social: tool bring_in({"agent":"academic","ask":"check what's due around Saturday"})
+  [Sunny] heck yeah! you're in for wrightsville saturday 9 am with ismail, omar, and priya 🏖️🎉 want penny + dean to check the cost and your deadlines? 👀
++19195550001 → Sunny> yes!
+[core] financial: tool estimate_plan_cost({"plan":"beach trip Saturday"})
+[core] financial: tool remember({"note":"Going on the beach trip Saturday."})
+[core] academic: tool check_plan_conflicts({"day":"saturday"})
+[core] academic: tool grade_impact({"course":"STOR 435","assignment":"Midterm 2"})
+  [Sunny] on it! Penny and Dean are jumping in right here
+  [Penny] (DM) hiii i'm penny 💸 i watch your spending so your bank account stops crying. ask if you can afford stuff and yes, i will roast the 3 a.m. doordash 💀
+  [Penny] (DM) 📇 contact card: Penny Suitemates (docs/avatars/penny.png)
+  [Penny] (DM) sitting at $476.85 left for the month (about $22.71 a day) while we save $400 for spring break 💸 👀
+  [Penny] (DM) a beach trip is gonna run about $45 per person, which is only 9% of your remaining $476.85 budget 👀 totally doable! 💸
+  [Dean] (DM) i'm dean. i keep tabs on your canvas so you don't fumble your deadlines or grades. text me "what's due" anytime 📚
+  [Dean] (DM) 📇 contact card: Dean Suitemates (docs/avatars/dean.png)
+  [Dean] (DM) stor 435 ps6 is due today at 5. do the problems before dinner 😤
+  [Dean] (DM) stor 435 midterm 2 is saturday at 9:30 am 💀 option 1: take it saturday morning then go (grade stays ~85%). option 2: skip it, stor drops to ~61%. your call.
++19195550001 → Sunny> /to academic
++19195550001 → Dean> can i afford a $60 concert ticket friday?
+[core] academic: tool check_plan_conflicts({"day":"friday"})
+[core] academic: tool bring_in({"agent":"financial","ask":"check if a $60 concert ticket fits the budget for Friday"})
+[core] financial: tool can_i_afford({"price":60,"item":"concert ticket"})
+  [Dean] Dean: penny's checking your budget, but you've got an engl 105 draft due friday night and midterm 2 saturday at 9:30 am 💀 finish that essay thursday.
+  [Penny] (DM) yep, $60 fits! you've got $476.85 left this month, so you'll still have ~$19.85 a day 🎟️💸
++19195550001 → Dean> /quit

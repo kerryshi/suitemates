@@ -6,13 +6,15 @@ import { Engine } from "./engine.ts";
 import { FakeLlm } from "./llm/fake.ts";
 import { GeminiClient } from "./llm/gemini.ts";
 import type { LlmClient } from "./llm/client.ts";
+import { photonCliAddUser } from "./photon-users.ts";
 
 export function createApp(opts: { config?: Config; storeFile?: string | null } = {}) {
   const config = opts.config ?? loadConfig();
   const personas = loadPersonas();
   const store = new Store(opts.storeFile === undefined ? config.DATA_FILE : opts.storeFile);
   const llm: LlmClient = config.fakeLlm ? new FakeLlm() : new GeminiClient(config.GEMINI_API_KEY!, config.GEMINI_MODEL);
-  const engine = new Engine({ personas, store, llm, config, routerPrompt: loadRouterPrompt() });
+  // addUser: an agent brought in by another (core/recruit.ts) is added to its own Photon project first.
+  const engine = new Engine({ personas, store, llm, config, routerPrompt: loadRouterPrompt(), addUser: photonCliAddUser });
   return { config, personas, store, llm, engine };
 }
 

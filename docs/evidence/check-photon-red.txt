@@ -1,0 +1,4 @@
+# check-photon against the live .env at 00:25 — before Kerry adds the per-agent projects (guard refuses)
+academic: FAIL no project: set ACADEMIC_PROJECT_ID and _SECRET
+financial: FAIL no project: set FINANCIAL_PROJECT_ID and _SECRET
+social: FAIL no project: set SOCIAL_PROJECT_ID and _SECRET

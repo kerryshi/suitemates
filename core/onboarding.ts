@@ -37,7 +37,7 @@ function onboardFor(user: UserProfile, text: string, n: OnboardNames): { reply: 
       return {
         user: u,
         reply:
-          `hey! i'm ${n[n.me]} from ${n.product} 👋 i've got ${ROLE[n.me]}, ` +
+          `hey, i'm ${n[n.me]} from ${n.product}. i've got ${ROLE[n.me]}, ` +
           (["academic", "financial", "social"] as const).filter((p) => p !== n.me).map((p) => `${n[p]} has ${ROLE[p]}`).join(", ") +
           `. quick setup: what's your monthly budget? (just a number, like 600)`,
       };
@@ -58,7 +58,7 @@ function onboardFor(user: UserProfile, text: string, n: OnboardNames): { reply: 
       u.onboardingStep = "done";
       return {
         user: u,
-        reply: `saving for: ${u.savingsGoal}. your Canvas is linked ✅ you're all set — ask "what's due this week?" anytime.`,
+        reply: `saving for: ${u.savingsGoal}. your Canvas is linked, you're all set. ask "what's due this week?" anytime.`,
       };
     default:
       return { user: u, reply: "" };
@@ -73,7 +73,7 @@ function onboardAcademic(user: UserProfile, n: OnboardNames): { reply: string; u
     return {
       user: u,
       reply:
-        `hey! i'm ${n.academic} from ${n.product} 👋 i keep track of your classes, deadlines and grades. ` +
+        `hey, i'm ${n.academic} from ${n.product}. i keep track of your classes, deadlines and grades. ` +
         `to get set up, what's your UNC email or Canvas login? (for the demo, anything works)`,
     };
   }
@@ -81,7 +81,7 @@ function onboardAcademic(user: UserProfile, n: OnboardNames): { reply: string; u
   u.onboardingStep = "done";
   return {
     user: u,
-    reply: `got it, your Canvas is linked ✅ try "what's due this week?" or "how are my grades?"`,
+    reply: `got it, your Canvas is linked. try "what's due this week?" or "how are my grades?"`,
   };
 }
 
@@ -94,7 +94,7 @@ function onboardSocial(user: UserProfile, text: string, n: OnboardNames): { repl
       u.onboardingStep = 1;
       return {
         user: u,
-        reply: `hey! i'm ${n.social} from ${n.product} 👋 i'm the plans person: i find people who want to do the same stuff you do. what's your first name?`,
+        reply: `hey, i'm ${n.social} from ${n.product}. i'm the plans person: i find people who want to do the same stuff you do. what's your first name?`,
       };
     case 1: {
       const name = parseFirstName(text, [n.academic, n.financial, n.social]);
@@ -112,7 +112,7 @@ function onboardSocial(user: UserProfile, text: string, n: OnboardNames): { repl
     case 2:
       u.interests = parseInterests(text);
       u.onboardingStep = "done";
-      return { user: u, reply: `love it. text me "what's happening this weekend?" and i'll find your people 🙌` };
+      return { user: u, reply: `love it. text me "what's happening this weekend?" and i'll find your people.` };
     default:
       return { user: u, reply: "" };
   }

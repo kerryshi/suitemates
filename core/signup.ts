@@ -66,9 +66,9 @@ const AVATAR: Record<PersonaId, string> = { academic: "dean", financial: "penny"
 const ROLE: Record<PersonaId, string> = { academic: "school", financial: "money", social: "plans" };
 // Until a persona writes its own `intro` trigger: a plain hello (no LLM call, so it can't glitch).
 const DEFAULT_INTRO: Record<PersonaId, (name: string) => string> = {
-  academic: (n) => `hey. i'm ${n}. i watch your canvas so you don't fumble the semester 📚 text me "what's due?"`,
-  financial: (n) => `hiii i'm ${n} 💸 i watch your spending so your bank account stops crying 😭 ask me "can i afford it?" anytime`,
-  social: (n) => `heyyy i'm ${n} 🌞 i find people who want to do the same stuff you do 🎉 ask me "what's happening this weekend?"`,
+  academic: (n) => `hey. i'm ${n}. i watch your canvas so you don't fumble the semester. text me "what's due?"`,
+  financial: (n) => `hey, i'm ${n}. i watch your spending so your bank account stops crying. ask me "can i afford it?" anytime`,
+  social: (n) => `hey, i'm ${n}. i find people who want to do the same stuff you do. ask me "what's happening this weekend?"`,
 };
 
 // Each persona's hello, then its contact card (name, avatar, its own number if it has a dedicated line), in this

@@ -19,7 +19,7 @@ export const DEMO_BUYS: Record<string, { merchant: string; amount: number; categ
 // Two texts: who Penny is (core sends her contact card right after), then where the month stands.
 export async function intro(ctx: Ctx): Promise<WatchEvent[]> {
   const hello =
-    `hiii${ctx.user.name ? ` ${ctx.user.name}` : ""}, i'm Penny 💸 i watch your spending so your bank account stops crying. ` +
+    `hey${ctx.user.name ? ` ${ctx.user.name}` : ""}, i'm Penny. i watch your spending so your bank account stops crying. ` +
     `i'll tell you if you can afford it, and i will absolutely say something about the 3 am DoorDash.`;
   const events: WatchEvent[] = [{ kind: "intro", userPhone: ctx.user.phone, facts: hello, dedupeKey: `financial:intro:${ctx.user.phone}` }];
   const budget = ctx.user.budgetMonthly;
@@ -54,7 +54,7 @@ export async function tryBuy(action: string, ctx: Ctx): Promise<{ error: string 
   if (realBank(ctx)) return { error: "Demo purchases are for the demo bank; yours come from your real account." };
   const mine = readExtras(ctx.user.phone, { ownOnly: true });
   if (mine.filter((e) => Date.now() - Date.parse(e.at) < 3_600_000).length >= MAX_DEMO_PER_HOUR) {
-    return { error: "That's a lot of shopping for one hour 😭 try again later." };
+    return { error: "That's a lot of shopping for one hour. Try again later." };
   }
   // Record what's already there first, so this purchase counts as new even if the watcher hasn't run for them yet.
   if (!ctx.kv.get<string[]>(SEEN_KEY)) ctx.kv.set(SEEN_KEY, (await getPurchases(ctx)).map((p) => p.id));

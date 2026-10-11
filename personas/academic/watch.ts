@@ -19,7 +19,7 @@ export async function watch(ctx: Ctx): Promise<WatchEvent[]> {
       events.push({
         kind: "due_within_24h",
         userPhone: ctx.user.phone,
-        facts: `⏰ ${a.course} ${a.name} is due ${fmtWhen(a.due, ctx.now)}. don't make me ask twice 😤`,
+        facts: `${a.course} ${a.name} is due ${fmtWhen(a.due, ctx.now)}. don't make me ask twice.`,
         dedupeKey: `academic:24h:${ctx.user.phone}:${a.id}:${ymd(a.due)}`,
       });
     }
@@ -28,7 +28,7 @@ export async function watch(ctx: Ctx): Promise<WatchEvent[]> {
       events.push({
         kind: "exam_week",
         userPhone: ctx.user.phone,
-        facts: `📚 ${a.course} ${a.name} is ${fmtWhen(a.due, ctx.now)}, ${days} days out. start reviewing today, a little every day. no cramming 👀`,
+        facts: `${a.course} ${a.name} is ${fmtWhen(a.due, ctx.now)}, ${days} days out. start reviewing today, a little every day. no cramming.`,
         dedupeKey: `academic:exam7:${ctx.user.phone}:${a.id}`,
       });
     }
@@ -39,7 +39,7 @@ export async function watch(ctx: Ctx): Promise<WatchEvent[]> {
     events.push({
       kind: "announcement",
       userPhone: ctx.user.phone,
-      facts: `👀 new from ${n.course}: ${n.title}. ${n.message.slice(0, 220)}`,
+      facts: `new from ${n.course}: ${n.title}. ${n.message.slice(0, 220)}`,
       dedupeKey: `academic:ann:${ctx.user.phone}:${n.id}`,
     });
   }
@@ -59,7 +59,7 @@ export const triggers = {
       events.push({
         kind: "intro_next_up",
         userPhone: ctx.user.phone,
-        facts: `first thing on your list: ${next.course} ${next.name}, due ${fmtWhen(next.due, ctx.now)} ⏰`,
+        facts: `first thing on your list: ${next.course} ${next.name}, due ${fmtWhen(next.due, ctx.now)}.`,
         dedupeKey: `academic:intro-next:${ctx.user.phone}`,
       });
     }
@@ -74,9 +74,9 @@ export const triggers = {
     const tomorrow = upcoming.filter((a) => ymd(a.due) === tomorrowYmd);
     const facts =
       (today.length
-        ? `morning 😤 you've got ${today.length} thing${today.length > 1 ? "s" : ""} due today: ` +
+        ? `morning. you've got ${today.length} thing${today.length > 1 ? "s" : ""} due today: ` +
           today.map((a) => `${a.course} ${a.name} at ${fmtWhen(a.due, ctx.now).replace("today ", "")}`).join("; ") + "."
-        : "morning. nothing due today. don't get comfy 👀") +
+        : "morning. nothing due today. don't get comfy.") +
       (tomorrow.length ? ` Tomorrow: ${tomorrow.map((a) => `${a.course} ${a.name}`).join("; ")}.` : "");
     return [{ kind: "morning_due", userPhone: ctx.user.phone, facts, dedupeKey: `academic:morning:${ctx.user.phone}:${ymd(ctx.now)}` }];
   },
@@ -93,9 +93,9 @@ export const triggers = {
     }
     const exams = upcoming.filter((a) => a.type === "exam" && a.due.getTime() > end && a.due.getTime() <= end + 7 * DAY);
     const facts = week.length
-      ? `your week 📚 ${[...byDay].map(([d, items]) => `${d}: ${items.join(", ")}`).join(" · ")}.` +
+      ? `your week. ${[...byDay].map(([d, items]) => `${d}: ${items.join(", ")}`).join(" · ")}.` +
         (exams.length ? ` Exams after that: ${exams.map((a) => describe(a, ctx.now)).join("; ")}.` : "")
-      : "your week is clear on canvas. nothing due for 7 days. enjoy it, quietly 🙄";
+      : "your week is clear on canvas. nothing due for 7 days. enjoy it, quietly.";
     return [{ kind: "weekly_plan", userPhone: ctx.user.phone, facts, dedupeKey: `academic:week:${ctx.user.phone}:${ymd(ctx.now)}` }];
   },
 };

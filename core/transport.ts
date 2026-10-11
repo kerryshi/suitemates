@@ -8,6 +8,7 @@ import { Spectrum, contact } from "spectrum-ts";
 import { imessage } from "spectrum-ts/providers/imessage";
 import type { Config } from "./config.ts";
 import type { Inbound, Outbound, PersonaId } from "./types.ts";
+import { capEmoji } from "./voice.ts";
 
 export interface Transport {
   start(onInbound: (ev: Inbound) => Promise<void>): Promise<void>;
@@ -129,7 +130,8 @@ export class SpectrumTransport implements Transport {
     if (wait > 0) await new Promise((r) => setTimeout(r, wait));
     this.lastSend.set(from, Date.now());
     if (o.text) {
-      const text = this.tagged(o);
+      // Capped before the echo buffer, or an echo of the capped text wouldn't match isEcho and we'd answer ourselves.
+      const text = this.tagged({ ...o, text: capEmoji(o.text) });
       this.recentlySent.push({ text, at: Date.now() });
       await space.send(text);
     }

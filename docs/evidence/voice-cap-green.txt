@@ -1,0 +1,45 @@
+$ npx tsx --test tests/voice.test.ts tests/voice-wiring.test.ts   # 2026-10-11 02:16 EDT, branch kerry/voice, core/voice.ts + wiring
+✔ SpectrumTransport sends at most one emoji, and the echo buffer holds the text that went out (3.118041ms)
+✔ ConsoleTransport prints at most one emoji (0.185ms)
+✔ a model reply with two emoji: one reaches the student and one is stored in history (6.14925ms)
+✔ no emoji: text is byte-identical (digits, $, #, *, urls and phone numbers are not emoji) (0.802875ms)
+✔ one emoji: unchanged wherever it sits (0.134042ms)
+✔ adjacent pair with a VS16 emoji: the first (🏖️, kept whole) stays, the second goes, the words stay apart (0.188458ms)
+✔ a second emoji at the end goes with its space (no trailing space) (0.074208ms)
+✔ a ZWJ sequence counts as one emoji: kept whole when first (0.072916ms)
+✔ a ZWJ sequence counts as one emoji: dropped whole when not first (0.056333ms)
+✔ skin tones stay with their hand (0.065208ms)
+✔ a flag is one emoji (0.284ms)
+✔ keycaps are one emoji; a bare # or digit is none (0.095917ms)
+✔ a VS16 heart is an emoji (0.099916ms)
+✔ punctuation and spacing are tidied only around what was removed (0.078125ms)
+✔ emoji glued to words: removed without gluing the words together (0.05275ms)
+✔ three or more: only the first survives (0.114875ms)
+✔ idempotent: capping a capped text changes nothing (1.731875ms)
+✔ countEmoji counts grapheme clusters (0.075417ms)
+ℹ tests 18
+ℹ suites 0
+ℹ pass 18
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 520.128583
+exit=0
+
+$ npm test (summary)
+ℹ tests 254
+ℹ suites 0
+ℹ pass 254
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 4273.039375
+
+$ npm run typecheck
+
+> hacknc-agents@0.1.0 typecheck
+> tsc --noEmit -p .
+
+exit=0

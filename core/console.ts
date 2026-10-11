@@ -4,6 +4,7 @@ import { PERSONA_IDS, type Inbound, type Outbound, type PersonaId } from "./type
 import type { App } from "./app.ts";
 import type { Transport } from "./transport.ts";
 import { listNotes } from "./memory.ts";
+import { capEmoji } from "./voice.ts";
 
 export const DEMO_USER = "+19195550001";
 type Mode = PersonaId;
@@ -53,7 +54,7 @@ export class ConsoleTransport implements Transport {
 
   async send(o: Outbound): Promise<void> {
     const where = o.handle.startsWith("dm:") ? " (DM)" : "";
-    if (o.text) console.log(`  [${this.app.config.names[o.persona]}]${where} ${o.text}`);
+    if (o.text) console.log(`  [${this.app.config.names[o.persona]}]${where} ${capEmoji(o.text)}`);
     if (o.card) console.log(`  [${this.app.config.names[o.persona]}]${where} 📇 contact card: ${o.card.name}${o.card.phone ? ` ${o.card.phone}` : ""} (${o.card.photo})`);
   }
 

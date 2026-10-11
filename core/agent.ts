@@ -2,6 +2,7 @@
 import type { Ctx, Persona } from "./types.ts";
 import type { LlmClient, LlmMessage } from "./llm/client.ts";
 import type { Turn } from "./store.ts";
+import { capEmoji } from "./voice.ts";
 
 const MAX_TOOL_ROUNDS = 3;
 const TOOL_TIMEOUT_MS = 10_000;
@@ -43,14 +44,15 @@ export async function respond(a: RespondArgs): Promise<string> {
   for (let round = 0; round < MAX_TOOL_ROUNDS; round++) {
     // Proactive texts carry complete facts: no tool round, so a purchase roast lands fast.
     const step = await a.llm.chat({ system, messages, tools: a.setting === "proactive" ? [] : a.persona.tools });
-    if ("text" in step) return step.text;
+    // Capped here too, so history holds what the student saw (a 2-emoji model turn is an example it copies).
+    if ("text" in step) return capEmoji(step.text);
     messages.push({ role: "model", toolCalls: step.toolCalls, raw: step.raw });
     const results = [];
     for (const call of step.toolCalls) results.push({ name: call.name, result: await runTool(a.persona, call, a.ctx) });
     messages.push({ role: "tool", results });
   }
   const last = await a.llm.chat({ system, messages, tools: [] });
-  return "text" in last ? last.text : "(no reply)";
+  return "text" in last ? capEmoji(last.text) : "(no reply)";
 }
 
 async function runTool(persona: Persona, call: { name: string; args: Record<string, unknown> }, ctx: Ctx): Promise<string> {

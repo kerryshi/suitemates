@@ -18,6 +18,8 @@ import {
   saveBoard,
   slug,
 } from "./board.ts";
+import { categoriesOf, fitNote, fits, isCategory, rankByFit } from "./interests.ts";
+import { PITCHED_KEY } from "./watch.ts";
 
 export type { Activity } from "./board.ts";
 
@@ -64,7 +66,10 @@ const listSignups: Tool = {
     const q = str(args.activity);
     const hits = q ? findActivities(b, q) : b.activities;
     if (hits.length === 0) return `No activities match "${q}".`;
-    return hits.map((a) => describe(b, a, ctx)).join("\n");
+    // Plans that fit the user's sign-up interests come first and say so.
+    return rankByFit(hits.map((a) => ({ a })), ctx.user.interests)
+      .map(({ a, fit }) => describe(b, a, ctx) + fitNote(fit))
+      .join("\n");
   },
 };
 
@@ -82,7 +87,9 @@ const joinActivity: Tool = {
   },
   async run(args, ctx) {
     const b = loadBoard();
-    const a = pick(b, str(args.activity), "signing them up");
+    // A bare "I'm in" right after Sunny's intro means the plan she pitched (watch.ts introEvent).
+    const pitched = ctx.kv.get<string>(PITCHED_KEY);
+    const a = pick(b, str(args.activity) || (pitched && b.activities.some((x) => x.id === pitched) ? pitched : ""), "signing them up");
     if (typeof a === "string") return a;
     const crew = others(b, a, ctx);
     const matched = crew.length ? ` Matched with: ${crew.join(", ")}.` : " Nobody else yet; they're first.";
@@ -156,7 +163,10 @@ const findMatches: Tool = {
     "or, given an interest, who's into it. Use for 'who should I hang with', 'who else likes soccer', or 'find me people'.",
   parameters: {
     properties: {
-      interest: { type: "string", description: "Optional interest to match on, e.g. 'soccer' or 'beach'." },
+      interest: {
+        type: "string",
+        description: "Optional interest to match on: a word like 'soccer' or 'beach', or a sign-up category like 'outdoors', 'food' or 'pickup sports'.",
+      },
     },
   },
   async run(args, ctx) {
@@ -164,7 +174,7 @@ const findMatches: Tool = {
     const me = ctx.user.phone;
     const interest = str(args.interest);
     if (interest) {
-      const hits = findActivities(b, interest);
+      const hits = isCategory(interest) ? b.activities.filter((a) => categoriesOf(a).includes(interest.toLowerCase())) : findActivities(b, interest);
       if (hits.length === 0) return `Nobody has a plan for "${interest}" yet. Offer start_activity.`;
       return hits
         .map((a) => {
@@ -176,8 +186,10 @@ const findMatches: Tool = {
 
     const mine = b.activities.filter((a) => a.signups.includes(me));
     if (mine.length === 0) {
-      const popular = [...b.activities].sort((x, y) => y.signups.length - x.signups.length).slice(0, 3);
-      return `The user isn't in any plans yet. Most popular:\n${popular.map((a) => describe(b, a, ctx)).join("\n")}`;
+      const byPeople = [...b.activities].sort((x, y) => y.signups.length - x.signups.length).map((a) => ({ a }));
+      const top = rankByFit(byPeople, ctx.user.interests).slice(0, 3);
+      const head = ctx.user.interests?.length ? "Best fits for their interests first, then most popular" : "Most popular";
+      return `The user isn't in any plans yet. ${head}:\n${top.map(({ a, fit }) => describe(b, a, ctx) + fitNote(fit)).join("\n")}`;
     }
 
     const shared = new Map<string, string[]>(); // phone → plan names shared with the user
@@ -189,12 +201,12 @@ const findMatches: Tool = {
 
     const suggestions = b.activities
       .filter((a) => !a.signups.includes(me))
-      .map((a) => ({ a, friends: a.signups.filter((p) => shared.has(p)) }))
+      .map((a) => ({ a, friends: a.signups.filter((p) => shared.has(p)), fit: fits(a, ctx.user.interests) }))
       .filter((s) => s.friends.length > 0)
-      .sort((x, y) => y.friends.length - x.friends.length);
+      .sort((x, y) => y.friends.length - x.friends.length || y.fit.length - x.fit.length);
     if (suggestions.length) {
       lines.push("Plans their crew is in that they aren't:");
-      for (const s of suggestions) lines.push(`${s.a.name}, ${s.a.when}: ${s.friends.map((p) => nameOf(b, p, ctx)).join(", ")}`);
+      for (const s of suggestions) lines.push(`${s.a.name}, ${s.a.when}: ${s.friends.map((p) => nameOf(b, p, ctx)).join(", ")}${fitNote(s.fit)}`);
     }
     return lines.join("\n");
   },

@@ -36,7 +36,7 @@ beforeEach(() => {
 test("join_activity adds the user and names who they matched with", async () => {
   const out = await run("join_activity", { activity: "beach trip" });
   assert.match(out, /^Joined\. Beach trip to Wrightsville/);
-  assert.match(out, /Matched with: Ismail, Abdullah, Priya/);
+  assert.match(out, /Matched with: Ismail, Omar, Priya/);
   assert.ok(signups("beach").includes(ME));
 });
 
@@ -73,13 +73,13 @@ test("find_matches ranks the crew by plans in common and suggests their other pl
   await run("join_activity", { activity: "soccer" });
   const out = await run("find_matches", {});
   const lines = out.split("\n");
-  assert.match(lines[0], /^Abdullah: 2 plans in common/);
+  assert.match(lines[0], /^Omar: 2 plans in common/);
   assert.match(lines[1], /^Priya: 2 plans in common/);
   assert.match(out, /Plans their crew is in that they aren't:\nBoba run on Franklin St, Friday 8 PM: Sam/);
 });
 
 test("find_matches by interest, and with no plans yet", async () => {
-  assert.match(await run("find_matches", { interest: "soccer" }), /Pickup soccer.*Abdullah, Priya, Sam \(user not in yet\)/);
+  assert.match(await run("find_matches", { interest: "soccer" }), /Pickup soccer.*Omar, Priya, Sam \(user not in yet\)/);
   assert.match(await run("find_matches", {}), /isn't in any plans yet\. Most popular:\nBeach trip/);
 });
 
@@ -203,7 +203,7 @@ test("watch: someone joining after you is a match, and it can be resent (no stat
   await run("join_activity", { activity: "soccer", my_name: "Jordan" }, ctx(NEW));
   const first = await watch(ctx());
   assert.deepEqual(kinds(first), ["match"]);
-  assert.equal(first[0].facts, "Jordan joined Pickup soccer at Hooker Fields (Sunday 4 PM) after you. Now 5 in: Abdullah, Priya, Sam, you, Jordan.");
+  assert.equal(first[0].facts, "Jordan joined Pickup soccer at Hooker Fields (Sunday 4 PM) after you. Now 5 in: Omar, Priya, Sam, you, Jordan.");
   assert.match(first[0].dedupeKey, new RegExp(`^social:match:[a-z0-9]+:\\${ME}:soccer:\\${NEW}$`));
   assert.deepEqual(await watch(ctx()), first);
   assert.deepEqual(await triggers.match(ctx()), first);
@@ -321,4 +321,100 @@ test("a first name cut to 30 characters is mentioned to the model, from join and
   assert.match(await run("join_activity", { activity: "boba", my_name: long }, ctx(NEW)), /First name shortened to 30 characters/);
   assert.match(await run("start_activity", { name: "Tennis at Cobb", when: "Sunday 2 PM", my_name: long }), /First name shortened to 30 characters/);
   assert.doesNotMatch(await run("join_activity", { activity: "beach", my_name: "Jordan" }, ctx(THIRD)), /shortened/);
+});
+
+// ---- sign-up interests (web form categories) and Sunny's intro ----
+const withInterests = (interests: string[] | undefined, phone = ME, name?: string): Ctx => {
+  const c = ctx(phone, name);
+  return { ...c, user: { ...c.user, interests } };
+};
+
+test("plans map to the sign-up interest categories by their names", async () => {
+  const { categoriesOf } = await import("./interests.ts");
+  const cats = (name: string) => categoriesOf({ id: "x", name, when: "", signups: [] });
+  assert.deepEqual(categoriesOf(loadBoard().activities.find((a) => a.id === "beach")!), ["outdoors"]);
+  assert.deepEqual(categoriesOf(loadBoard().activities.find((a) => a.id === "soccer")!), ["pickup sports"]);
+  assert.deepEqual(categoriesOf(loadBoard().activities.find((a) => a.id === "boba")!), ["food"]);
+  assert.deepEqual(cats("Tennis at Cobb courts"), ["pickup sports"]);
+  assert.deepEqual(cats("COMP 211 study group"), ["study groups"]);
+  assert.deepEqual(cats("Food bank cleanup"), ["volunteering"]); // "food bank" claims "food"
+  assert.deepEqual(cats("Late night tacos"), ["food"]);
+  assert.deepEqual(cats("Chill hangout"), []);
+});
+
+test("intro pitches the open plan that fits their interests, with who's in", async () => {
+  const [ev] = await triggers.intro(withInterests(["food"], ME, "Jordan Lee"));
+  assert.equal(ev.kind, "intro");
+  assert.equal(ev.dedupeKey, `social:intro:${ME}`);
+  assert.equal(
+    ev.facts,
+    `Hey Jordan, I'm Sunny. I find people who want to do the same things you do. You said you're into food: Boba run on Franklin St is Friday 8 PM and Sam is in. Want in? Just say "I'm in".`,
+  );
+  const [sports] = await triggers.intro(withInterests(["gym", "pickup sports"]));
+  assert.match(sports.facts, /^Hey, I'm Sunny\..*into pickup sports: Pickup soccer at Hooker Fields is Sunday 4 PM and Omar, Priya, Sam are in\./);
+});
+
+test("intro with no interests (or none that fit) offers the most popular plan and asks what they're into", async () => {
+  for (const interests of [undefined, [], ["gaming"]]) {
+    const [ev] = await triggers.intro(withInterests(interests));
+    assert.match(ev.facts, /The big one right now: Beach trip to Wrightsville, Saturday 9 AM, and Ismail, Omar, Priya are in\. Want in\? Or tell me what you're into\.$/, String(interests));
+  }
+});
+
+test("intro skips plans they're already in", async () => {
+  await run("join_activity", { activity: "boba" });
+  const [ev] = await triggers.intro(withInterests(["food"]));
+  assert.doesNotMatch(ev.facts, /Boba/);
+  assert.match(ev.facts, /The big one right now: Beach trip/);
+});
+
+test("the intro trigger is wired for core's /admin send-intro", () => {
+  assert.equal(typeof loadPersonas().get("social")?.triggers?.intro, "function");
+});
+
+test("list_signups puts plans that fit their interests first and says so", async () => {
+  const lines = (await tools.find((t) => t.name === "list_signups")!.run({}, withInterests(["food"]))).split("\n");
+  assert.match(lines[0], /^Boba run on Franklin St.* · fits their interests: food$/);
+  assert.match(lines[1], /^Beach trip/);
+  assert.doesNotMatch(lines[1], /fits their interests/);
+  const plain = (await run("list_signups", {})).split("\n");
+  assert.match(plain[0], /^Beach trip/); // no interests: board order, no notes
+});
+
+test("find_matches understands sign-up categories and ranks fits first when they're in no plans", async () => {
+  const fm = (args: Record<string, unknown>, c: Ctx) => tools.find((t) => t.name === "find_matches")!.run(args, c);
+  assert.match(await fm({ interest: "outdoors" }, ctx()), /^Beach trip to Wrightsville, Saturday 9 AM: Ismail, Omar, Priya \(user not in yet\)$/);
+  assert.match(await fm({ interest: "Pickup Sports" }, ctx()), /^Pickup soccer at Hooker Fields/);
+  const out = await fm({}, withInterests(["food"]));
+  assert.match(out, /Best fits for their interests first, then most popular:\nBoba run on Franklin St.* · fits their interests: food\nBeach trip/);
+});
+
+test("review: game nights are gaming; plurals and hyphens match; watching sports isn't pickup sports", async () => {
+  const { categoriesOf } = await import("./interests.ts");
+  const cats = (name: string) => categoriesOf({ id: "x", name, when: "", signups: [] });
+  for (const n of ["Game night", "Video game night", "Board games at Epilogue", "board-game night", "Video games at Sitterson"]) {
+    assert.deepEqual(cats(n), ["gaming"], n);
+  }
+  assert.deepEqual(cats("Ice-cream run"), ["food"]);
+  assert.deepEqual(cats("Watch the UNC basketball game"), []);
+  assert.deepEqual(cats("UNC vs Duke football game"), []);
+  assert.deepEqual(cats("Pickup basketball, watch for rain"), ["pickup sports"]);
+  assert.deepEqual(cats("Dinner at Mario's"), ["food"]);
+  assert.deepEqual(cats("Mario Kart tournament"), ["gaming"]);
+  assert.deepEqual(cats("Need a lift to RDU"), []);
+  assert.deepEqual(cats("Church service"), []);
+  assert.deepEqual(cats("Community service at the shelter"), ["volunteering"]);
+  assert.deepEqual(cats("Final Four watch party"), ["parties"]);
+  assert.deepEqual(cats("Code review"), []);
+  assert.deepEqual(cats("Finals week study session"), ["study groups"]);
+});
+
+test("review: a bare 'I'm in' after the intro joins the plan Sunny pitched, even if history lost the intro", async () => {
+  const me = withInterests(["food"], NEW, "Jordan");
+  await triggers.intro(me); // pitches boba and remembers it
+  const out = await tools.find((t) => t.name === "join_activity")!.run({}, me);
+  assert.match(out, /^Joined\. Boba run on Franklin St/);
+  assert.ok(signups("boba").includes(NEW));
+  // Without an intro, a bare join still asks which plan.
+  assert.match(await run("join_activity", {}, ctx(THIRD)), /^Which plan\?/);
 });

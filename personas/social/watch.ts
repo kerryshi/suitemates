@@ -7,6 +7,7 @@
 // claim makes each text go out once, while the forced demo trigger can always resend it.
 import type { Ctx, WatchEvent } from "../../core/types.ts";
 import { type Activity, type Board, loadBoard, nameOf } from "./board.ts";
+import { rankByFit } from "./interests.ts";
 
 export const HOT_AT = 3; // a plan the user was never in is worth a text when a live join brings it to this many
 
@@ -57,7 +58,38 @@ export async function watch(ctx: Ctx): Promise<WatchEvent[]> {
   return [...matches(b, ctx), ...hotPlan(b, ctx)];
 }
 
+// First text after web sign-up ("send intro" in /admin → core/signup.ts introTexts): Sunny says hi and pitches the
+// open plan that best fits their sign-up interests, with who's in. No interests or no fit → the most popular plan.
+// The pitched plan is kept in kv (PITCHED_KEY): if the LLM call fails, core sends these facts raw and history
+// doesn't keep them, so join_activity falls back to it when a bare "I'm in" arrives with no plan named.
+export const PITCHED_KEY = "intro:pitched";
+
+export function introEvent(ctx: Ctx): WatchEvent {
+  const b = loadBoard();
+  const me = ctx.user.phone;
+  const first = ctx.user.name?.trim().split(/\s+/)[0];
+  const sunny = process.env.SOCIAL_NAME || "Sunny";
+  const open = b.activities.filter((a) => !a.signups.includes(me)).sort((x, y) => y.signups.length - x.signups.length);
+  const [best] = rankByFit(open.map((a) => ({ a })), ctx.user.interests);
+  const who = (a: Activity) => {
+    const names = a.signups.filter((p) => p !== me).map((p) => nameOf(b, p, ctx));
+    return names.length ? `${names.join(", ")} ${names.length === 1 ? "is" : "are"} in` : "nobody's in yet";
+  };
+  ctx.kv.set(PITCHED_KEY, best?.a.id);
+  const hello = `Hey${first ? ` ${first}` : ""}, I'm ${sunny}. I find people who want to do the same things you do.`;
+  const pitch = !best
+    ? " Tell me what you're into and I'll find your people."
+    : best.fit.length
+      ? ` You said you're into ${best.fit.join(" and ")}: ${best.a.name} is ${best.a.when} and ${who(best.a)}. Want in? Just say "I'm in".`
+      : ` The big one right now: ${best.a.name}, ${best.a.when}, and ${who(best.a)}. Want in? Or tell me what you're into.`;
+  return { kind: "intro", userPhone: me, facts: hello + pitch, dedupeKey: `social:intro:${me}` };
+}
+
 export const triggers = {
+  async intro(ctx: Ctx): Promise<WatchEvent[]> {
+    return [introEvent(ctx)];
+  },
+
   // On cue for the demo: only the newest "someone joined your plan" text, so a forced re-run
   // can't replay every old match on stage. npm run trigger -- social match
   async match(ctx: Ctx): Promise<WatchEvent[]> {

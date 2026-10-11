@@ -1,6 +1,15 @@
 # STATUS: hacknc-agents (team build)
 
 Last updated: 2026-10-10 23:40 EDT · Devpost due Sun 10:00 AM · repo github.com/kerryshi/hacknc-agents (private)
+
+## Before the repo goes public (Devpost, Sun AM) — secrets in git history
+DEAN.md (ff9abae, removed in #29) committed live values; deleting the file doesn't remove them from history. Rotate each, then the old ones in history are dead:
+- [ ] Ismail: `photon projects regenerate-secret <Dean's project>` → Kerry updates `ACADEMIC_PROJECT_SECRET` in .env → one server restart
+- [ ] Ismail: revoke that Canvas access token (Canvas → Account → Settings → Approved Integrations)
+- [ ] Ismail: delete that Gemini API key (aistudio.google.com → API keys)
+- [ ] The old free project [old-project]'s secret also leaked (into a Claude transcript): rotate or delete it once Dean is on his own project
+- [ ] `git log --all -p | grep -nE '(SECRET|TOKEN|API_KEY)=[A-Za-z0-9]'` finds nothing still live
+
 Plan of record: `docs/PLAN.md` (architect). Owners: Kerry = core + Financial, Ismail = Academic, Abdullah = Social.
 
 ## Where we are (main, 23:40)

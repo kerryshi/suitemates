@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!-- Template: ops/watchdog.sh install fills __NODE__, __CODE__ (this checkout) and __DATA__ (the checkout the server runs in). -->
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.kerryshi.suitemates-watchdog</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>__NODE__</string>
+        <string>__CODE__/node_modules/tsx/dist/cli.mjs</string>
+        <string>scripts/watchdog.ts</string>
+    </array>
+    <key>WorkingDirectory</key>
+    <string>__CODE__</string>
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>WATCHDOG_ROOT</key>
+        <string>__DATA__</string>
+        <key>PATH</key>
+        <string>/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+    </dict>
+    <key>RunAtLoad</key>
+    <true/>
+    <key>KeepAlive</key>
+    <true/>
+    <key>ThrottleInterval</key>
+    <integer>10</integer>
+    <key>StandardOutPath</key>
+    <string>__DATA__/data/logs/watchdog.log</string>
+    <key>StandardErrorPath</key>
+    <string>__DATA__/data/logs/watchdog.log</string>
+</dict>
+</plist>

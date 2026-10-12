@@ -2,6 +2,8 @@
 
 Three AI texting agents that help UNC students balance school, money, and social life, with no app to download. Each agent texts from its own iMessage number, and all three share one brain about you: when your life overlaps (a beach trip that costs money and lands on a midterm weekend), the agent you're texting brings the others in, and they text you first. HackNC 2026.
 
+> **Follow-up:** the agent hand-off core (consent decided by a state machine, not the model, plus a gate that rewrites false "X is texting you" claims) was rebuilt after the hackathon as a standalone, tested repo: [kerryshi/suitemates-handoff](https://github.com/kerryshi/suitemates-handoff). This repo is the team's hackathon snapshot.
+
 | Persona | Folder | Data | Proactive |
 |---|---|---|---|
 | Academic (Dean) | `personas/academic/` | Canvas | morning "due today", 24h warnings |
